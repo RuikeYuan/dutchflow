@@ -7,7 +7,7 @@ const port = Number(process.env.REDDIT_AUTH_PORT ?? 8787);
 const redirectUri = process.env.REDDIT_REDIRECT_URI ?? `http://127.0.0.1:${port}/callback`;
 const clientId = process.env.REDDIT_CLIENT_ID;
 const clientSecret = process.env.REDDIT_CLIENT_SECRET ?? "";
-const userAgent = process.env.REDDIT_USER_AGENT ?? "DutchFlow social auth by u/RuikeYuan";
+const userAgent = process.env.REDDIT_USER_AGENT ?? "DutchFlow by Forab AI social auth by u/RuikeYuan";
 const scope = process.env.REDDIT_AUTH_SCOPE ?? "submit read identity";
 const state = crypto.randomBytes(16).toString("hex");
 

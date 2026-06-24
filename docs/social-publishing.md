@@ -1,5 +1,8 @@
 # Social Publishing
 
+Brand: Forab AI
+Product: DutchFlow by Forab AI
+
 This project includes cautious social publishing helpers. Use them for occasional, honest launch posts and feedback requests. Do not use them for spam, fake engagement, automated voting, or repeated cross-posting.
 
 ## Drafts

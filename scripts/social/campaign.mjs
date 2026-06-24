@@ -1,5 +1,7 @@
 export const app = {
   name: "DutchFlow",
+  brand: "Forab AI",
+  fullName: "DutchFlow by Forab AI",
   url: "https://dutch-frequency-app.vercel.app",
   repo: "https://github.com/RuikeYuan/dutchflow",
   tagline: "a simple Dutch frequency vocabulary trainer",
@@ -8,14 +10,14 @@ export const app = {
 
 export const posts = {
   short: [
-    `I built ${app.name}, ${app.tagline}.`,
+    `I built ${app.fullName}, ${app.tagline}.`,
     "",
     "It has frequency-based word browsing, notebook cards, spaced review, sentence shadowing, and AI example sentences.",
     "",
     app.url
   ].join("\n"),
   feedback: [
-    `I built ${app.name} for learning Dutch vocabulary by frequency.`,
+    `I built ${app.fullName} for learning Dutch vocabulary by frequency.`,
     "",
     "The app focuses on the words learners are most likely to see first, then adds review cards, pronunciation, example sentences, and light speaking practice.",
     "",
@@ -25,7 +27,7 @@ export const posts = {
     "If you are learning Dutch, what would make this more useful for daily study?"
   ].join("\n"),
   builder: [
-    `Small launch: ${app.name}`,
+    `Small launch: ${app.fullName}`,
     "",
     "A Vite + React app for studying Dutch vocabulary with frequency data, local progress, AI-generated examples, translation, grammar notes, and speaking practice.",
     "",
@@ -38,7 +40,7 @@ export const posts = {
 
 export const platformPosts = {
   reddit: {
-    title: `I built ${app.name}, a simple Dutch frequency vocabulary trainer`,
+    title: `I built ${app.fullName}, a simple Dutch frequency vocabulary trainer`,
     body: posts.feedback
   },
   discord: {
@@ -49,7 +51,7 @@ export const platformPosts = {
   },
   linkedin: {
     text: [
-      `I shipped ${app.name}, ${app.tagline}.`,
+      `I shipped ${app.fullName}, ${app.tagline}.`,
       "",
       "It combines frequency-based vocabulary study with review cards, pronunciation, AI examples, translations, grammar notes, and speaking practice.",
       "",
@@ -61,7 +63,7 @@ export const platformPosts = {
   },
   x: {
     text: [
-      `I built ${app.name}: ${app.tagline}.`,
+      `I built ${app.fullName}: ${app.tagline}.`,
       "",
       "Frequency words, notebook cards, spaced review, sentence shadowing, AI examples, and speaking practice.",
       "",

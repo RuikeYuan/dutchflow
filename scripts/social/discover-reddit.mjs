@@ -95,7 +95,7 @@ async function getAccessToken() {
     headers: {
       Authorization: `Basic ${basicAuth(process.env.REDDIT_CLIENT_ID, process.env.REDDIT_CLIENT_SECRET)}`,
       "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent": process.env.REDDIT_USER_AGENT ?? "DutchFlow discovery script"
+      "User-Agent": process.env.REDDIT_USER_AGENT ?? "DutchFlow by Forab AI discovery script"
     },
     body: new URLSearchParams({
       grant_type: "refresh_token",
@@ -113,7 +113,7 @@ async function getAccessToken() {
 
 async function redditGet(path, accessToken) {
   const headers = {
-    "User-Agent": process.env.REDDIT_USER_AGENT ?? "DutchFlow discovery script"
+    "User-Agent": process.env.REDDIT_USER_AGENT ?? "DutchFlow by Forab AI discovery script"
   };
   const baseUrl = accessToken ? "https://oauth.reddit.com" : "https://www.reddit.com";
   if (accessToken) {
