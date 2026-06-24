@@ -245,6 +245,41 @@ export async function explainExample(sentence) {
   return explanation;
 }
 
+export async function askWordQuestion({ word, translation, partOfSpeech, sentence, question, turns = [] }) {
+  const systemPrompt =
+    "You are a concise Dutch tutor for A1-B2 learners. Answer questions about one Dutch word, including grammar, usage, examples, nuance, morphology, pronunciation hints, and learner mistakes. Be practical and accurate.";
+  const userPrompt = [
+    `Dutch word: ${word}`,
+    `Part of speech: ${partOfSpeech}`,
+    `English meaning: ${translation}`,
+    sentence ? `Current example sentence: ${sentence}` : "",
+    turns.length
+      ? [
+          "",
+          "Previous conversation:",
+          ...turns
+            .slice(-8)
+            .map((turn) => `${turn.role === "assistant" ? "Tutor" : "Learner"}: ${String(turn.text ?? "").trim()}`)
+            .filter((line) => !line.endsWith(":"))
+        ].join("\n")
+      : "",
+    "",
+    `Learner question: ${question}`,
+    "",
+    "Answer in the same language as the learner's question when obvious; otherwise use clear English.",
+    "Keep the answer compact: 4-8 short lines. Use simple examples when useful."
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const answer = await callLlm(systemPrompt, userPrompt, 0.35, 360);
+
+  if (!answer) {
+    throw new Error("LLM returned an empty answer");
+  }
+
+  return answer;
+}
+
 export async function getSpeakingReply(scenario, turns) {
   const transcript = turns
     .map((turn) => {

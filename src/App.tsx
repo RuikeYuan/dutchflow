@@ -34,6 +34,10 @@ type ViewMode = "browse" | "notebook" | "study" | "speaking" | "method";
 type UiLanguage = "zh" | "en" | "nl" | "es" | "de";
 type ExampleTranslationLanguage = "zh" | "en" | "de";
 type CardMeaningLanguage = "en" | "zh";
+type WordAnswerTurn = {
+  role: "user" | "assistant";
+  text: string;
+};
 
 const words = frequencyWords as DutchWord[];
 const wordLookup = new Map<string, DutchWord>();
@@ -51,6 +55,7 @@ const languageStorageKey = "dutch-frequency-app-ui-language";
 const generatedExamplesStorageKey = "dutch-frequency-app-generated-examples";
 const exampleTranslationsStorageKey = "dutch-frequency-app-example-translations";
 const exampleGrammarStorageKey = "dutch-frequency-app-example-grammar";
+const wordAnswersStorageKey = "dutch-frequency-app-word-answers";
 const studyProgressStorageKey = "dutch-frequency-app-study-progress";
 const listNames = ["All", "Core", "Fiction", "Newspapers", "Spoken", "Web", "General"];
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
@@ -148,6 +153,11 @@ const translations: Record<
     explainingGrammar: string;
     grammarExplanation: string;
     grammarFailed: string;
+    askWord: string;
+    askingWord: string;
+    wordQuestionPlaceholder: string;
+    wordAnswer: string;
+    wordAnswerFailed: string;
     list: Record<string, string>;
     pos: Record<string, string>;
   }
@@ -227,6 +237,11 @@ const translations: Record<
     explainingGrammar: "讲解中...",
     grammarExplanation: "语法细节",
     grammarFailed: "语法讲解失败，请检查 Gemini 配置",
+    askWord: "问 AI",
+    askingWord: "回答中...",
+    wordQuestionPlaceholder: "问这个词的语法、用法、搭配、区别...",
+    wordAnswer: "AI 问答",
+    wordAnswerFailed: "AI 问答失败，请检查 LLM 配置",
     list: {
       All: "全部",
       Core: "核心",
@@ -324,6 +339,11 @@ const translations: Record<
     explainingGrammar: "Explaining...",
     grammarExplanation: "Grammar details",
     grammarFailed: "Could not explain grammar. Check the LLM config",
+    askWord: "Ask AI",
+    askingWord: "Answering...",
+    wordQuestionPlaceholder: "Ask grammar, usage, collocations, nuance...",
+    wordAnswer: "AI answer",
+    wordAnswerFailed: "Could not answer. Check the LLM config",
     list: {
       All: "All",
       Core: "Core",
@@ -421,6 +441,11 @@ const translations: Record<
     explainingGrammar: "Uitleg...",
     grammarExplanation: "Grammatica",
     grammarFailed: "Grammatica-uitleg mislukt. Controleer Gemini",
+    askWord: "Vraag AI",
+    askingWord: "Antwoord...",
+    wordQuestionPlaceholder: "Vraag naar grammatica, gebruik, combinaties...",
+    wordAnswer: "AI-antwoord",
+    wordAnswerFailed: "Antwoord mislukt. Controleer de LLM-configuratie",
     list: {
       All: "Alles",
       Core: "Kern",
@@ -518,6 +543,11 @@ const translations: Record<
     explainingGrammar: "Explicando...",
     grammarExplanation: "Detalles gramaticales",
     grammarFailed: "No se pudo explicar la gramática. Revisa Gemini",
+    askWord: "Preguntar IA",
+    askingWord: "Respondiendo...",
+    wordQuestionPlaceholder: "Pregunta gramática, uso, matices...",
+    wordAnswer: "Respuesta IA",
+    wordAnswerFailed: "No se pudo responder. Revisa el LLM",
     list: {
       All: "Todo",
       Core: "Básico",
@@ -615,6 +645,11 @@ const translations: Record<
     explainingGrammar: "Erklärt...",
     grammarExplanation: "Grammatikdetails",
     grammarFailed: "Grammatikerklärung fehlgeschlagen. Prüfe Gemini",
+    askWord: "KI fragen",
+    askingWord: "Antwortet...",
+    wordQuestionPlaceholder: "Frage zu Grammatik, Gebrauch, Nuancen...",
+    wordAnswer: "KI-Antwort",
+    wordAnswerFailed: "Antwort fehlgeschlagen. Prüfe die LLM-Konfiguration",
     list: {
       All: "Alle",
       Core: "Kern",
@@ -1057,6 +1092,15 @@ function getSavedExampleGrammar() {
   }
 }
 
+function getSavedWordAnswers() {
+  try {
+    const value = JSON.parse(localStorage.getItem(wordAnswersStorageKey) ?? "{}");
+    return value && typeof value === "object" ? (value as Record<string, WordAnswerTurn[]>) : {};
+  } catch {
+    return {};
+  }
+}
+
 function getSavedStudyProgress() {
   try {
     const value = JSON.parse(localStorage.getItem(studyProgressStorageKey) ?? "{}");
@@ -1330,6 +1374,10 @@ function WordCard({
   translationMessage,
   onTranslateExample,
   onExplainGrammar,
+  wordAnswers,
+  askingWord,
+  wordAnswerMessage,
+  onAskWord,
   generating,
   generationMessage,
   flipped,
@@ -1349,6 +1397,10 @@ function WordCard({
   translationMessage?: string;
   onTranslateExample: (sentenceKey: string, sentence: string, targetLanguage: ExampleTranslationLanguage) => void;
   onExplainGrammar: (sentenceKey: string, sentence: string) => void;
+  wordAnswers: WordAnswerTurn[];
+  askingWord: boolean;
+  wordAnswerMessage?: string;
+  onAskWord: (word: DutchWord, sentence: string, question: string) => void;
   generating: boolean;
   generationMessage?: string;
   flipped: boolean;
@@ -1361,6 +1413,14 @@ function WordCard({
   const secondaryText = flipped ? item.word : meaning;
   const primaryLabel = flipped ? (cardMeaningLanguage === "zh" ? "中文" : "English") : "Nederlands";
   const secondaryLabel = flipped ? "Nederlands" : cardMeaningLanguage === "zh" ? "中文" : "English";
+  const [question, setQuestion] = useState("");
+
+  function submitQuestion() {
+    const trimmed = question.trim();
+    if (!trimmed || askingWord) return;
+    onAskWord(item, sentence, trimmed);
+    setQuestion("");
+  }
 
   return (
     <article className="word-card">
@@ -1428,6 +1488,39 @@ function WordCard({
             onExplainGrammar={onExplainGrammar}
             t={t}
           />
+          <div className="word-qa">
+            <div className="word-qa-head">
+              <strong>{t.wordAnswer}</strong>
+              <span>{cleanWord(item.word)}</span>
+            </div>
+            {wordAnswers.length ? (
+              <div className="word-qa-turns">
+                {wordAnswers.map((turn, index) => (
+                  <div className={`word-qa-turn ${turn.role}`} key={`${item.sourceId}-${turn.role}-${index}`}>
+                    <span>{turn.role === "user" ? "You" : "AI"}</span>
+                    {turn.text.split("\n").map((line, lineIndex) => (
+                      <p key={`${line}-${lineIndex}`}>{line}</p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <div className="word-qa-input">
+              <input
+                value={question}
+                onChange={(event) => setQuestion(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") submitQuestion();
+                }}
+                placeholder={t.wordQuestionPlaceholder}
+              />
+              <button className="mini-button" type="button" onClick={submitQuestion} disabled={askingWord || !question.trim()}>
+                <Sparkles size={15} />
+                <span>{askingWord ? t.askingWord : t.askWord}</span>
+              </button>
+            </div>
+            {wordAnswerMessage ? <p className="ai-status">{wordAnswerMessage}</p> : null}
+          </div>
         </>
       ) : null}
     </article>
@@ -1707,12 +1800,15 @@ export default function App() {
   const [exampleTranslations, setExampleTranslations] =
     useState<Record<string, string>>(getSavedExampleTranslations);
   const [exampleGrammar, setExampleGrammar] = useState<Record<string, string>>(getSavedExampleGrammar);
+  const [wordAnswers, setWordAnswers] = useState<Record<string, WordAnswerTurn[]>>(getSavedWordAnswers);
   const [studyProgress, setStudyProgress] = useState<Record<string, StudyProgress>>(getSavedStudyProgress);
   const [generatingId, setGeneratingId] = useState("");
   const [translatingKey, setTranslatingKey] = useState("");
   const [explainingGrammarKey, setExplainingGrammarKey] = useState("");
+  const [askingWordId, setAskingWordId] = useState("");
   const [generationMessages, setGenerationMessages] = useState<Record<string, string>>({});
   const [translationMessages, setTranslationMessages] = useState<Record<string, string>>({});
+  const [wordAnswerMessages, setWordAnswerMessages] = useState<Record<string, string>>({});
   const [examplesLoading, setExamplesLoading] = useState(true);
   const [examplesFailed, setExamplesFailed] = useState(false);
   const [visibleLimit, setVisibleLimit] = useState(180);
@@ -1739,6 +1835,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(exampleGrammarStorageKey, JSON.stringify(exampleGrammar));
   }, [exampleGrammar]);
+
+  useEffect(() => {
+    localStorage.setItem(wordAnswersStorageKey, JSON.stringify(wordAnswers));
+  }, [wordAnswers]);
 
   useEffect(() => {
     localStorage.setItem(studyProgressStorageKey, JSON.stringify(studyProgress));
@@ -2049,6 +2149,63 @@ export default function App() {
       setTranslationMessages((current) => ({ ...current, [sentenceKey]: t.grammarFailed }));
     } finally {
       setExplainingGrammarKey("");
+    }
+  }
+
+  async function handleAskWord(word: DutchWord, sentence: string, question: string) {
+    if (!apiAvailable) {
+      setWordAnswerMessages((current) => ({ ...current, [word.sourceId]: t.wordAnswerFailed }));
+      return;
+    }
+
+    const previousTurns = wordAnswers[word.sourceId] ?? [];
+    const userTurn: WordAnswerTurn = { role: "user", text: question };
+    setAskingWordId(word.sourceId);
+    setWordAnswerMessages((current) => ({ ...current, [word.sourceId]: "" }));
+    setWordAnswers((current) => ({
+      ...current,
+      [word.sourceId]: [...(current[word.sourceId] ?? []), userTurn]
+    }));
+
+    try {
+      const response = await fetch(apiUrl("/api/ask-word"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          word: word.word,
+          translation: word.translation,
+          partOfSpeech: word.partOfSpeech,
+          sentence,
+          question,
+          turns: previousTurns
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to answer word question");
+      }
+
+      const data = (await response.json()) as { answer?: string };
+      const answer = data.answer?.trim();
+      if (!answer) {
+        throw new Error("Empty answer");
+      }
+
+      const assistantTurn: WordAnswerTurn = { role: "assistant", text: answer };
+      setWordAnswers((current) => ({
+        ...current,
+        [word.sourceId]: [...(current[word.sourceId] ?? []), assistantTurn]
+      }));
+    } catch {
+      setWordAnswerMessages((current) => ({ ...current, [word.sourceId]: t.wordAnswerFailed }));
+      setWordAnswers((current) => ({
+        ...current,
+        [word.sourceId]: (current[word.sourceId] ?? []).filter((turn) => turn !== userTurn)
+      }));
+    } finally {
+      setAskingWordId("");
     }
   }
 
@@ -2374,6 +2531,10 @@ export default function App() {
                   translationMessage={translationMessages[word.sourceId]}
                   onTranslateExample={handleTranslateExample}
                   onExplainGrammar={handleExplainGrammar}
+                  wordAnswers={wordAnswers[word.sourceId] ?? []}
+                  askingWord={askingWordId === word.sourceId}
+                  wordAnswerMessage={wordAnswerMessages[word.sourceId]}
+                  onAskWord={handleAskWord}
                   generating={generatingId === word.sourceId}
                   generationMessage={generationMessages[word.sourceId]}
                   flipped={isCardFlipped(word.sourceId)}

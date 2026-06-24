@@ -1053,6 +1053,80 @@ h1 {
   line-height: 1.5;
 }
 
+.word-qa {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  padding: 11px;
+}
+
+.word-qa-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.word-qa-head strong {
+  color: var(--teal);
+}
+
+.word-qa-turns {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.word-qa-turn {
+  border-radius: 8px;
+  padding: 9px;
+  background: #f9f7f1;
+}
+
+.word-qa-turn.assistant {
+  background: #eefaf8;
+}
+
+.word-qa-turn span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.word-qa-turn p {
+  min-height: 0;
+  margin: 4px 0 0;
+  color: #3f4b43;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.word-qa-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.word-qa-input input {
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  padding: 0 10px;
+  font: inherit;
+  font-size: 0.86rem;
+  outline: 0;
+}
+
 .repeat-head > span {
   min-width: 0;
   color: var(--muted);
@@ -1499,6 +1573,7 @@ h1 {
   .repeat-actions,
   .ai-example-row,
   .translation-tools,
+  .word-qa-input,
   .speaking-controls,
   .speaking-input {
     align-items: stretch;
