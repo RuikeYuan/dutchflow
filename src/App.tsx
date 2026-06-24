@@ -17,6 +17,7 @@ import {
   Volume2
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { grammarGuideChapters, grammarGuideParts, type GrammarChapter, type GrammarNode } from "./data/grammarGuide";
 import frequencyWords from "./data/frequencyWords.json";
 
 type DutchWord = {
@@ -30,7 +31,7 @@ type DutchWord = {
   frequency?: number;
 };
 
-type ViewMode = "browse" | "notebook" | "study" | "speaking" | "method";
+type ViewMode = "browse" | "notebook" | "study" | "speaking" | "grammar" | "method";
 type UiLanguage = "zh" | "en" | "nl" | "es" | "de";
 type ExampleTranslationLanguage = "zh" | "en" | "de";
 type CardMeaningLanguage = "en" | "zh";
@@ -92,6 +93,7 @@ const translations: Record<
     modeNotebook: string;
     modeStudy: string;
     modeSpeaking: string;
+    modeGrammar: string;
     modeMethod: string;
     filtersLabel: string;
     playPronunciation: string;
@@ -176,6 +178,7 @@ const translations: Record<
     modeNotebook: "单词本",
     modeStudy: "练习",
     modeSpeaking: "口语",
+    modeGrammar: "语法",
     modeMethod: "方法",
     filtersLabel: "词频分类",
     playPronunciation: "播放读音",
@@ -278,6 +281,7 @@ const translations: Record<
     modeNotebook: "Notebook",
     modeStudy: "Study",
     modeSpeaking: "Speaking",
+    modeGrammar: "Grammar",
     modeMethod: "Method",
     filtersLabel: "Frequency lists",
     playPronunciation: "Play pronunciation",
@@ -380,6 +384,7 @@ const translations: Record<
     modeNotebook: "Woordenlijst",
     modeStudy: "Oefenen",
     modeSpeaking: "Spreken",
+    modeGrammar: "Grammatica",
     modeMethod: "Methode",
     filtersLabel: "Frequentielijsten",
     playPronunciation: "Uitspraak afspelen",
@@ -482,6 +487,7 @@ const translations: Record<
     modeNotebook: "Cuaderno",
     modeStudy: "Practicar",
     modeSpeaking: "Hablar",
+    modeGrammar: "Gramática",
     modeMethod: "Método",
     filtersLabel: "Listas de frecuencia",
     playPronunciation: "Reproducir pronunciación",
@@ -584,6 +590,7 @@ const translations: Record<
     modeNotebook: "Wortliste",
     modeStudy: "Üben",
     modeSpeaking: "Sprechen",
+    modeGrammar: "Grammatik",
     modeMethod: "Methode",
     filtersLabel: "Frequenzlisten",
     playPronunciation: "Aussprache abspielen",
@@ -1527,6 +1534,116 @@ function WordCard({
   );
 }
 
+function GrammarGuidePage() {
+  const [selectedChapterId, setSelectedChapterId] = useState(grammarGuideChapters[0]?.id ?? "");
+  const selectedChapter = grammarGuideChapters.find((chapter) => chapter.id === selectedChapterId) ?? grammarGuideChapters[0];
+
+  return (
+    <section className="grammar-page">
+      <div className="grammar-hero">
+        <div>
+          <span className="method-eyebrow">中文语法教练</span>
+          <h2>荷兰语语法思维导图</h2>
+          <p>
+            按《荷兰语语法自学教程》的结构整理成四大模块、十六个章节。点击导图节点进入章节页，先抓规则骨架，再回到词卡里问 AI 具体用法。
+          </p>
+        </div>
+        <div className="grammar-source-note">
+          <strong>学习设计</strong>
+          <span>词法 → 句法 → 时态 → 拼写</span>
+          <span>每章：目标 / 易错点 / 规则导图</span>
+        </div>
+      </div>
+
+      <div className="grammar-layout">
+        <div className="grammar-map" aria-label="Grammar mind map">
+          <div className="grammar-root">荷兰语语法</div>
+          <div className="grammar-part-grid">
+            {grammarGuideParts.map((part) => (
+              <article className="grammar-part" key={part.id}>
+                <div className="grammar-part-head">
+                  <h3>{part.title}</h3>
+                  <span>{part.pageRange}</span>
+                </div>
+                <p>{part.theme}</p>
+                <div className="grammar-chapter-list">
+                  {part.chapters.map((chapter) => (
+                    <button
+                      className={chapter.id === selectedChapter.id ? "active" : ""}
+                      key={chapter.id}
+                      type="button"
+                      onClick={() => setSelectedChapterId(chapter.id)}
+                    >
+                      <span>{chapter.title}</span>
+                      <small>{chapter.pageRange}</small>
+                    </button>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <GrammarChapterPanel chapter={selectedChapter} />
+      </div>
+    </section>
+  );
+}
+
+function GrammarChapterPanel({ chapter }: { chapter: GrammarChapter }) {
+  return (
+    <article className="grammar-chapter-panel">
+      <div className="grammar-chapter-title">
+        <span>{chapter.pageRange}</span>
+        <h2>{chapter.title}</h2>
+        <p>{chapter.summary}</p>
+      </div>
+
+      <div className="grammar-summary-grid">
+        <div>
+          <h3>学习目标</h3>
+          {chapter.goals.map((goal) => (
+            <p key={goal}>{goal}</p>
+          ))}
+        </div>
+        <div>
+          <h3>中文学习者易错点</h3>
+          {chapter.pitfalls.map((pitfall) => (
+            <p key={pitfall}>{pitfall}</p>
+          ))}
+        </div>
+      </div>
+
+      <div className="grammar-node-panel">
+        <h3>章节思维导图</h3>
+        <div className="grammar-node-tree">
+          {chapter.nodes.map((node) => (
+            <GrammarNodeView node={node} key={node.id} />
+          ))}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function GrammarNodeView({ node }: { node: GrammarNode }) {
+  return (
+    <div className="grammar-node">
+      <div className="grammar-node-card">
+        <strong>{node.title}</strong>
+        {node.detail ? <span>{node.detail}</span> : null}
+      </div>
+      {node.children?.length ? (
+        <div className="grammar-node-children">
+          {node.children.map((child) => (
+            <GrammarNodeView node={child} key={child.id} />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function MethodPage({ language }: { language: UiLanguage }) {
   const content = methodContent[language];
 
@@ -2290,13 +2407,17 @@ export default function App() {
               <Mic size={17} />
               <span>{t.modeSpeaking}</span>
             </button>
+            <button className={mode === "grammar" ? "active" : ""} onClick={() => setMode("grammar")}>
+              <BookOpen size={17} />
+              <span>{t.modeGrammar}</span>
+            </button>
             <button className={mode === "method" ? "active" : ""} onClick={() => setMode("method")}>
               <BookOpen size={17} />
               <span>{t.modeMethod}</span>
             </button>
           </div>
 
-          {mode !== "method" && mode !== "speaking" ? (
+          {mode !== "method" && mode !== "speaking" && mode !== "grammar" ? (
             <div className="card-controls" aria-label="Card side controls">
               <button
                 className={cardsFlipped ? "active" : ""}
@@ -2321,7 +2442,7 @@ export default function App() {
           ) : null}
         </div>
 
-        {mode !== "method" && mode !== "speaking" ? (
+        {mode !== "method" && mode !== "speaking" && mode !== "grammar" ? (
           <div className="filters" aria-label={t.filtersLabel}>
             <Filter size={17} />
             {listNames.map((name) => (
@@ -2339,6 +2460,8 @@ export default function App() {
 
       {mode === "method" ? (
         <MethodPage language={language} />
+      ) : mode === "grammar" ? (
+        <GrammarGuidePage />
       ) : mode === "speaking" ? (
         <SpeakingPage t={t} />
       ) : mode === "study" && studyWord ? (
