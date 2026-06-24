@@ -965,6 +965,13 @@ h1 {
   gap: 9px;
 }
 
+.grammar-node-explorer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.75fr);
+  gap: 12px;
+  align-items: start;
+}
+
 .grammar-node {
   display: grid;
   gap: 8px;
@@ -974,7 +981,16 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #f9f7f1;
+  color: var(--ink);
+  display: block;
   padding: 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.grammar-node-card.active {
+  border-color: var(--teal);
+  background: #eefaf8;
 }
 
 .grammar-node-card strong {
@@ -995,6 +1011,52 @@ h1 {
   margin-left: 18px;
   border-left: 2px solid #d9ece8;
   padding-left: 12px;
+}
+
+.grammar-node-detail {
+  position: sticky;
+  top: 110px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 13px;
+}
+
+.grammar-node-detail > span {
+  color: var(--teal);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.grammar-node-detail h3 {
+  margin: 6px 0;
+  color: var(--ink);
+  font-size: 1.2rem;
+}
+
+.grammar-node-detail p {
+  margin: 8px 0 0;
+  color: #3f4b43;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.grammar-node-path {
+  color: var(--muted) !important;
+  font-size: 0.78rem !important;
+}
+
+.grammar-node-study,
+.grammar-node-related {
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.grammar-node-study strong,
+.grammar-node-related strong {
+  color: var(--teal);
+  font-size: 0.84rem;
 }
 
 .result-head {
@@ -1797,8 +1859,13 @@ h1 {
   .method-card-grid,
   .method-action-grid,
   .grammar-summary-grid,
-  .grammar-chapter-list {
+  .grammar-chapter-list,
+  .grammar-node-explorer {
     grid-template-columns: 1fr;
+  }
+
+  .grammar-node-detail {
+    position: static;
   }
 
   .interval-row {

@@ -39,6 +39,11 @@ type WordAnswerTurn = {
   role: "user" | "assistant";
   text: string;
 };
+type GrammarNodeEntry = {
+  node: GrammarNode;
+  path: string[];
+  depth: number;
+};
 
 const words = frequencyWords as DutchWord[];
 const wordLookup = new Map<string, DutchWord>();
@@ -1591,6 +1596,14 @@ function GrammarGuidePage() {
 }
 
 function GrammarChapterPanel({ chapter }: { chapter: GrammarChapter }) {
+  const [selectedNodeId, setSelectedNodeId] = useState(chapter.nodes[0]?.id ?? "");
+  const nodeEntries = useMemo(() => collectGrammarNodes(chapter.nodes), [chapter]);
+  const selectedNode = nodeEntries.find((entry) => entry.node.id === selectedNodeId) ?? nodeEntries[0];
+
+  useEffect(() => {
+    setSelectedNodeId(chapter.nodes[0]?.id ?? "");
+  }, [chapter.id, chapter.nodes]);
+
   return (
     <article className="grammar-chapter-panel">
       <div className="grammar-chapter-title">
@@ -1616,32 +1629,98 @@ function GrammarChapterPanel({ chapter }: { chapter: GrammarChapter }) {
 
       <div className="grammar-node-panel">
         <h3>章节思维导图</h3>
-        <div className="grammar-node-tree">
-          {chapter.nodes.map((node) => (
-            <GrammarNodeView node={node} key={node.id} />
-          ))}
+        <div className="grammar-node-explorer">
+          <div className="grammar-node-tree">
+            {chapter.nodes.map((node) => (
+              <GrammarNodeView
+                node={node}
+                key={node.id}
+                selectedId={selectedNode?.node.id ?? ""}
+                onSelect={setSelectedNodeId}
+              />
+            ))}
+          </div>
+          {selectedNode ? <GrammarNodeDetail entry={selectedNode} chapter={chapter} /> : null}
         </div>
       </div>
     </article>
   );
 }
 
-function GrammarNodeView({ node }: { node: GrammarNode }) {
+function GrammarNodeView({
+  node,
+  selectedId,
+  onSelect
+}: {
+  node: GrammarNode;
+  selectedId: string;
+  onSelect: (id: string) => void;
+}) {
   return (
     <div className="grammar-node">
-      <div className="grammar-node-card">
+      <button
+        className={`grammar-node-card ${node.id === selectedId ? "active" : ""}`}
+        type="button"
+        onClick={() => onSelect(node.id)}
+      >
         <strong>{node.title}</strong>
         {node.detail ? <span>{node.detail}</span> : null}
-      </div>
+      </button>
       {node.children?.length ? (
         <div className="grammar-node-children">
           {node.children.map((child) => (
-            <GrammarNodeView node={child} key={child.id} />
+            <GrammarNodeView node={child} selectedId={selectedId} onSelect={onSelect} key={child.id} />
           ))}
         </div>
       ) : null}
     </div>
   );
+}
+
+function GrammarNodeDetail({
+  entry,
+  chapter
+}: {
+  entry: GrammarNodeEntry;
+  chapter: GrammarChapter;
+}) {
+  const childNodes = entry.node.children ?? [];
+
+  return (
+    <aside className="grammar-node-detail">
+      <span>{chapter.title}</span>
+      <h3>{entry.node.title}</h3>
+      <p className="grammar-node-path">{entry.path.join(" / ")}</p>
+      <p>{entry.node.detail ?? "这个节点是章节结构中的概念入口，可以从它的子节点继续展开学习。"}</p>
+      <div className="grammar-node-study">
+        <strong>怎么学</strong>
+        <p>先看规则作用，再看它在例句中的位置，最后回到词卡里问 AI：“这个词在这里为什么这样用？”</p>
+      </div>
+      {childNodes.length ? (
+        <div className="grammar-node-related">
+          <strong>子知识点</strong>
+          {childNodes.map((child) => (
+            <p key={child.id}>{child.title}</p>
+          ))}
+        </div>
+      ) : (
+        <div className="grammar-node-related">
+          <strong>练习方向</strong>
+          <p>找 3 个包含这个规则的单词或例句，分别问：形式是什么、为什么这样写、中文学习者容易错在哪里。</p>
+        </div>
+      )}
+    </aside>
+  );
+}
+
+function collectGrammarNodes(nodes: GrammarNode[], path: string[] = [], depth = 0): GrammarNodeEntry[] {
+  return nodes.flatMap((node) => {
+    const currentPath = [...path, node.title];
+    return [
+      { node, path: currentPath, depth },
+      ...collectGrammarNodes(node.children ?? [], currentPath, depth + 1)
+    ];
+  });
 }
 
 function MethodPage({ language }: { language: UiLanguage }) {
