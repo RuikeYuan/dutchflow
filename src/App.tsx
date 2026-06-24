@@ -920,7 +920,38 @@ function cleanWord(value: string) {
 }
 
 function makeExampleSentence(word: DutchWord) {
-  return `Ik leer het woord ${cleanWord(word.word)} vandaag.`;
+  const term = cleanWord(word.word);
+  const templatesByPartOfSpeech: Record<string, Array<(value: string) => string>> = {
+    noun: [
+      (value) => `Ik zie de ${value} vandaag.`,
+      (value) => `Waar is de ${value}?`,
+      (value) => `De ${value} is belangrijk voor mij.`
+    ],
+    verb: [
+      (value) => `Ik wil vandaag ${value}.`,
+      (value) => `Kun jij ook ${value}?`,
+      (value) => `Wij oefenen met ${value}.`
+    ],
+    adj: [
+      (value) => `Dat is ${value}.`,
+      (value) => `Ik vind het ${value}.`,
+      (value) => `Het voelt vandaag ${value}.`
+    ],
+    adv: [
+      (value) => `Ik doe dat ${value}.`,
+      (value) => `Hij komt ${value}.`,
+      (value) => `Dat gebeurt ${value}.`
+    ]
+  };
+  const fallbackTemplates = [
+    (value: string) => `Vandaag oefen ik met ${value}.`,
+    (value: string) => `${value} is een nuttig Nederlands woord.`,
+    (value: string) => `Ik gebruik ${value} in een korte zin.`,
+    (value: string) => `Kun je ${value} herkennen?`
+  ];
+  const templates = templatesByPartOfSpeech[word.partOfSpeech] ?? fallbackTemplates;
+  const index = Math.abs(word.sourceId.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0)) % templates.length;
+  return templates[index](term);
 }
 
 function cardMeaningFor(word: DutchWord, language: CardMeaningLanguage) {
