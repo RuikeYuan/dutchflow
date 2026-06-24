@@ -1,0 +1,46 @@
+name: Discover Social Communities
+
+on:
+  workflow_dispatch:
+    inputs:
+      queries:
+        description: Comma-separated search queries
+        required: true
+        default: learn Dutch,language learning,side project
+      limit:
+        description: Results per query
+        required: true
+        default: "8"
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Discover Reddit communities
+        run: npm run social:discover -- --queries="${{ inputs.queries }}" --limit="${{ inputs.limit }}" > reddit-communities.json
+        env:
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_REFRESH_TOKEN: ${{ secrets.REDDIT_REFRESH_TOKEN }}
+          REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
+
+      - name: Print results
+        run: cat reddit-communities.json
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: reddit-communities
+          path: reddit-communities.json

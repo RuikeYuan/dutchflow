@@ -12,6 +12,19 @@ npm run social:draft -- --platform=reddit
 npm run social:draft -- --platform=linkedin
 ```
 
+## Discover Communities
+
+Find potentially relevant Reddit communities and score them by topic fit, size, and rule cautions:
+
+```bash
+npm run social:discover
+npm run social:discover -- --queries="learn Dutch,language learning,side project" --limit=10
+```
+
+The output is a shortlist, not permission to post. Open each subreddit, read the latest rules, and prefer asking moderators when self-promotion rules are unclear.
+
+You can also run `Discover Social Communities` manually from GitHub Actions. If Reddit OAuth secrets are present, it uses live Reddit search and rule checks. Without those secrets, it falls back to the built-in shortlist.
+
 ## Reddit Setup
 
 Create a Reddit app at:
