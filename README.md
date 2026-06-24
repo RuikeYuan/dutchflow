@@ -23,6 +23,26 @@ npm run dev
 http://127.0.0.1:5180
 ```
 
+## Automatic Deploy
+
+This repo includes a GitHub Actions workflow at `.github/workflows/vercel-production.yml`.
+After pushing the repo to GitHub, add these repository secrets:
+
+```text
+VERCEL_TOKEN
+VERCEL_ORG_ID
+VERCEL_PROJECT_ID
+```
+
+For the current Vercel project:
+
+```text
+VERCEL_ORG_ID=team_lzShNBk8YbGLHxpepr5rFLFn
+VERCEL_PROJECT_ID=prj_Iz1n8h8yxlwOXPkcZuAWTU52xFHw
+```
+
+Then every push to `main` runs `npm run build` and deploys to Vercel Production.
+
 ## iOS / App Store
 
 This project is prepared for iOS packaging with Capacitor.
