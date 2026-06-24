@@ -45,6 +45,22 @@ REDDIT_USER_AGENT
 REDDIT_SUBREDDIT
 ```
 
+One-click local authorization after you have a Reddit app:
+
+```bash
+$env:REDDIT_CLIENT_ID="your_client_id"
+$env:REDDIT_CLIENT_SECRET="your_client_secret"
+npm run social:reddit-auth
+```
+
+The script opens Reddit in your browser. Click Allow once. It saves `REDDIT_REFRESH_TOKEN` to `.env.social.local`.
+
+Your Reddit app redirect URI must be:
+
+```text
+http://127.0.0.1:8787/callback
+```
+
 Local dry run:
 
 ```bash
