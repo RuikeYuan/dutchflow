@@ -1,0 +1,49 @@
+name: Post to Reddit
+
+on:
+  workflow_dispatch:
+    inputs:
+      subreddit:
+        description: Target subreddit without r/
+        required: true
+        default: languagelearning
+      title:
+        description: Post title
+        required: true
+        default: I built DutchFlow, a simple Dutch frequency vocabulary trainer
+      live:
+        description: Actually publish the post
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  reddit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Publish
+        run: |
+          if [ "${{ inputs.live }}" = "true" ]; then
+            npm run social:reddit -- --live
+          else
+            npm run social:reddit
+          fi
+        env:
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_REFRESH_TOKEN: ${{ secrets.REDDIT_REFRESH_TOKEN }}
+          REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
+          REDDIT_SUBREDDIT: ${{ inputs.subreddit }}
+          REDDIT_POST_TITLE: ${{ inputs.title }}
