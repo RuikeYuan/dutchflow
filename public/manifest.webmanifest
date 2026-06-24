@@ -1,0 +1,19 @@
+{
+  "name": "Dutch Frequency Trainer",
+  "short_name": "Dutch Trainer",
+  "description": "Dutch vocabulary frequency cards, examples, and spaced study.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fffdf8",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "/app-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

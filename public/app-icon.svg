@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Dutch Frequency">
+  <rect width="512" height="512" rx="108" fill="#0f766e"/>
+  <path fill="#f97316" d="M0 342h512v170H0z"/>
+  <path fill="#ffffff" d="M0 171h512v171H0z"/>
+  <circle cx="256" cy="256" r="124" fill="#fffdf8" opacity=".96"/>
+  <path fill="#0f766e" d="M168 200h78c61 0 102 35 102 87s-41 87-102 87h-78V200Zm58 47v80h17c28 0 46-15 46-40s-18-40-46-40h-17Z"/>
+</svg>

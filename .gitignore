@@ -1,0 +1,11 @@
+node_modules
+dist
+.env.local
+.env.*.local
+.env
+.DS_Store
+
+.vercel
+.playwright-mcp
+.vite-dev.log
+.vite-dev.err.log
