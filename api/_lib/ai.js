@@ -1,3 +1,5 @@
+import { formatGrammarGuideContext, getGrammarGuideContext } from "./grammar-guide.js";
+
 function sendJson(response, statusCode, payload) {
   response.statusCode = statusCode;
   response.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -227,10 +229,19 @@ export async function translateExample(sentence, targetLanguage) {
 }
 
 export async function explainExample(sentence) {
+  const grammarContext = formatGrammarGuideContext(
+    getGrammarGuideContext({
+      question: "解释这个荷兰语例句的语法",
+      sentence
+    })
+  );
   const systemPrompt =
     "You explain Dutch grammar for Chinese-speaking A1-A2 learners. Be concise, accurate, and practical.";
   const userPrompt = [
     `Dutch sentence: ${sentence}`,
+    "参考语法框架：",
+    grammarContext,
+    "",
     "用中文讲解这句荷兰语。",
     "请按 4-6 行输出，每行一个要点。",
     "必须包含：整体句型、关键词/短语、动词变化、介词/冠词/代词等细节、自然表达提示。",
@@ -246,6 +257,14 @@ export async function explainExample(sentence) {
 }
 
 export async function askWordQuestion({ word, translation, partOfSpeech, sentence, question, turns = [] }) {
+  const grammarContext = formatGrammarGuideContext(
+    getGrammarGuideContext({
+      word,
+      partOfSpeech,
+      sentence,
+      question
+    })
+  );
   const systemPrompt =
     "You are a concise Dutch tutor for A1-B2 learners. Answer questions about one Dutch word, including grammar, usage, examples, nuance, morphology, pronunciation hints, and learner mistakes. Be practical and accurate.";
   const userPrompt = [
@@ -253,6 +272,9 @@ export async function askWordQuestion({ word, translation, partOfSpeech, sentenc
     `Part of speech: ${partOfSpeech}`,
     `English meaning: ${translation}`,
     sentence ? `Current example sentence: ${sentence}` : "",
+    "",
+    "Chinese learner grammar guide context:",
+    grammarContext,
     turns.length
       ? [
           "",
@@ -267,6 +289,7 @@ export async function askWordQuestion({ word, translation, partOfSpeech, sentenc
     `Learner question: ${question}`,
     "",
     "Answer in the same language as the learner's question when obvious; otherwise use clear English.",
+    "When grammar is involved, follow the Chinese learner grammar guide context above. Do not quote long source passages; explain in your own words.",
     "Keep the answer compact: 4-8 short lines. Use simple examples when useful."
   ]
     .filter(Boolean)
