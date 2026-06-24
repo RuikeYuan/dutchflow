@@ -1,3 +1,5 @@
+import { platformPosts } from "./campaign.mjs";
+
 const requiredEnv = [
   "REDDIT_CLIENT_ID",
   "REDDIT_CLIENT_SECRET",
@@ -9,19 +11,8 @@ const requiredEnv = [
 const live = process.argv.includes("--live");
 const title =
   process.env.REDDIT_POST_TITLE ??
-  "I built DutchFlow, a simple Dutch frequency vocabulary trainer";
-const text =
-  process.env.REDDIT_POST_TEXT ??
-  [
-    "Hi! I built DutchFlow, a small web app for learning Dutch vocabulary by frequency.",
-    "",
-    "It includes browsing, notebook cards, spaced review, sentence shadowing, and AI-powered example sentences.",
-    "",
-    "App: https://dutch-frequency-app.vercel.app",
-    "Repo: https://github.com/RuikeYuan/dutchflow",
-    "",
-    "I would love feedback from Dutch learners: what would make this more useful for daily study?"
-  ].join("\n");
+  platformPosts.reddit.title;
+const text = process.env.REDDIT_POST_TEXT ?? platformPosts.reddit.body;
 
 function getMissingEnv() {
   return requiredEnv.filter((name) => !process.env[name]);

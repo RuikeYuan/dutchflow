@@ -1,6 +1,16 @@
 # Social Publishing
 
-This project includes a cautious Reddit publishing helper. Use it for occasional, honest launch posts and feedback requests. Do not use it for spam, fake engagement, automated voting, or repeated cross-posting.
+This project includes cautious social publishing helpers. Use them for occasional, honest launch posts and feedback requests. Do not use them for spam, fake engagement, automated voting, or repeated cross-posting.
+
+## Drafts
+
+Generate platform-specific drafts:
+
+```bash
+npm run social:draft
+npm run social:draft -- --platform=reddit
+npm run social:draft -- --platform=linkedin
+```
 
 ## Reddit Setup
 
@@ -32,6 +42,47 @@ Local live post:
 
 ```bash
 npm run social:reddit -- --live
+```
+
+## Discord
+
+Create a Discord webhook in your server channel, then set:
+
+```text
+DISCORD_WEBHOOK_URL
+```
+
+Dry run:
+
+```bash
+npm run social:webhook -- --platform=discord
+```
+
+Live post:
+
+```bash
+npm run social:webhook -- --platform=discord --live
+```
+
+## Telegram
+
+Create a bot with BotFather, add it to your channel or chat, then set:
+
+```text
+TELEGRAM_BOT_TOKEN
+TELEGRAM_CHAT_ID
+```
+
+Dry run:
+
+```bash
+npm run social:webhook -- --platform=telegram
+```
+
+Live post:
+
+```bash
+npm run social:webhook -- --platform=telegram --live
 ```
 
 GitHub Actions:

@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc && node --max-old-space-size=4096 ./node_modules/vite/bin/vite.js build",
     "preview": "vite preview",
+    "social:draft": "node scripts/social/draft-posts.mjs",
+    "social:webhook": "node scripts/social/post-webhook.mjs",
     "social:reddit": "node scripts/social/post-reddit.mjs",
     "ios:add": "cap add ios",
     "ios:sync": "npm run build && cap sync ios",
