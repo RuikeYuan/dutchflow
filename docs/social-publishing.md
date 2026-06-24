@@ -5,6 +5,8 @@ Product: DutchFlow by Forab AI
 
 This project includes cautious social publishing helpers. Use them for occasional, honest launch posts and feedback requests. Do not use them for spam, fake engagement, automated voting, or repeated cross-posting.
 
+See `docs/community-targets.md` for a first-pass list of learner communities and suggested post angles.
+
 ## Drafts
 
 Generate platform-specific drafts:
