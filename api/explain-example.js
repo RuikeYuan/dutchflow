@@ -6,13 +6,14 @@ export default async function handler(request, response) {
   try {
     const body = await readJsonBody(request);
     const sentence = String(body.sentence ?? "").trim();
+    const targetLanguage = String(body.targetLanguage ?? "zh").trim();
 
     if (!sentence) {
       badRequest(response, "Missing sentence");
       return;
     }
 
-    ok(response, { explanation: await explainExample(sentence) });
+    ok(response, { explanation: await explainExample(sentence, targetLanguage) });
   } catch (error) {
     fail(response, error, "Failed to explain example");
   }

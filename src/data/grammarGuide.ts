@@ -153,10 +153,14 @@ export const grammarGuideParts: GrammarPart[] = [
             children: [
               { id: "infinitive", title: "动词原形", detail: "常以 -en 结尾，也用于情态动词后。" },
               { id: "finite-verb", title: "主要动词形", detail: "随人称、时态、语序变化，是句法核心。" },
-              { id: "participles", title: "分词", detail: "现在分词和过去分词用于进行、完成、形容词化等结构。" }
+              { id: "present-participle", title: "现在分词", detail: "可表达进行、伴随或形容词化意义。" },
+              { id: "past-tense-form", title: "过去式", detail: "用于一般过去时，弱变化和强变化并存。" },
+              { id: "past-participle", title: "过去分词", detail: "用于完成时、被动句和形容词化表达。" },
+              { id: "infinitive-use", title: "不定式", detail: "常与 te、情态动词、助动词或固定结构连用。" }
             ]
           },
-          { id: "auxiliary-verbs", title: "助动词", detail: "hebben/zijn/worden/gaan/zullen 等帮助构成时态、被动、将来。" },
+          { id: "separable-verbs", title: "可分动词", detail: "前缀在主句中常后置，完成时 ge 常夹在前缀和动词之间。" },
+          { id: "reflexive-verbs", title: "反身动词", detail: "与反身代词 zich/me/je 等搭配，动作回到主语自身。" },
           { id: "modal-verbs", title: "情态动词", detail: "kunnen/moeten/mogen/willen/zullen 后接动词原形。" },
           { id: "zijn", title: "动词 zijn", detail: "高频不规则动词，也是系动词和完成时助动词。" },
           { id: "intransitive-verbs", title: "不及物动词", detail: "常与固定介词搭配，需要作为词组记忆。" }
@@ -171,12 +175,41 @@ export const grammarGuideParts: GrammarPart[] = [
         goals: ["区分主格和宾格", "理解重读型/弱读型", "掌握 er/daar/hier 与介词的关系"],
         pitfalls: ["混用 hen/hun", "混用 ons/onze", "不知道 er 可以代替事物并和介词结合"],
         nodes: [
-          { id: "personal-pronouns", title: "人称代词", detail: "主格作主语，宾格作宾语或介词宾语。" },
-          { id: "possessive-pronouns", title: "物主代词", detail: "注意 ons/onze 和名词词性/数有关。" },
-          { id: "reflexive-pronouns", title: "反身代词", detail: "zich/me/je 等可与 zelf 强调自己。" },
-          { id: "thing-pronouns", title: "事物代词", detail: "尤其关注 het、er、daar、hier 与介词连用。" },
+          {
+            id: "personal-possessive-reflexive",
+            title: "人称、物主和反身代词",
+            detail: "按句法功能和重读/弱读形式学习。",
+            children: [
+              { id: "subject-object-pronouns", title: "主格与宾格区别", detail: "主格作主语，宾格作宾语或介词宾语。" },
+              { id: "strong-weak-pronouns", title: "重读型和弱读型", detail: "jij/je、zij/ze 等形式有语气和重音差别。" },
+              { id: "ons-onze", title: "ons 和 onze", detail: "物主代词形式受后面名词词性和数影响。" },
+              { id: "hen-hun", title: "hen 和 hun", detail: "正式语法中 hen/hun 用法不同，口语里常混用。" },
+              { id: "men", title: "人称代词 men", detail: "表示泛指的人，相当于“人们/有人/大家”。" },
+              { id: "possessive-as-noun", title: "物主代词名词化", detail: "物主代词可独立作名词性成分。" },
+              { id: "reflexive-zelf", title: "反身代词 + zelf", detail: "zelf 用来强调“自己”。" }
+            ]
+          },
+          {
+            id: "thing-pronouns",
+            title: "事物代词",
+            detail: "尤其关注 het、er、daar、hier 与介词连用。",
+            children: [
+              { id: "thing-subject", title: "主格事物代词", detail: "作主语或形式主语时使用。" },
+              { id: "thing-object-no-prep", title: "不与介词连用的宾格事物代词", detail: "直接作宾语时使用。" },
+              { id: "thing-object-with-prep", title: "与介词连用的宾格事物代词", detail: "常转化为 er/daar/hier + 介词结构。" }
+            ]
+          },
           { id: "demonstratives", title: "指示代词", detail: "deze/die/dit/dat 与距离、de/het 词相关。" },
-          { id: "indefinite-pronouns", title: "不定代词", detail: "iemand/niemand/iets/niets/alles 等表达不确定对象。" }
+          {
+            id: "indefinite-pronouns",
+            title: "不定代词",
+            detail: "iemand/niemand/iets/niets/alles 等表达不确定对象。",
+            children: [
+              { id: "indefinite-person", title: "指代人的不定代词", detail: "iemand, niemand, iedereen 等。" },
+              { id: "indefinite-thing-no-prep", title: "不与介词连用、指代事物", detail: "iets, niets, alles 等直接作事物成分。" },
+              { id: "indefinite-thing-with-prep", title: "与介词连用、指代事物", detail: "常转化为 ergens/nergens/overal 等或 er + 介词结构。" }
+            ]
+          }
         ]
       },
       {
@@ -236,12 +269,30 @@ export const grammarGuideParts: GrammarPart[] = [
             title: "否定句",
             detail: "geen 否定不定名词，niet 否定其他成分。",
             children: [
-              { id: "geen", title: "geen", detail: "geen boek, geen tijd。" },
-              { id: "niet", title: "niet", detail: "niet groot, niet vandaag, niet naar school。" }
+              { id: "geen", title: "通过 geen 构成否定句", detail: "geen boek, geen tijd；常否定不定名词或数量概念。" },
+              { id: "niet", title: "通过 niet 构成否定句", detail: "niet groot, niet vandaag, niet naar school；常否定非名词性成分或特指成分。" },
+              { id: "geen-vs-niet", title: "geen 和 niet 的区别", detail: "判断核心是看被否定对象：不定名词倾向 geen，其他成分多用 niet。" },
+              { id: "other-negative-words", title: "其它带否定含义的词", detail: "niemand, niets, nooit, nergens 等本身带否定意义。" }
             ]
           },
-          { id: "passive", title: "被动句", detail: "常由 worden/zijn + 过去分词构成。" },
-          { id: "exclamation", title: "感叹句", detail: "可省略，也可保留完整句子结构。" },
+          {
+            id: "passive",
+            title: "被动句",
+            detail: "常由 worden/zijn + 过去分词构成。",
+            children: [
+              { id: "passive-general", title: "被动句的一般结构", detail: "动作承受者作主语，配合 worden/zijn + 过去分词。" },
+              { id: "passive-er", title: "用副词 Er 构成的被动句", detail: "Er wordt... 可用于不强调具体主语的被动表达。" }
+            ]
+          },
+          {
+            id: "exclamation",
+            title: "感叹句",
+            detail: "可省略，也可保留完整句子结构。",
+            children: [
+              { id: "elliptical-exclamation", title: "省略感叹句", detail: "省略部分句子成分，突出情绪表达。" },
+              { id: "complete-exclamation", title: "完整感叹句", detail: "保留较完整的句子结构表达感叹。" }
+            ]
+          },
           { id: "imperative", title: "祈使句", detail: "常省略主语，用于命令、请求或建议。" }
         ]
       },
@@ -273,7 +324,28 @@ export const grammarGuideParts: GrammarPart[] = [
         pitfalls: ["把中文语序直接搬到荷兰语", "可分动词前缀没放句末", "时间/方式/地点状语顺序混乱"],
         nodes: [
           { id: "sentence-elements", title: "句子成分", detail: "主语、宾语、状语、谓语是分析词序的基础。" },
+          {
+            id: "core-elements",
+            title: "主要句子成分的基本概念",
+            detail: "先能找成分，才能判断词序。",
+            children: [
+              { id: "subject", title: "主语", detail: "句子谈论的对象，通常决定动词变位。" },
+              { id: "object", title: "宾语", detail: "动作影响的对象，可分直接宾语和间接宾语。" },
+              { id: "attribute", title: "定语", detail: "修饰名词，常由形容词、短语或从句承担。" },
+              { id: "adverbial", title: "状语", detail: "说明时间、地点、方式、原因等。" }
+            ]
+          },
+          {
+            id: "general-word-order",
+            title: "词序的一般规律",
+            detail: "主句和从句的动词位置不同。",
+            children: [
+              { id: "main-clause-order", title: "主句词序的一般规律", detail: "主句中变位动词通常位于第二位。" },
+              { id: "subordinate-clause-order", title: "从句词序的一般规律", detail: "从句中变位动词常位于句末。" }
+            ]
+          },
           { id: "time-adverbs", title: "时间状语位置", detail: "单个或多个时间状语出现时要注意层级。" },
+          { id: "time-place-adverbs", title: "时间状语和地点状语的位置", detail: "时间和地点同时出现时要注意信息焦点和常规顺序。" },
           { id: "manner-adverbs", title: "方式状语位置", detail: "方式状语常靠近动词相关结构。" },
           { id: "objects", title: "直接/间接宾语", detail: "双宾语位置和是否带介词有关。" },
           { id: "separable-prefix-position", title: "可分动词前缀位置", detail: "主句中常放句末。" },
@@ -297,9 +369,24 @@ export const grammarGuideParts: GrammarPart[] = [
         goals: ["掌握一般现在时构成", "理解现在进行时表达", "知道荷兰语现在时可表达将来"],
         pitfalls: ["忽略人称变位", "把英语进行时习惯套到荷兰语", "所有将来都强行用 zullen"],
         nodes: [
-          { id: "simple-present-form", title: "一般现在时构成", detail: "ik 词干；jij/hij/zij/het 常词干 + t；复数用原形。" },
-          { id: "simple-present-use", title: "一般现在时用法", detail: "事实、习惯、现在状态，也可表示已安排将来。" },
-          { id: "present-progressive", title: "现在进行时", detail: "常用 aan het + infinitief 等结构表达正在进行。" }
+          {
+            id: "simple-present",
+            title: "一般现在时",
+            detail: "表达现在事实、习惯、普遍情况，也可表达部分将来安排。",
+            children: [
+              { id: "simple-present-form", title: "一般现在时的构成规律", detail: "ik 词干；jij/hij/zij/het 常词干 + t；复数用原形。" },
+              { id: "simple-present-use", title: "一般现在时的用法", detail: "事实、习惯、现在状态，也可表示已安排将来。" }
+            ]
+          },
+          {
+            id: "present-progressive",
+            title: "现在进行时",
+            detail: "表达正在进行的动作。",
+            children: [
+              { id: "present-progressive-form", title: "现在进行时的构成规律", detail: "常用 aan het + infinitief 等结构。" },
+              { id: "present-progressive-use", title: "现在进行时的用法", detail: "强调动作此刻或某段时间内正在进行。" }
+            ]
+          }
         ]
       },
       {
@@ -311,10 +398,42 @@ export const grammarGuideParts: GrammarPart[] = [
         goals: ["掌握一般过去式构成", "理解完成时 hebben/zijn + 过去分词", "知道过去完成表达更早的过去"],
         pitfalls: ["过去式和完成时乱用", "过去分词拼写错误", "不知道何时用 zijn 作助动词"],
         nodes: [
-          { id: "simple-past", title: "一般过去时", detail: "弱变化和强变化并存；高频不规则动词要单独记。" },
-          { id: "past-progressive", title: "过去进行时", detail: "表达过去某时正在进行的动作。" },
-          { id: "present-perfect", title: "现在完成时", detail: "hebben/zijn + 过去分词，强调经历、结果或完成。" },
-          { id: "past-perfect", title: "过去完成时", detail: "had/was + 过去分词，表达过去之前已完成。" }
+          {
+            id: "simple-past",
+            title: "一般过去时",
+            detail: "用于叙述过去发生的动作或状态。",
+            children: [
+              { id: "simple-past-form", title: "一般过去时的构成规律", detail: "弱变化和强变化并存；高频不规则动词要单独记。" },
+              { id: "simple-past-use", title: "一般过去时的用法", detail: "常用于叙述、故事、过去背景。" }
+            ]
+          },
+          {
+            id: "past-progressive",
+            title: "过去进行时",
+            detail: "表达过去某时正在进行的动作。",
+            children: [
+              { id: "past-progressive-form", title: "过去进行时的构成规律", detail: "用过去时态的进行结构表达过去正在发生。" },
+              { id: "past-progressive-use", title: "过去进行时的用法", detail: "强调过去某一时刻或阶段的持续动作。" }
+            ]
+          },
+          {
+            id: "present-perfect",
+            title: "现在完成时",
+            detail: "hebben/zijn + 过去分词，强调经历、结果或完成。",
+            children: [
+              { id: "present-perfect-form", title: "现在完成时的构成规律", detail: "hebben/zijn + 过去分词；助动词选择和动词意义有关。" },
+              { id: "present-perfect-use", title: "现在完成时的用法", detail: "表示动作已经完成、与现在有关，或表达经历。" }
+            ]
+          },
+          {
+            id: "past-perfect",
+            title: "过去完成时",
+            detail: "had/was + 过去分词，表达过去之前已完成。",
+            children: [
+              { id: "past-perfect-form", title: "过去完成时的构成规律", detail: "had/was + 过去分词。" },
+              { id: "past-perfect-use", title: "过去完成时的用法", detail: "说明某个过去时间点之前已经发生的动作。" }
+            ]
+          }
         ]
       },
       {
@@ -327,8 +446,24 @@ export const grammarGuideParts: GrammarPart[] = [
         pitfalls: ["所有将来都用 zullen", "gaan 和 zullen 语气差别不清", "忘记助动词后动词用原形"],
         nodes: [
           { id: "future-present", title: "用现在时表示将来", detail: "有明确时间安排时常用现在时。" },
-          { id: "future-gaan", title: "gaan 将来", detail: "强调计划、趋势、即将发生。" },
-          { id: "future-zullen", title: "zullen 将来", detail: "较书面，可表达预测、承诺、推测。" }
+          {
+            id: "future-gaan",
+            title: "使用助动词 gaan 构成将来时",
+            detail: "强调计划、趋势、即将发生。",
+            children: [
+              { id: "future-gaan-form", title: "gaan 将来时态的构成规律", detail: "gaan 按人称变位，后接动词原形。" },
+              { id: "future-gaan-use", title: "gaan 将来时态的用法", detail: "表达计划、打算、趋势或即将发生。" }
+            ]
+          },
+          {
+            id: "future-zullen",
+            title: "使用助动词 zullen 构成将来时",
+            detail: "较书面，可表达预测、承诺、推测。",
+            children: [
+              { id: "future-zullen-form", title: "zullen 将来时态的构成规律", detail: "zullen 按人称变位，后接动词原形。" },
+              { id: "future-zullen-use", title: "zullen 将来时态的用法", detail: "表达预测、承诺、推测、较正式的将来。" }
+            ]
+          }
         ]
       }
     ]

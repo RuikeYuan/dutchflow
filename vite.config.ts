@@ -35,6 +35,7 @@ function stripTags(value: string) {
     .replace(/&quot;/g, "\"")
     .replace(/&#39;/g, "'")
     .replace(/\s+/g, " ")
+    .replace(/^[•\u2022]\s*/, "")
     .trim();
 }
 
@@ -252,7 +253,42 @@ async function translateExample(sentence: string, targetLanguage: string) {
   return translated;
 }
 
-async function explainExample(sentence: string) {
+async function explainExample(sentence: string, targetLanguage = "zh") {
+  if (targetLanguage === "en") {
+    const systemPrompt =
+      "You explain Dutch grammar for A1-A2 learners in clear spoken English. Be concise, accurate, and practical.";
+    const userPrompt = [
+      `Dutch sentence: ${sentence}`,
+      "Explain this Dutch sentence in English for audio playback.",
+      "Use 3-5 short spoken lines.",
+      "Mention the sentence pattern, key words or phrases, verb form, articles/pronouns/prepositions when relevant, and one natural usage tip.",
+      "Wrap every Dutch word or Dutch phrase that should be pronounced in Dutch as [[nl:word or phrase]].",
+      "Do not use the [[nl:...]] marker for English words.",
+      "Do not use Markdown tables. Do not be long."
+    ].join("\n");
+    const explanation = process.env.GEMINI_API_KEY
+      ? await callGemini(`${systemPrompt}\n\n${userPrompt}`, 0.25, 220)
+      : await callOpenAiCompatible(
+          [
+            {
+              role: "system",
+              content: systemPrompt
+            },
+            {
+              role: "user",
+              content: userPrompt
+            }
+          ],
+          0.25,
+          220
+        );
+
+    if (!explanation) {
+      throw new Error("LLM returned an empty grammar explanation");
+    }
+    return explanation;
+  }
+
   const systemPrompt =
     "You explain Dutch grammar for Chinese-speaking A1-A2 learners. Be concise, accurate, and practical.";
   const userPrompt = [
@@ -428,6 +464,7 @@ export default defineConfig(({ mode }) => {
           try {
             const body = await readJsonBody(request);
             const sentence = String(body.sentence ?? "").trim();
+            const targetLanguage = String(body.targetLanguage ?? "zh").trim();
 
             if (!sentence) {
               response.statusCode = 400;
@@ -436,7 +473,7 @@ export default defineConfig(({ mode }) => {
               return;
             }
 
-            const explanation = await explainExample(sentence);
+            const explanation = await explainExample(sentence, targetLanguage);
             response.setHeader("Content-Type", "application/json; charset=utf-8");
             response.end(JSON.stringify({ explanation }));
           } catch (error) {

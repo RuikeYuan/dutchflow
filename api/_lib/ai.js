@@ -1,4 +1,4 @@
-import { formatGrammarGuideContext, getGrammarGuideContext } from "./grammar-guide.js";
+﻿import { formatGrammarGuideContext, getGrammarGuideContext } from "./grammar-guide.js";
 
 function sendJson(response, statusCode, payload) {
   response.statusCode = statusCode;
@@ -228,13 +228,38 @@ export async function translateExample(sentence, targetLanguage) {
   return translated;
 }
 
-export async function explainExample(sentence) {
+export async function explainExample(sentence, targetLanguage = "zh") {
   const grammarContext = formatGrammarGuideContext(
     getGrammarGuideContext({
-      question: "解释这个荷兰语例句的语法",
+      question: "Explain the grammar of this Dutch example sentence",
       sentence
     })
   );
+
+  if (targetLanguage === "en") {
+    const systemPrompt =
+      "You explain Dutch grammar for A1-A2 learners in clear spoken English. Be concise, accurate, and practical.";
+    const userPrompt = [
+      `Dutch sentence: ${sentence}`,
+      "Grammar reference context:",
+      grammarContext,
+      "",
+      "Explain this Dutch sentence in English for audio playback.",
+      "Use 3-5 short spoken lines.",
+      "Mention the sentence pattern, key words or phrases, verb form, articles/pronouns/prepositions when relevant, and one natural usage tip.",
+      "Wrap every Dutch word or Dutch phrase that should be pronounced in Dutch as [[nl:word or phrase]].",
+      "Do not use the [[nl:...]] marker for English words.",
+      "Do not use Markdown tables. Do not be long."
+    ].join("\n");
+    const explanation = await callLlm(systemPrompt, userPrompt, 0.25, 220);
+
+    if (!explanation) {
+      throw new Error("LLM returned an empty grammar explanation");
+    }
+
+    return explanation;
+  }
+
   const systemPrompt =
     "You explain Dutch grammar for Chinese-speaking A1-A2 learners. Be concise, accurate, and practical.";
   const userPrompt = [
@@ -255,7 +280,6 @@ export async function explainExample(sentence) {
 
   return explanation;
 }
-
 export async function askWordQuestion({ word, translation, partOfSpeech, sentence, question, turns = [] }) {
   const grammarContext = formatGrammarGuideContext(
     getGrammarGuideContext({

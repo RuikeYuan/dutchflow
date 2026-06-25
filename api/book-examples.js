@@ -33,6 +33,7 @@ function stripTags(value) {
     .replace(/&quot;/g, "\"")
     .replace(/&#39;/g, "'")
     .replace(/\s+/g, " ")
+    .replace(/^[•\u2022]\s*/, "")
     .trim();
 }
 

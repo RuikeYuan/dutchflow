@@ -35,6 +35,8 @@ type ViewMode = "browse" | "notebook" | "study" | "speaking" | "grammar" | "meth
 type UiLanguage = "zh" | "en" | "nl" | "es" | "de";
 type ExampleTranslationLanguage = "zh" | "en" | "de";
 type CardMeaningLanguage = "en" | "zh";
+type SpeechLanguage = "zh-CN" | "en-US" | "nl-NL";
+type SpeechItem = { text: string; language: SpeechLanguage };
 type WordAnswerTurn = {
   role: "user" | "assistant";
   text: string;
@@ -46,6 +48,7 @@ type GrammarNodeEntry = {
 };
 
 const words = frequencyWords as DutchWord[];
+const defaultNotebookWordCount = 2000;
 const wordLookup = new Map<string, DutchWord>();
 for (const word of words) {
   const variants = word.word
@@ -57,10 +60,12 @@ for (const word of words) {
   }
 }
 const notebookStorageKey = "dutch-frequency-app-notebook";
+const defaultNotebookMigrationKey = "dutch-frequency-app-default-notebook-2000";
 const languageStorageKey = "dutch-frequency-app-ui-language";
 const generatedExamplesStorageKey = "dutch-frequency-app-generated-examples";
 const exampleTranslationsStorageKey = "dutch-frequency-app-example-translations";
 const exampleGrammarStorageKey = "dutch-frequency-app-example-grammar";
+const spokenGrammarStorageKey = "dutch-frequency-app-spoken-grammar-v2";
 const wordAnswersStorageKey = "dutch-frequency-app-word-answers";
 const studyProgressStorageKey = "dutch-frequency-app-study-progress";
 const listNames = ["All", "Core", "Fiction", "Newspapers", "Spoken", "Web", "General"];
@@ -102,6 +107,9 @@ const translations: Record<
     modeMethod: string;
     filtersLabel: string;
     playPronunciation: string;
+    autoPlayNotebook: string;
+    stopAutoPlayNotebook: string;
+    autoPlayExampleGrammar: string;
     addToNotebook: string;
     removeFromNotebook: string;
     noTranslation: string;
@@ -187,6 +195,9 @@ const translations: Record<
     modeMethod: "方法",
     filtersLabel: "词频分类",
     playPronunciation: "播放读音",
+    autoPlayNotebook: "自动播放中英荷",
+    stopAutoPlayNotebook: "停止播放",
+    autoPlayExampleGrammar: "读例句和英文语法",
     addToNotebook: "加入单词本",
     removeFromNotebook: "从单词本移除",
     noTranslation: "暂无释义",
@@ -290,6 +301,9 @@ const translations: Record<
     modeMethod: "Method",
     filtersLabel: "Frequency lists",
     playPronunciation: "Play pronunciation",
+    autoPlayNotebook: "Auto-play Chinese, English, Dutch",
+    stopAutoPlayNotebook: "Stop playback",
+    autoPlayExampleGrammar: "Read example and English grammar",
     addToNotebook: "Add to notebook",
     removeFromNotebook: "Remove from notebook",
     noTranslation: "No translation",
@@ -393,6 +407,9 @@ const translations: Record<
     modeMethod: "Methode",
     filtersLabel: "Frequentielijsten",
     playPronunciation: "Uitspraak afspelen",
+    autoPlayNotebook: "Chinees, Engels, Nederlands automatisch afspelen",
+    stopAutoPlayNotebook: "Afspelen stoppen",
+    autoPlayExampleGrammar: "Voorbeeld en Engelse grammatica lezen",
     addToNotebook: "Toevoegen aan woordenlijst",
     removeFromNotebook: "Verwijderen uit woordenlijst",
     noTranslation: "Geen vertaling",
@@ -496,6 +513,9 @@ const translations: Record<
     modeMethod: "Método",
     filtersLabel: "Listas de frecuencia",
     playPronunciation: "Reproducir pronunciación",
+    autoPlayNotebook: "Reproducir chino, inglés y neerlandés",
+    stopAutoPlayNotebook: "Detener reproducción",
+    autoPlayExampleGrammar: "Leer ejemplo y gramática en inglés",
     addToNotebook: "Añadir al cuaderno",
     removeFromNotebook: "Quitar del cuaderno",
     noTranslation: "Sin traducción",
@@ -599,6 +619,9 @@ const translations: Record<
     modeMethod: "Methode",
     filtersLabel: "Frequenzlisten",
     playPronunciation: "Aussprache abspielen",
+    autoPlayNotebook: "Chinesisch, Englisch, Niederländisch abspielen",
+    stopAutoPlayNotebook: "Wiedergabe stoppen",
+    autoPlayExampleGrammar: "Beispiel und englische Grammatik vorlesen",
     addToNotebook: "Zur Wortliste hinzufügen",
     removeFromNotebook: "Aus Wortliste entfernen",
     noTranslation: "Keine Übersetzung",
@@ -1001,6 +1024,14 @@ function makeExampleSentence(word: DutchWord) {
   return templates[index](term);
 }
 
+function sentenceHash(value: string) {
+  let hash = 0;
+  for (const char of value) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  }
+  return hash.toString(36);
+}
+
 function cardMeaningFor(word: DutchWord, language: CardMeaningLanguage) {
   return language === "zh" && word.translationZh ? word.translationZh : word.translation;
 }
@@ -1037,11 +1068,39 @@ function scoreDutchVoice(voice: SpeechSynthesisVoice) {
   return score;
 }
 
+function scoreVoice(voice: SpeechSynthesisVoice, language: SpeechLanguage) {
+  const lang = voice.lang.toLocaleLowerCase("en-US");
+  const name = voice.name.toLocaleLowerCase("en-US");
+  const languageRoot = language.split("-")[0].toLocaleLowerCase("en-US");
+  const requestedLang = language.toLocaleLowerCase("en-US");
+
+  if (!lang.startsWith(languageRoot)) {
+    return -1;
+  }
+
+  let score = lang === requestedLang ? 100 : 40;
+  if (name.includes("natural")) score += 40;
+  if (name.includes("neural")) score += 35;
+  if (name.includes("online")) score += 30;
+  if (name.includes("premium")) score += 25;
+  if (name.includes("microsoft")) score += 20;
+  if (name.includes("google")) score += 15;
+  if (name.includes("apple")) score += 10;
+  return score;
+}
+
 function getBestDutchVoice() {
   const voices = window.speechSynthesis.getVoices();
   return voices
     .filter((voice) => voice.lang.toLocaleLowerCase("nl-NL").startsWith("nl"))
     .sort((first, second) => scoreDutchVoice(second) - scoreDutchVoice(first))[0];
+}
+
+function getBestVoice(language: SpeechLanguage) {
+  const voices = window.speechSynthesis.getVoices();
+  return voices
+    .filter((voice) => scoreVoice(voice, language) >= 0)
+    .sort((first, second) => scoreVoice(second, language) - scoreVoice(first, language))[0];
 }
 
 function speakText(text: string) {
@@ -1068,12 +1127,151 @@ function speak(word: DutchWord) {
   speakText(cleanWord(word.word));
 }
 
+function createUtterance(text: string, language: SpeechLanguage) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  const voice = getBestVoice(language);
+
+  if (voice) {
+    utterance.voice = voice;
+    utterance.lang = voice.lang;
+  } else {
+    utterance.lang = language;
+    window.speechSynthesis.getVoices();
+  }
+
+  utterance.rate = language === "nl-NL" ? 0.9 : 0.95;
+  utterance.pitch = 1;
+  return utterance;
+}
+
+function notebookSpeechItems(wordsToPlay: DutchWord[]) {
+  return wordsToPlay.flatMap((word) =>
+    [
+      { text: word.translationZh, language: "zh-CN" as const },
+      { text: word.translation, language: "en-US" as const },
+      { text: cleanWord(word.word), language: "nl-NL" as const }
+    ].filter((item): item is SpeechItem => Boolean(item.text?.trim()))
+  );
+}
+
+function grammarExplanationSpeechItems(explanation: string): SpeechItem[] {
+  const items: SpeechItem[] = [];
+  const markerPattern = /\[\[nl:([\s\S]*?)\]\]/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = markerPattern.exec(explanation))) {
+    const englishText = explanation.slice(lastIndex, match.index).trim();
+    const dutchText = match[1]?.trim();
+    if (englishText) {
+      items.push({ text: englishText, language: "en-US" });
+    }
+    if (dutchText) {
+      items.push({ text: dutchText, language: "nl-NL" });
+    }
+    lastIndex = markerPattern.lastIndex;
+  }
+
+  const remainingText = explanation.slice(lastIndex).trim();
+  if (remainingText) {
+    items.push({ text: remainingText, language: "en-US" });
+  }
+
+  return items.length ? items : [{ text: explanation, language: "en-US" as const }];
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function dutchTermsForSpeech(word: DutchWord, sentence: string) {
+  const terms = new Set<string>();
+  for (const variant of word.word.split(",")) {
+    const cleaned = cleanWord(variant);
+    if (cleaned) {
+      terms.add(cleaned);
+    }
+  }
+  for (const token of tokenizeSentence(sentence)) {
+    const cleaned = token.trim();
+    if (/^\p{L}+(?:['’]\p{L}+)*$/u.test(cleaned)) {
+      terms.add(cleaned);
+    }
+  }
+  return [...terms].sort((first, second) => second.length - first.length);
+}
+
+function splitEnglishWithDutchTerms(text: string, dutchTerms: string[]) {
+  if (!dutchTerms.length) {
+    return text.trim() ? [{ text: text.trim(), language: "en-US" as const }] : [];
+  }
+
+  const pattern = new RegExp(`(^|[^\\p{L}])(${dutchTerms.map(escapeRegExp).join("|")})(?=$|[^\\p{L}])`, "giu");
+  const items: SpeechItem[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text))) {
+    const prefix = match[1] ?? "";
+    const term = match[2] ?? "";
+    const termStart = match.index + prefix.length;
+    const englishText = text.slice(lastIndex, termStart).trim();
+    if (englishText) {
+      items.push({ text: englishText, language: "en-US" });
+    }
+    if (term.trim()) {
+      items.push({ text: term.trim(), language: "nl-NL" });
+    }
+    lastIndex = termStart + term.length;
+  }
+
+  const remainingText = text.slice(lastIndex).trim();
+  if (remainingText) {
+    items.push({ text: remainingText, language: "en-US" });
+  }
+
+  return items;
+}
+
+function grammarExplanationSpeechItemsForWord(explanation: string, word: DutchWord, sentence: string): SpeechItem[] {
+  const dutchTerms = dutchTermsForSpeech(word, sentence);
+  const items: SpeechItem[] = [];
+  const markerPattern = /\[\[nl:([\s\S]*?)\]\]/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = markerPattern.exec(explanation))) {
+    items.push(...splitEnglishWithDutchTerms(explanation.slice(lastIndex, match.index), dutchTerms));
+    const dutchText = match[1]?.trim();
+    if (dutchText) {
+      items.push({ text: dutchText, language: "nl-NL" });
+    }
+    lastIndex = markerPattern.lastIndex;
+  }
+
+  items.push(...splitEnglishWithDutchTerms(explanation.slice(lastIndex), dutchTerms));
+  return items.length ? items : [{ text: explanation, language: "en-US" as const }];
+}
+
 function getSavedIds() {
   try {
     const value = JSON.parse(localStorage.getItem(notebookStorageKey) ?? "[]");
-    return new Set<string>(Array.isArray(value) ? value : []);
+    const saved = new Set<string>(Array.isArray(value) ? value : []);
+
+    if (localStorage.getItem(defaultNotebookMigrationKey) !== "done") {
+      for (const word of words.slice(0, defaultNotebookWordCount)) {
+        saved.add(word.sourceId);
+      }
+      localStorage.setItem(notebookStorageKey, JSON.stringify(Array.from(saved)));
+      localStorage.setItem(defaultNotebookMigrationKey, "done");
+    }
+
+    return saved;
   } catch {
-    return new Set<string>();
+    const saved = new Set(words.slice(0, defaultNotebookWordCount).map((word) => word.sourceId));
+    localStorage.setItem(notebookStorageKey, JSON.stringify(Array.from(saved)));
+    localStorage.setItem(defaultNotebookMigrationKey, "done");
+    return saved;
   }
 }
 
@@ -1098,6 +1296,15 @@ function getSavedExampleTranslations() {
 function getSavedExampleGrammar() {
   try {
     const value = JSON.parse(localStorage.getItem(exampleGrammarStorageKey) ?? "{}");
+    return value && typeof value === "object" ? (value as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function getSavedSpokenGrammar() {
+  try {
+    const value = JSON.parse(localStorage.getItem(spokenGrammarStorageKey) ?? "{}");
     return value && typeof value === "object" ? (value as Record<string, string>) : {};
   } catch {
     return {};
@@ -1425,6 +1632,7 @@ function WordCard({
   const secondaryText = flipped ? item.word : meaning;
   const primaryLabel = flipped ? (cardMeaningLanguage === "zh" ? "中文" : "English") : "Nederlands";
   const secondaryLabel = flipped ? "Nederlands" : cardMeaningLanguage === "zh" ? "中文" : "English";
+  const sentenceKey = `${item.sourceId}:${sentenceHash(sentence)}`;
   const [question, setQuestion] = useState("");
 
   function submitQuestion() {
@@ -1489,7 +1697,7 @@ function WordCard({
             {generationMessage ? <span className="ai-status">{generationMessage}</span> : null}
           </div>
           <RepeatPractice
-            sentenceKey={item.sourceId}
+            sentenceKey={sentenceKey}
             sentence={sentence}
             exampleTranslations={exampleTranslations}
             grammarExplanation={grammarExplanation}
@@ -1610,6 +1818,7 @@ function GrammarChapterPanel({ chapter }: { chapter: GrammarChapter }) {
         <span>{chapter.pageRange}</span>
         <h2>{chapter.title}</h2>
         <p>{chapter.summary}</p>
+        <small>{nodeEntries.length} 个可点击知识点</small>
       </div>
 
       <div className="grammar-summary-grid">
@@ -1996,6 +2205,7 @@ export default function App() {
   const [exampleTranslations, setExampleTranslations] =
     useState<Record<string, string>>(getSavedExampleTranslations);
   const [exampleGrammar, setExampleGrammar] = useState<Record<string, string>>(getSavedExampleGrammar);
+  const [spokenGrammar, setSpokenGrammar] = useState<Record<string, string>>(getSavedSpokenGrammar);
   const [wordAnswers, setWordAnswers] = useState<Record<string, WordAnswerTurn[]>>(getSavedWordAnswers);
   const [studyProgress, setStudyProgress] = useState<Record<string, StudyProgress>>(getSavedStudyProgress);
   const [generatingId, setGeneratingId] = useState("");
@@ -2013,7 +2223,10 @@ export default function App() {
   const [cardsFlipped, setCardsFlipped] = useState(false);
   const [cardFlipOverrides, setCardFlipOverrides] = useState<Record<string, boolean>>({});
   const [cardMeaningLanguage, setCardMeaningLanguage] = useState<CardMeaningLanguage>("en");
+  const [includeNotebookExampleGrammar, setIncludeNotebookExampleGrammar] = useState(false);
   const autoTranslationRequestsRef = useRef<Set<string>>(new Set());
+  const autoPlayTokenRef = useRef(0);
+  const [autoPlayingNotebook, setAutoPlayingNotebook] = useState(false);
   const t = translations[language];
 
   useEffect(() => {
@@ -2033,6 +2246,10 @@ export default function App() {
   }, [exampleGrammar]);
 
   useEffect(() => {
+    localStorage.setItem(spokenGrammarStorageKey, JSON.stringify(spokenGrammar));
+  }, [spokenGrammar]);
+
+  useEffect(() => {
     localStorage.setItem(wordAnswersStorageKey, JSON.stringify(wordAnswers));
   }, [wordAnswers]);
 
@@ -2044,6 +2261,21 @@ export default function App() {
     localStorage.setItem(languageStorageKey, language);
     document.documentElement.lang = language === "zh" ? "zh-CN" : language;
   }, [language]);
+
+  useEffect(() => {
+    if (mode !== "notebook" && autoPlayingNotebook) {
+      stopNotebookAutoPlay();
+    }
+  }, [autoPlayingNotebook, mode]);
+
+  useEffect(() => {
+    return () => {
+      autoPlayTokenRef.current += 1;
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -2160,6 +2392,108 @@ export default function App() {
     }));
   }
 
+  function stopNotebookAutoPlay() {
+    autoPlayTokenRef.current += 1;
+    setAutoPlayingNotebook(false);
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  }
+
+  function playSpeechItems(items: SpeechItem[], index: number, token: number, onComplete: () => void) {
+    if (!("speechSynthesis" in window) || token !== autoPlayTokenRef.current) {
+      setAutoPlayingNotebook(false);
+      return;
+    }
+
+    const item = items[index];
+    if (!item) {
+      onComplete();
+      return;
+    }
+
+    const utterance = createUtterance(item.text, item.language);
+    utterance.onend = () => playSpeechItems(items, index + 1, token, onComplete);
+    utterance.onerror = () => playSpeechItems(items, index + 1, token, onComplete);
+    window.speechSynthesis.speak(utterance);
+  }
+
+  async function getSpokenGrammarExplanation(sentenceKey: string, sentence: string) {
+    const cached = spokenGrammar[sentenceKey];
+    if (cached) return cached;
+    if (!apiAvailable) return "";
+
+    try {
+      const response = await fetch(apiUrl("/api/explain-example"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          sentence,
+          targetLanguage: "en"
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to explain example");
+      }
+
+      const data = (await response.json()) as { explanation?: string };
+      const explanation = data.explanation?.trim();
+      if (!explanation) return "";
+
+      setSpokenGrammar((current) => ({ ...current, [sentenceKey]: explanation }));
+      return explanation;
+    } catch {
+      return "";
+    }
+  }
+
+  async function playNotebookWords(wordsToPlay: DutchWord[], index: number, token: number, includeExampleGrammar: boolean) {
+    if (token !== autoPlayTokenRef.current) {
+      setAutoPlayingNotebook(false);
+      return;
+    }
+
+    const word = wordsToPlay[index];
+    if (!word) {
+      setAutoPlayingNotebook(false);
+      return;
+    }
+
+    const items = notebookSpeechItems([word]);
+
+    if (includeExampleGrammar) {
+      const sentence = sentenceFor(word);
+      const sentenceKey = sentenceKeyFor(word);
+      if (sentence) {
+        items.push({ text: sentence, language: "nl-NL" });
+        const explanation = await getSpokenGrammarExplanation(sentenceKey, sentence);
+        if (token !== autoPlayTokenRef.current) return;
+        if (explanation) {
+          items.push(...grammarExplanationSpeechItemsForWord(explanation, word, sentence));
+        }
+      }
+    }
+
+    playSpeechItems(items, 0, token, () => {
+      void playNotebookWords(wordsToPlay, index + 1, token, includeExampleGrammar);
+    });
+  }
+
+  function startNotebookAutoPlay() {
+    if (!matchingWords.length) return;
+
+    autoPlayTokenRef.current += 1;
+    const token = autoPlayTokenRef.current;
+    setAutoPlayingNotebook(true);
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    void playNotebookWords(matchingWords, 0, token, includeNotebookExampleGrammar);
+  }
+
   function moveStudy(step: number) {
     setRevealed(false);
     setStudyIndex((current) => (current + step + studyWords.length) % studyWords.length);
@@ -2182,15 +2516,27 @@ export default function App() {
   }
 
   function sentenceFor(word: DutchWord) {
-    return generatedExamples[word.sourceId] ?? bookExamples[word.sourceId] ?? makeExampleSentence(word);
+    return bookExamples[word.sourceId] ?? generatedExamples[word.sourceId] ?? makeExampleSentence(word);
   }
 
-  function translationsFor(sourceId: string) {
+  function sentenceKeyFor(word: DutchWord) {
+    return `${word.sourceId}:${sentenceHash(sentenceFor(word))}`;
+  }
+
+  function translationsFor(sentenceKey: string) {
     return {
-      zh: exampleTranslations[`${sourceId}:zh`],
-      en: exampleTranslations[`${sourceId}:en`],
-      de: exampleTranslations[`${sourceId}:de`]
+      zh: exampleTranslations[`${sentenceKey}:zh`],
+      en: exampleTranslations[`${sentenceKey}:en`],
+      de: exampleTranslations[`${sentenceKey}:de`]
     };
+  }
+
+  function translatingLanguageFor(sentenceKey: string): ExampleTranslationLanguage | "" {
+    const languageCode = translatingKey.slice(sentenceKey.length + 1);
+    return translatingKey.startsWith(`${sentenceKey}:`) &&
+      (languageCode === "zh" || languageCode === "en" || languageCode === "de")
+      ? languageCode
+      : "";
   }
 
   useEffect(() => {
@@ -2199,7 +2545,8 @@ export default function App() {
     const candidates = mode === "study" && studyWord ? [studyWord] : visibleWords;
     const nextWord = candidates.find((word) => {
       const sentence = sentenceFor(word);
-      const cacheKey = `${word.sourceId}:${defaultExampleTranslationLanguage}`;
+      const sentenceKey = sentenceKeyFor(word);
+      const cacheKey = `${sentenceKey}:${defaultExampleTranslationLanguage}`;
       const requestKey = `${cacheKey}:${sentence}`;
       return sentence && !exampleTranslations[cacheKey] && !autoTranslationRequestsRef.current.has(requestKey);
     });
@@ -2207,9 +2554,10 @@ export default function App() {
     if (!nextWord) return;
 
     const sentence = sentenceFor(nextWord);
-    const cacheKey = `${nextWord.sourceId}:${defaultExampleTranslationLanguage}`;
+    const sentenceKey = sentenceKeyFor(nextWord);
+    const cacheKey = `${sentenceKey}:${defaultExampleTranslationLanguage}`;
     autoTranslationRequestsRef.current.add(`${cacheKey}:${sentence}`);
-    void handleTranslateExample(nextWord.sourceId, sentence, defaultExampleTranslationLanguage);
+    void handleTranslateExample(sentenceKey, sentence, defaultExampleTranslationLanguage);
   }, [bookExamples, exampleTranslations, generatedExamples, mode, studyWord, translatingKey, visibleWords]);
 
   async function handleGenerateExample(word: DutchWord) {
@@ -2247,14 +2595,20 @@ export default function App() {
       setGeneratedExamples((current) => ({ ...current, [word.sourceId]: example }));
       setExampleTranslations((current) => {
         const next = { ...current };
-        delete next[`${word.sourceId}:zh`];
-        delete next[`${word.sourceId}:en`];
-        delete next[`${word.sourceId}:de`];
+        for (const key of Object.keys(next)) {
+          if (key === word.sourceId || key.startsWith(`${word.sourceId}:`)) {
+            delete next[key];
+          }
+        }
         return next;
       });
       setExampleGrammar((current) => {
         const next = { ...current };
-        delete next[word.sourceId];
+        for (const key of Object.keys(next)) {
+          if (key === word.sourceId || key.startsWith(`${word.sourceId}:`)) {
+            delete next[key];
+          }
+        }
         return next;
       });
       setGenerationMessages((current) => ({ ...current, [word.sourceId]: t.generatedExampleSaved }));
@@ -2406,6 +2760,7 @@ export default function App() {
   }
 
   const studyCardFlipped = studyWord ? isCardFlipped(studyWord.sourceId) : cardsFlipped;
+  const studySentenceKey = studyWord ? sentenceKeyFor(studyWord) : "";
 
   return (
     <main>
@@ -2597,17 +2952,13 @@ export default function App() {
             {!studyCardFlipped ? (
               <>
                 <RepeatPractice
-                  sentenceKey={studyWord.sourceId}
+                  sentenceKey={studySentenceKey}
                   sentence={sentenceFor(studyWord)}
-                  exampleTranslations={translationsFor(studyWord.sourceId)}
-                  grammarExplanation={exampleGrammar[studyWord.sourceId]}
-                  translating={
-                    translatingKey.startsWith(`${studyWord.sourceId}:`)
-                      ? (translatingKey.split(":")[1] as ExampleTranslationLanguage)
-                      : ""
-                  }
-                  explainingGrammar={explainingGrammarKey === studyWord.sourceId}
-                  translationMessage={translationMessages[studyWord.sourceId]}
+                  exampleTranslations={translationsFor(studySentenceKey)}
+                  grammarExplanation={exampleGrammar[studySentenceKey]}
+                  translating={translatingLanguageFor(studySentenceKey)}
+                  explainingGrammar={explainingGrammarKey === studySentenceKey}
+                  translationMessage={translationMessages[studySentenceKey]}
                   onTranslate={handleTranslateExample}
                   onExplainGrammar={handleExplainGrammar}
                   t={t}
@@ -2703,8 +3054,35 @@ export default function App() {
             <span>
               {t.resultCount(matchingWords.length)} / {t.showingResults(visibleWords.length, matchingWords.length)}
             </span>
+            {mode === "notebook" && matchingWords.length > 0 ? (
+              <div className="notebook-playback-controls">
+                <label className="inline-toggle">
+                  <input
+                    type="checkbox"
+                    checked={includeNotebookExampleGrammar}
+                    onChange={(event) => setIncludeNotebookExampleGrammar(event.target.checked)}
+                    disabled={autoPlayingNotebook}
+                  />
+                  <span>{t.autoPlayExampleGrammar}</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={autoPlayingNotebook ? stopNotebookAutoPlay : startNotebookAutoPlay}
+                  title={autoPlayingNotebook ? t.stopAutoPlayNotebook : t.autoPlayNotebook}
+                >
+                  {autoPlayingNotebook ? <Square size={16} /> : <Volume2 size={16} />}
+                  <span>{autoPlayingNotebook ? t.stopAutoPlayNotebook : t.autoPlayNotebook}</span>
+                </button>
+              </div>
+            ) : null}
             {mode === "notebook" && savedIds.size > 0 ? (
-              <button type="button" onClick={() => setSavedIds(new Set())}>
+              <button
+                type="button"
+                onClick={() => {
+                  stopNotebookAutoPlay();
+                  setSavedIds(new Set());
+                }}
+              >
                 <RotateCcw size={16} />
                 <span>{t.clearNotebook}</span>
               </button>
@@ -2714,37 +3092,37 @@ export default function App() {
           {visibleWords.length > 0 ? (
             <>
               <div className="word-grid">
-                {visibleWords.map((word) => (
-                  <WordCard
-                    key={word.sourceId}
-                    item={word}
-                  saved={savedIds.has(word.sourceId)}
-                  onToggle={toggleSaved}
-                  onGenerateExample={handleGenerateExample}
-                  sentence={sentenceFor(word)}
-                  exampleTranslations={translationsFor(word.sourceId)}
-                  grammarExplanation={exampleGrammar[word.sourceId]}
-                  translatingExample={
-                    translatingKey.startsWith(`${word.sourceId}:`)
-                      ? (translatingKey.split(":")[1] as ExampleTranslationLanguage)
-                      : ""
-                  }
-                  explainingGrammar={explainingGrammarKey === word.sourceId}
-                  translationMessage={translationMessages[word.sourceId]}
-                  onTranslateExample={handleTranslateExample}
-                  onExplainGrammar={handleExplainGrammar}
-                  wordAnswers={wordAnswers[word.sourceId] ?? []}
-                  askingWord={askingWordId === word.sourceId}
-                  wordAnswerMessage={wordAnswerMessages[word.sourceId]}
-                  onAskWord={handleAskWord}
-                  generating={generatingId === word.sourceId}
-                  generationMessage={generationMessages[word.sourceId]}
-                  flipped={isCardFlipped(word.sourceId)}
-                  cardMeaningLanguage={cardMeaningLanguage}
-                  onToggleFlip={toggleCardFlip}
-                  t={t}
-                />
-                ))}
+                {visibleWords.map((word) => {
+                  const sentence = sentenceFor(word);
+                  const sentenceKey = sentenceKeyFor(word);
+                  return (
+                    <WordCard
+                      key={word.sourceId}
+                      item={word}
+                      saved={savedIds.has(word.sourceId)}
+                      onToggle={toggleSaved}
+                      onGenerateExample={handleGenerateExample}
+                      sentence={sentence}
+                      exampleTranslations={translationsFor(sentenceKey)}
+                      grammarExplanation={exampleGrammar[sentenceKey]}
+                      translatingExample={translatingLanguageFor(sentenceKey)}
+                      explainingGrammar={explainingGrammarKey === sentenceKey}
+                      translationMessage={translationMessages[sentenceKey]}
+                      onTranslateExample={handleTranslateExample}
+                      onExplainGrammar={handleExplainGrammar}
+                      wordAnswers={wordAnswers[word.sourceId] ?? []}
+                      askingWord={askingWordId === word.sourceId}
+                      wordAnswerMessage={wordAnswerMessages[word.sourceId]}
+                      onAskWord={handleAskWord}
+                      generating={generatingId === word.sourceId}
+                      generationMessage={generationMessages[word.sourceId]}
+                      flipped={isCardFlipped(word.sourceId)}
+                      cardMeaningLanguage={cardMeaningLanguage}
+                      onToggleFlip={toggleCardFlip}
+                      t={t}
+                    />
+                  );
+                })}
               </div>
               {visibleWords.length < matchingWords.length ? (
                 <div className="load-more-row">
