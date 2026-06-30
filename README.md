@@ -1,14 +1,14 @@
 # Dutch Frequency Trainer
 
-一个基于荷兰语词频数据的学习 app，支持：
+A Dutch vocabulary learning app built on frequency data. Features:
 
-- 高频词浏览和分类筛选
-- 荷兰语、英文释义、词性搜索
-- 单词本，本地浏览器保存
-- 荷兰语读音，使用浏览器 Speech Synthesis
-- 抽认卡练习，优先使用单词本内容
-- AI 电子人口语陪练，支持场景对话、语音输入、AI 追问和简短纠错
-- 本地开发服务器自动读取 EPUB 里的例句，无需手动导入
+- Browse high-frequency words with category filtering
+- Search by Dutch word, English definition, or part of speech
+- Personal word list saved in the browser (localStorage)
+- Dutch pronunciation via browser Speech Synthesis
+- Flashcard practice, prioritizing words from your word list
+- AI conversation partner for spoken practice: scenario dialogues, voice input, follow-up questions, and brief corrections
+- Dev server automatically reads example sentences from the EPUB — no manual import needed
 
 ## Run
 
@@ -17,7 +17,7 @@ npm install
 npm run dev
 ```
 
-默认地址：
+Default address:
 
 ```text
 http://127.0.0.1:5180
@@ -82,16 +82,15 @@ Before App Store submission:
 
 ## Data
 
-词频数据来自本地 EPUB：
+Frequency data is sourced from a local EPUB:
 
 ```text
 C:\Users\humao\Downloads\vdoc.pub_a-frequency-dictionary-of-dutch.epub
 ```
 
-应用只提取学习所需的词条字段：词、词性、英文释义、词频列表、排名、频率。
+The app extracts only the fields needed for study: word, part of speech, English definition, frequency list, rank, and frequency score.
 
-开发服务器会自动从这个本地 EPUB 读取书中例句，并通过 `/api/book-examples` 提供给前端。
-如果 EPUB 不在默认路径，可以用环境变量指定：
+The dev server automatically reads example sentences from the EPUB and serves them via `/api/book-examples`. If the EPUB is not at the default path, specify it with an environment variable:
 
 ```bash
 $env:DUTCH_FREQ_EPUB_PATH="D:\path\to\a-frequency-dictionary-of-dutch.epub"
@@ -100,9 +99,9 @@ npm run dev
 
 ## LLM Examples
 
-每个单词卡和练习页都有一个 AI 例句按钮。配置环境变量后可自动生成并保存该词的新例句：
+Each word card and practice page has an AI example button. Set the appropriate environment variable to auto-generate and save new example sentences for any word.
 
-Gemini：
+Gemini:
 
 ```bash
 $env:GEMINI_API_KEY="your_gemini_api_key"
@@ -111,12 +110,14 @@ $env:PORT="5173"
 npm run dev
 ```
 
+OpenAI:
+
 ```bash
 $env:OPENAI_API_KEY="your_api_key"
 npm run dev
 ```
 
-也可以使用 OpenAI-compatible 服务：
+Or any OpenAI-compatible endpoint:
 
 ```bash
 $env:LLM_API_KEY="your_api_key"
@@ -125,10 +126,10 @@ $env:LLM_MODEL="gpt-4o-mini"
 npm run dev
 ```
 
-生成的例句保存在浏览器本地，显示优先级为：AI 生成例句、书中例句、自动模板句。
+Generated sentences are saved in the browser. Display priority: AI-generated → book example → auto template.
 
-例句区也可以选择中文、English、Deutsch 翻译，翻译同样使用上面的 LLM 配置，并保存在浏览器本地。
+The example section also supports Chinese, English, and German translations, generated via the same LLM config and saved locally.
 
-口语陪练页同样使用上面的 Gemini 或 OpenAI-compatible 配置。语音输入依赖浏览器麦克风权限和 Speech Recognition；如果浏览器不支持，也可以直接输入荷兰语句子练习。
+The conversation practice page uses the same Gemini or OpenAI-compatible config. Voice input requires browser microphone permission and Speech Recognition support; if unavailable, you can type Dutch sentences directly.
 
-例句不会写入源码数据文件。运行 `npm run dev` 时，Vite 本地服务会从上面的 EPUB 路径读取例句，并通过 `/api/book-examples` 提供给前端。
+Generated examples are never written back to the source data files. When running `npm run dev`, the Vite dev server reads sentences from the EPUB path above and serves them via `/api/book-examples`.
