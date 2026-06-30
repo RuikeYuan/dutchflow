@@ -2860,10 +2860,10 @@ export default function App() {
                 title="Flip all visible word cards"
               >
                 <RotateCcw size={16} />
-                <span>{cardsFlipped ? "释义 → 荷兰文" : "荷兰文 → 释义"}</span>
+                <span>{cardsFlipped ? "Definition → Dutch" : "Dutch → Definition"}</span>
               </button>
               <label>
-                <span>背面</span>
+                <span>Back</span>
                 <select
                   value={cardMeaningLanguage}
                   onChange={(event) => setCardMeaningLanguage(event.target.value as CardMeaningLanguage)}
