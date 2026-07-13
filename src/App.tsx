@@ -1089,33 +1089,68 @@ function scoreVoice(voice: SpeechSynthesisVoice, language: SpeechLanguage) {
   return score;
 }
 
-function getBestDutchVoice() {
-  const voices = window.speechSynthesis.getVoices();
+let cachedVoices: SpeechSynthesisVoice[] = [];
+let voicesReadyPromise: Promise<SpeechSynthesisVoice[]> | null = null;
+
+function ensureVoicesLoaded(): Promise<SpeechSynthesisVoice[]> {
+  if (!("speechSynthesis" in window)) {
+    return Promise.resolve([]);
+  }
+
+  const available = window.speechSynthesis.getVoices();
+  if (available.length > 0) {
+    cachedVoices = available;
+    return Promise.resolve(available);
+  }
+
+  if (voicesReadyPromise) {
+    return voicesReadyPromise;
+  }
+
+  voicesReadyPromise = new Promise((resolve) => {
+    const settle = () => {
+      window.speechSynthesis.removeEventListener("voiceschanged", settle);
+      clearTimeout(timeoutId);
+      cachedVoices = window.speechSynthesis.getVoices();
+      voicesReadyPromise = null;
+      resolve(cachedVoices);
+    };
+    const timeoutId = setTimeout(settle, 1000);
+    window.speechSynthesis.addEventListener("voiceschanged", settle);
+  });
+
+  return voicesReadyPromise;
+}
+
+if (typeof window !== "undefined" && "speechSynthesis" in window) {
+  ensureVoicesLoaded();
+}
+
+function getBestDutchVoice(voices: SpeechSynthesisVoice[]) {
   return voices
     .filter((voice) => voice.lang.toLocaleLowerCase("nl-NL").startsWith("nl"))
     .sort((first, second) => scoreDutchVoice(second) - scoreDutchVoice(first))[0];
 }
 
-function getBestVoice(language: SpeechLanguage) {
-  const voices = window.speechSynthesis.getVoices();
+function getBestVoice(voices: SpeechSynthesisVoice[], language: SpeechLanguage) {
   return voices
     .filter((voice) => scoreVoice(voice, language) >= 0)
     .sort((first, second) => scoreVoice(second, language) - scoreVoice(first, language))[0];
 }
 
-function speakText(text: string) {
+async function speakText(text: string) {
   if (!("speechSynthesis" in window)) {
     return;
   }
 
+  const voices = await ensureVoicesLoaded();
   const utterance = new SpeechSynthesisUtterance(text);
-  const voice = getBestDutchVoice();
+  const voice = getBestDutchVoice(voices);
   if (voice) {
     utterance.voice = voice;
     utterance.lang = voice.lang;
   } else {
     utterance.lang = "nl-NL";
-    window.speechSynthesis.getVoices();
   }
   utterance.rate = 0.9;
   utterance.pitch = 1;
@@ -1123,20 +1158,20 @@ function speakText(text: string) {
   window.speechSynthesis.speak(utterance);
 }
 
-function speak(word: DutchWord) {
-  speakText(cleanWord(word.word));
+async function speak(word: DutchWord) {
+  await speakText(cleanWord(word.word));
 }
 
-function createUtterance(text: string, language: SpeechLanguage) {
+async function createUtterance(text: string, language: SpeechLanguage) {
+  const voices = await ensureVoicesLoaded();
   const utterance = new SpeechSynthesisUtterance(text);
-  const voice = getBestVoice(language);
+  const voice = getBestVoice(voices, language);
 
   if (voice) {
     utterance.voice = voice;
     utterance.lang = voice.lang;
   } else {
     utterance.lang = language;
-    window.speechSynthesis.getVoices();
   }
 
   utterance.rate = language === "nl-NL" ? 0.9 : 0.95;
@@ -2400,7 +2435,7 @@ export default function App() {
     }
   }
 
-  function playSpeechItems(items: SpeechItem[], index: number, token: number, onComplete: () => void) {
+  async function playSpeechItems(items: SpeechItem[], index: number, token: number, onComplete: () => void) {
     if (!("speechSynthesis" in window) || token !== autoPlayTokenRef.current) {
       setAutoPlayingNotebook(false);
       return;
@@ -2412,7 +2447,11 @@ export default function App() {
       return;
     }
 
-    const utterance = createUtterance(item.text, item.language);
+    const utterance = await createUtterance(item.text, item.language);
+    if (token !== autoPlayTokenRef.current) {
+      setAutoPlayingNotebook(false);
+      return;
+    }
     utterance.onend = () => playSpeechItems(items, index + 1, token, onComplete);
     utterance.onerror = () => playSpeechItems(items, index + 1, token, onComplete);
     window.speechSynthesis.speak(utterance);
