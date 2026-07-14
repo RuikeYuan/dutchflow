@@ -9,3 +9,8 @@ dist
 .playwright-mcp
 .vite-dev.log
 .vite-dev.err.log
+
+.env*
+
+# Extracted from a copyrighted EPUB; lives in private Vercel Blob storage instead.
+src/data/bookExamples.json

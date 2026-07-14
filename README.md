@@ -97,6 +97,8 @@ $env:DUTCH_FREQ_EPUB_PATH="D:\path\to\a-frequency-dictionary-of-dutch.epub"
 npm run dev
 ```
 
+In production there's no EPUB file to read from. Book sentences are pre-extracted once and uploaded to a private Vercel Blob store (`BOOK_EXAMPLES_BLOB_PATHNAME` env var + `BLOB_READ_WRITE_TOKEN`); `api/book-examples.js` fetches that blob instead. Re-upload with `vercel blob put <file> --pathname <name> --access private` and update the env var if the source EPUB changes.
+
 ## LLM Examples
 
 Each word card and practice page has an AI example button. Set the appropriate environment variable to auto-generate and save new example sentences for any word.
