@@ -48,7 +48,7 @@ type GrammarNodeEntry = {
 };
 
 const words = frequencyWords as DutchWord[];
-const defaultNotebookWordCount = 2000;
+const defaultNotebookWordCount = 3000;
 const wordLookup = new Map<string, DutchWord>();
 for (const word of words) {
   const variants = word.word
@@ -60,7 +60,7 @@ for (const word of words) {
   }
 }
 const notebookStorageKey = "dutch-frequency-app-notebook";
-const defaultNotebookMigrationKey = "dutch-frequency-app-default-notebook-2000";
+const defaultNotebookMigrationKey = "dutch-frequency-app-default-notebook-3000";
 const languageStorageKey = "dutch-frequency-app-ui-language";
 const generatedExamplesStorageKey = "dutch-frequency-app-generated-examples";
 const exampleTranslationsStorageKey = "dutch-frequency-app-example-translations";
