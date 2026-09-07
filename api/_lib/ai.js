@@ -72,6 +72,22 @@ function parseJsonObject(value) {
   }
 }
 
+function parseJsonArray(value) {
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    const match = value.match(/\[[\s\S]*\]/);
+    if (!match) return [];
+    try {
+      const parsed = JSON.parse(match[0]);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+}
+
 function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -210,7 +226,63 @@ export async function generateExample(word, translation, partOfSpeech) {
   return example;
 }
 
-export async function translateExample(sentence, targetLanguage) {
+export async function generateNewsReading({ headline, summary, sourceName, level = "A2-B1" }) {
+  const systemPrompt =
+    "You write original short Dutch reading passages for language learners. You take inspiration from a real news topic but you never copy, translate, or closely paraphrase the source text - you write entirely new sentences of your own about the same general subject.";
+  const userPrompt = [
+    `News topic for inspiration (source: ${sourceName ?? "unknown"}):`,
+    `Headline: ${headline}`,
+    summary ? `Summary: ${summary}` : "",
+    "",
+    `Write one short original Dutch reading passage (3-5 sentences) at ${level} level about this general topic.`,
+    "Do not mention the source, do not quote it, do not translate it - invent your own simple sentences a learner can understand.",
+    "Return only the Dutch passage, no title, no explanation."
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const passage = await callLlm(systemPrompt, userPrompt, 0.6, 220);
+
+  if (!passage) {
+    throw new Error("LLM returned an empty news reading passage");
+  }
+
+  return passage;
+}
+
+export async function generatePodcastDialogue({ headline, summary, sourceName, level = "A2-B1" }) {
+  const systemPrompt =
+    "You write short original Dutch podcast dialogues for language learners. Two hosts, A and B, discuss a topic in simple, natural spoken Dutch. You take inspiration from a real news topic but you never copy, translate, or closely paraphrase the source text - you invent your own dialogue about the same general subject.";
+  const userPrompt = [
+    `News topic for inspiration (source: ${sourceName ?? "unknown"}):`,
+    `Headline: ${headline}`,
+    summary ? `Summary: ${summary}` : "",
+    "",
+    `Write a natural podcast-style dialogue (6-8 short turns, alternating speaker A and speaker B) at ${level} level about this general topic.`,
+    "Do not mention or quote the source - invent your own simple sentences a learner can understand.",
+    "Give each turn a natural Simplified Chinese translation too.",
+    'Return strict JSON only, an array like: [{"speaker":"A","text":"Dutch sentence","translation":"Chinese translation"}, ...]',
+    "No markdown, no extra text outside the JSON array."
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const raw = await callLlm(systemPrompt, userPrompt, 0.6, 1000);
+  const rawTurns = parseJsonArray(raw);
+  const turns = rawTurns
+    .map((turn) => ({
+      speaker: turn?.speaker === "B" ? "B" : "A",
+      text: sanitizeExample(String(turn?.text ?? "")),
+      translation: sanitizeExample(String(turn?.translation ?? ""))
+    }))
+    .filter((turn) => turn.text);
+
+  if (!turns.length) {
+    throw new Error("LLM returned an empty podcast dialogue");
+  }
+
+  return turns;
+}
+
+export async function translateExample(sentence, targetLanguage, maxTokens) {
   const languageName =
     targetLanguage === "zh"
       ? "Simplified Chinese"
@@ -219,7 +291,7 @@ export async function translateExample(sentence, targetLanguage) {
         : "English";
   const systemPrompt = "Translate Dutch example sentences for language learners. Return only the translation, no explanation.";
   const userPrompt = `Translate this Dutch sentence into ${languageName}:\n${sentence}`;
-  const translated = await callLlm(systemPrompt, userPrompt, 0.2, 80);
+  const translated = await callLlm(systemPrompt, userPrompt, 0.2, maxTokens ?? 80);
 
   if (!translated) {
     throw new Error("LLM returned an empty translation");
@@ -228,7 +300,7 @@ export async function translateExample(sentence, targetLanguage) {
   return translated;
 }
 
-export async function explainExample(sentence, targetLanguage = "zh") {
+export async function explainExample(sentence, targetLanguage = "zh", maxTokens) {
   const grammarContext = formatGrammarGuideContext(
     getGrammarGuideContext({
       question: "Explain the grammar of this Dutch example sentence",
@@ -251,7 +323,7 @@ export async function explainExample(sentence, targetLanguage = "zh") {
       "Do not use the [[nl:...]] marker for English words.",
       "Do not use Markdown tables. Do not be long."
     ].join("\n");
-    const explanation = await callLlm(systemPrompt, userPrompt, 0.25, 220);
+    const explanation = await callLlm(systemPrompt, userPrompt, 0.25, maxTokens ?? 220);
 
     if (!explanation) {
       throw new Error("LLM returned an empty grammar explanation");
@@ -272,7 +344,7 @@ export async function explainExample(sentence, targetLanguage = "zh") {
     "必须包含：整体句型、关键词/短语、动词变化、介词/冠词/代词等细节、自然表达提示。",
     "不要输出 Markdown 表格，不要太长。"
   ].join("\n");
-  const explanation = await callLlm(systemPrompt, userPrompt, 0.25, 260);
+  const explanation = await callLlm(systemPrompt, userPrompt, 0.25, maxTokens ?? 260);
 
   if (!explanation) {
     throw new Error("LLM returned an empty grammar explanation");

@@ -3,12 +3,17 @@ import {
   BookmarkCheck,
   BookOpen,
   Check,
+  CheckSquare,
   ChevronLeft,
   ChevronRight,
   Filter,
   Languages,
   Layers3,
   Mic,
+  Pause,
+  Play,
+  Podcast,
+  RefreshCw,
   RotateCcw,
   Search,
   Shuffle,
@@ -31,7 +36,7 @@ type DutchWord = {
   frequency?: number;
 };
 
-type ViewMode = "browse" | "notebook" | "study" | "speaking" | "grammar" | "method";
+type ViewMode = "browse" | "notebook" | "study" | "speaking" | "grammar" | "reading" | "podcast" | "method";
 type UiLanguage = "zh" | "en" | "nl" | "es" | "de";
 type ExampleTranslationLanguage = "zh" | "en" | "de";
 type CardMeaningLanguage = "en" | "zh";
@@ -41,6 +46,17 @@ type WordAnswerTurn = {
   role: "user" | "assistant";
   text: string;
 };
+type SyncPayload = {
+  notebook: string[];
+  autoPlayMuted: string[];
+  generatedExamples: Record<string, string>;
+  exampleTranslations: Record<string, string>;
+  exampleGrammar: Record<string, string>;
+  spokenGrammar: Record<string, string>;
+  wordAnswers: Record<string, WordAnswerTurn[]>;
+  studyProgress: Record<string, StudyProgress>;
+};
+type SyncStatus = "idle" | "syncing" | "synced" | "error";
 type GrammarNodeEntry = {
   node: GrammarNode;
   path: string[];
@@ -67,7 +83,12 @@ const exampleTranslationsStorageKey = "dutch-frequency-app-example-translations"
 const exampleGrammarStorageKey = "dutch-frequency-app-example-grammar";
 const spokenGrammarStorageKey = "dutch-frequency-app-spoken-grammar-v2";
 const wordAnswersStorageKey = "dutch-frequency-app-word-answers";
+const autoPlayMutedStorageKey = "dutch-frequency-app-autoplay-muted";
+const defaultAutoPlaySelectionMigrationKey = "dutch-frequency-app-default-autoplay-selection-fiction20";
 const studyProgressStorageKey = "dutch-frequency-app-study-progress";
+const syncCodeStorageKey = "dutch-frequency-app-sync-code";
+const syncUpdatedAtStorageKey = "dutch-frequency-app-sync-updated-at";
+const syncCodeCharset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const listNames = ["All", "Core", "Fiction", "Newspapers", "Spoken", "Web", "General"];
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
 const apiAvailable = import.meta.env.DEV || import.meta.env.PROD || Boolean(apiBaseUrl);
@@ -104,12 +125,49 @@ const translations: Record<
     modeStudy: string;
     modeSpeaking: string;
     modeGrammar: string;
+    modeReading: string;
     modeMethod: string;
+    readingTitle: string;
+    readingSubtitle: string;
+    readingLoading: string;
+    readingFailed: string;
+    readingEmpty: string;
+    autoPlayGenres: string;
+    stopAutoPlayGenres: string;
+    autoPlayingGenre: (label: string) => string;
+    syncLabel: string;
+    syncHint: string;
+    syncGenerate: string;
+    syncDisable: string;
+    syncCopy: string;
+    syncCopied: string;
+    syncEnterCodePlaceholder: string;
+    syncLink: string;
+    syncLinkConfirm: string;
+    syncStatusSyncing: string;
+    syncStatusSynced: string;
+    syncStatusError: string;
+    modePodcast: string;
+    podcastTitle: string;
+    podcastSubtitle: string;
+    podcastLoading: string;
+    podcastFailed: string;
+    podcastEmpty: string;
+    podcastPlay: string;
+    podcastPause: string;
+    podcastPlaying: string;
+    podcastShowTranscript: string;
+    podcastHideTranscript: string;
     filtersLabel: string;
     playPronunciation: string;
     autoPlayNotebook: string;
     stopAutoPlayNotebook: string;
     autoPlayExampleGrammar: string;
+    loopAutoPlay: string;
+    includeInAutoPlay: string;
+    excludeFromAutoPlay: string;
+    resetAutoPlaySelection: string;
+    selectFictionTop20AutoPlay: string;
     addToNotebook: string;
     removeFromNotebook: string;
     noTranslation: string;
@@ -192,12 +250,49 @@ const translations: Record<
     modeStudy: "练习",
     modeSpeaking: "口语",
     modeGrammar: "语法",
+    modeReading: "每日阅读",
     modeMethod: "方法",
+    readingTitle: "每日阅读",
+    readingSubtitle: "AI 根据当天荷兰新闻话题原创的简短阅读材料，配中文翻译和语法讲解。",
+    readingLoading: "正在加载阅读材料…",
+    readingFailed: "加载阅读材料失败，请稍后重试。",
+    readingEmpty: "暂时没有阅读材料，请稍后再来看看。",
+    autoPlayGenres: "从此分类起自动朗读全部",
+    stopAutoPlayGenres: "停止自动朗读",
+    autoPlayingGenre: (label) => `正在朗读：${label}`,
+    syncLabel: "同步",
+    syncHint: "生成一个同步码，在其他设备上输入同一个码，就能同步单词本和复习进度。不需要注册账号。",
+    syncGenerate: "生成同步码",
+    syncDisable: "停止同步",
+    syncCopy: "复制",
+    syncCopied: "已复制",
+    syncEnterCodePlaceholder: "输入其他设备的同步码",
+    syncLink: "连接",
+    syncLinkConfirm: "这会用云端数据覆盖当前设备上的单词本和复习进度，确定继续吗？",
+    syncStatusSyncing: "同步中…",
+    syncStatusSynced: "已同步",
+    syncStatusError: "同步失败，请检查网络后重试",
+    modePodcast: "播客",
+    podcastTitle: "荷兰语播客",
+    podcastSubtitle: "AI 根据当天新闻话题生成的原创荷兰语对话，两位虚拟主播用简单荷兰语聊天，配中文文字稿和语法讲解。",
+    podcastLoading: "正在加载播客…",
+    podcastFailed: "加载播客失败，请稍后重试。",
+    podcastEmpty: "暂时没有播客内容，请稍后再来看看。",
+    podcastPlay: "播放",
+    podcastPause: "暂停",
+    podcastPlaying: "播放中…",
+    podcastShowTranscript: "显示文字稿",
+    podcastHideTranscript: "隐藏文字稿",
     filtersLabel: "词频分类",
     playPronunciation: "播放读音",
     autoPlayNotebook: "自动播放中英荷",
     stopAutoPlayNotebook: "停止播放",
     autoPlayExampleGrammar: "读例句和英文语法",
+    loopAutoPlay: "循环播放",
+    includeInAutoPlay: "已加入自动播放，点击可跳过此词",
+    excludeFromAutoPlay: "已跳过此词，点击可加入自动播放",
+    resetAutoPlaySelection: "全部朗读",
+    selectFictionTop20AutoPlay: "只选 Fiction 前20",
     addToNotebook: "加入单词本",
     removeFromNotebook: "从单词本移除",
     noTranslation: "暂无释义",
@@ -298,12 +393,49 @@ const translations: Record<
     modeStudy: "Study",
     modeSpeaking: "Speaking",
     modeGrammar: "Grammar",
+    modeReading: "Daily Reading",
     modeMethod: "Method",
+    readingTitle: "Daily Reading",
+    readingSubtitle: "Short original Dutch passages inspired by today's news, with translation and grammar notes.",
+    readingLoading: "Loading reading passages...",
+    readingFailed: "Failed to load reading passages. Please try again later.",
+    readingEmpty: "No reading passages yet. Check back later.",
+    autoPlayGenres: "Auto-play all, starting from this category",
+    stopAutoPlayGenres: "Stop auto-play",
+    autoPlayingGenre: (label) => `Now playing: ${label}`,
+    syncLabel: "Sync",
+    syncHint: "Generate a sync code and enter it on another device to sync your notebook and review progress. No account needed.",
+    syncGenerate: "Generate sync code",
+    syncDisable: "Stop syncing",
+    syncCopy: "Copy",
+    syncCopied: "Copied",
+    syncEnterCodePlaceholder: "Enter sync code from another device",
+    syncLink: "Link",
+    syncLinkConfirm: "This will overwrite this device's notebook and review progress with the cloud data. Continue?",
+    syncStatusSyncing: "Syncing...",
+    syncStatusSynced: "Synced",
+    syncStatusError: "Sync failed. Check your connection and try again.",
+    modePodcast: "Podcast",
+    podcastTitle: "Dutch Podcast",
+    podcastSubtitle: "Original Dutch dialogues generated from today's news, performed by two virtual hosts in simple Dutch, with a Chinese transcript and grammar notes.",
+    podcastLoading: "Loading podcast...",
+    podcastFailed: "Failed to load podcast episodes. Please try again later.",
+    podcastEmpty: "No podcast episodes yet. Check back later.",
+    podcastPlay: "Play",
+    podcastPause: "Pause",
+    podcastPlaying: "Playing...",
+    podcastShowTranscript: "Show transcript",
+    podcastHideTranscript: "Hide transcript",
     filtersLabel: "Frequency lists",
     playPronunciation: "Play pronunciation",
     autoPlayNotebook: "Auto-play Chinese, English, Dutch",
     stopAutoPlayNotebook: "Stop playback",
     autoPlayExampleGrammar: "Read example and English grammar",
+    loopAutoPlay: "Loop playback",
+    includeInAutoPlay: "Included in auto-play. Click to skip this word",
+    excludeFromAutoPlay: "Skipped in auto-play. Click to include this word",
+    resetAutoPlaySelection: "Read all",
+    selectFictionTop20AutoPlay: "Only Fiction top 20",
     addToNotebook: "Add to notebook",
     removeFromNotebook: "Remove from notebook",
     noTranslation: "No translation",
@@ -404,12 +536,49 @@ const translations: Record<
     modeStudy: "Oefenen",
     modeSpeaking: "Spreken",
     modeGrammar: "Grammatica",
+    modeReading: "Dagelijks lezen",
     modeMethod: "Methode",
+    readingTitle: "Dagelijks lezen",
+    readingSubtitle: "Korte originele Nederlandse teksten geïnspireerd op het nieuws van vandaag, met vertaling en grammatica-uitleg.",
+    readingLoading: "Leesteksten laden...",
+    readingFailed: "Laden van leesteksten mislukt. Probeer het later opnieuw.",
+    readingEmpty: "Nog geen leesteksten. Kom later terug.",
+    autoPlayGenres: "Alles automatisch afspelen vanaf deze categorie",
+    stopAutoPlayGenres: "Automatisch afspelen stoppen",
+    autoPlayingGenre: (label) => `Nu bezig: ${label}`,
+    syncLabel: "Synchroniseren",
+    syncHint: "Genereer een synchronisatiecode en voer die op een ander apparaat in om je woordenboek en herhaalvoortgang te synchroniseren. Geen account nodig.",
+    syncGenerate: "Code genereren",
+    syncDisable: "Synchronisatie stoppen",
+    syncCopy: "Kopiëren",
+    syncCopied: "Gekopieerd",
+    syncEnterCodePlaceholder: "Voer code van ander apparaat in",
+    syncLink: "Koppelen",
+    syncLinkConfirm: "Dit overschrijft het woordenboek en de herhaalvoortgang op dit apparaat met de cloudgegevens. Doorgaan?",
+    syncStatusSyncing: "Synchroniseren...",
+    syncStatusSynced: "Gesynchroniseerd",
+    syncStatusError: "Synchronisatie mislukt. Controleer je verbinding en probeer het opnieuw.",
+    modePodcast: "Podcast",
+    podcastTitle: "Nederlandse Podcast",
+    podcastSubtitle: "Originele Nederlandse dialogen geïnspireerd op het nieuws van vandaag, gesproken door twee virtuele presentatoren in eenvoudig Nederlands, met Chinees transcript en grammatica-uitleg.",
+    podcastLoading: "Podcast laden...",
+    podcastFailed: "Laden van podcast mislukt. Probeer het later opnieuw.",
+    podcastEmpty: "Nog geen podcastafleveringen. Kom later terug.",
+    podcastPlay: "Afspelen",
+    podcastPause: "Pauzeren",
+    podcastPlaying: "Speelt af...",
+    podcastShowTranscript: "Transcript tonen",
+    podcastHideTranscript: "Transcript verbergen",
     filtersLabel: "Frequentielijsten",
     playPronunciation: "Uitspraak afspelen",
     autoPlayNotebook: "Chinees, Engels, Nederlands automatisch afspelen",
     stopAutoPlayNotebook: "Afspelen stoppen",
     autoPlayExampleGrammar: "Voorbeeld en Engelse grammatica lezen",
+    loopAutoPlay: "Herhalen",
+    includeInAutoPlay: "Wordt automatisch afgespeeld. Klik om dit woord over te slaan",
+    excludeFromAutoPlay: "Wordt overgeslagen. Klik om dit woord toe te voegen",
+    resetAutoPlaySelection: "Alles voorlezen",
+    selectFictionTop20AutoPlay: "Alleen Fiction top 20",
     addToNotebook: "Toevoegen aan woordenlijst",
     removeFromNotebook: "Verwijderen uit woordenlijst",
     noTranslation: "Geen vertaling",
@@ -510,12 +679,49 @@ const translations: Record<
     modeStudy: "Practicar",
     modeSpeaking: "Hablar",
     modeGrammar: "Gramática",
+    modeReading: "Lectura diaria",
     modeMethod: "Método",
+    readingTitle: "Lectura diaria",
+    readingSubtitle: "Textos breves originales en neerlandés inspirados en las noticias de hoy, con traducción y notas de gramática.",
+    readingLoading: "Cargando textos de lectura...",
+    readingFailed: "No se pudieron cargar los textos de lectura. Inténtalo de nuevo más tarde.",
+    readingEmpty: "Todavía no hay textos de lectura. Vuelve más tarde.",
+    autoPlayGenres: "Reproducir todo automáticamente desde esta categoría",
+    stopAutoPlayGenres: "Detener reproducción automática",
+    autoPlayingGenre: (label) => `Reproduciendo: ${label}`,
+    syncLabel: "Sincronizar",
+    syncHint: "Genera un código de sincronización e ingrésalo en otro dispositivo para sincronizar tu cuaderno y tu progreso de repaso. No necesitas una cuenta.",
+    syncGenerate: "Generar código",
+    syncDisable: "Detener sincronización",
+    syncCopy: "Copiar",
+    syncCopied: "Copiado",
+    syncEnterCodePlaceholder: "Ingresa el código de otro dispositivo",
+    syncLink: "Vincular",
+    syncLinkConfirm: "Esto sobrescribirá el cuaderno y el progreso de repaso de este dispositivo con los datos de la nube. ¿Continuar?",
+    syncStatusSyncing: "Sincronizando...",
+    syncStatusSynced: "Sincronizado",
+    syncStatusError: "Error de sincronización. Revisa tu conexión e inténtalo de nuevo.",
+    modePodcast: "Podcast",
+    podcastTitle: "Podcast en Neerlandés",
+    podcastSubtitle: "Diálogos originales en neerlandés inspirados en las noticias de hoy, interpretados por dos presentadores virtuales en neerlandés sencillo, con transcripción en chino y notas de gramática.",
+    podcastLoading: "Cargando podcast...",
+    podcastFailed: "No se pudieron cargar los episodios. Inténtalo de nuevo más tarde.",
+    podcastEmpty: "Todavía no hay episodios. Vuelve más tarde.",
+    podcastPlay: "Reproducir",
+    podcastPause: "Pausar",
+    podcastPlaying: "Reproduciendo...",
+    podcastShowTranscript: "Mostrar transcripción",
+    podcastHideTranscript: "Ocultar transcripción",
     filtersLabel: "Listas de frecuencia",
     playPronunciation: "Reproducir pronunciación",
     autoPlayNotebook: "Reproducir chino, inglés y neerlandés",
     stopAutoPlayNotebook: "Detener reproducción",
     autoPlayExampleGrammar: "Leer ejemplo y gramática en inglés",
+    loopAutoPlay: "Reproducir en bucle",
+    includeInAutoPlay: "Incluido en la reproducción automática. Haz clic para omitir esta palabra",
+    excludeFromAutoPlay: "Omitida en la reproducción automática. Haz clic para incluir esta palabra",
+    resetAutoPlaySelection: "Leer todo",
+    selectFictionTop20AutoPlay: "Solo Fiction top 20",
     addToNotebook: "Añadir al cuaderno",
     removeFromNotebook: "Quitar del cuaderno",
     noTranslation: "Sin traducción",
@@ -616,12 +822,49 @@ const translations: Record<
     modeStudy: "Üben",
     modeSpeaking: "Sprechen",
     modeGrammar: "Grammatik",
+    modeReading: "Tägliches Lesen",
     modeMethod: "Methode",
+    readingTitle: "Tägliches Lesen",
+    readingSubtitle: "Kurze originale niederländische Texte, inspiriert von aktuellen Nachrichten, mit Übersetzung und Grammatikerklärung.",
+    readingLoading: "Lesetexte werden geladen...",
+    readingFailed: "Lesetexte konnten nicht geladen werden. Bitte später erneut versuchen.",
+    readingEmpty: "Noch keine Lesetexte. Schau später wieder vorbei.",
+    autoPlayGenres: "Alles automatisch abspielen ab dieser Kategorie",
+    stopAutoPlayGenres: "Automatische Wiedergabe stoppen",
+    autoPlayingGenre: (label) => `Wird abgespielt: ${label}`,
+    syncLabel: "Synchronisieren",
+    syncHint: "Erstelle einen Sync-Code und gib ihn auf einem anderen Gerät ein, um dein Vokabelheft und deinen Wiederholungsfortschritt zu synchronisieren. Kein Konto nötig.",
+    syncGenerate: "Code erstellen",
+    syncDisable: "Synchronisierung stoppen",
+    syncCopy: "Kopieren",
+    syncCopied: "Kopiert",
+    syncEnterCodePlaceholder: "Code eines anderen Geräts eingeben",
+    syncLink: "Verbinden",
+    syncLinkConfirm: "Dadurch werden das Vokabelheft und der Wiederholungsfortschritt auf diesem Gerät mit den Cloud-Daten überschrieben. Fortfahren?",
+    syncStatusSyncing: "Synchronisiere...",
+    syncStatusSynced: "Synchronisiert",
+    syncStatusError: "Synchronisierung fehlgeschlagen. Verbindung prüfen und erneut versuchen.",
+    modePodcast: "Podcast",
+    podcastTitle: "Niederländischer Podcast",
+    podcastSubtitle: "Originelle niederländische Dialoge, inspiriert von aktuellen Nachrichten, gesprochen von zwei virtuellen Moderatoren in einfachem Niederländisch, mit chinesischem Transkript und Grammatikerklärung.",
+    podcastLoading: "Podcast wird geladen...",
+    podcastFailed: "Laden der Podcast-Folgen fehlgeschlagen. Bitte später erneut versuchen.",
+    podcastEmpty: "Noch keine Podcast-Folgen. Schau später wieder vorbei.",
+    podcastPlay: "Abspielen",
+    podcastPause: "Pausieren",
+    podcastPlaying: "Wird abgespielt...",
+    podcastShowTranscript: "Transkript anzeigen",
+    podcastHideTranscript: "Transkript verbergen",
     filtersLabel: "Frequenzlisten",
     playPronunciation: "Aussprache abspielen",
     autoPlayNotebook: "Chinesisch, Englisch, Niederländisch abspielen",
     stopAutoPlayNotebook: "Wiedergabe stoppen",
     autoPlayExampleGrammar: "Beispiel und englische Grammatik vorlesen",
+    loopAutoPlay: "Wiederholen",
+    includeInAutoPlay: "Wird automatisch abgespielt. Klicken, um dieses Wort zu überspringen",
+    excludeFromAutoPlay: "Wird übersprungen. Klicken, um dieses Wort einzuschließen",
+    resetAutoPlaySelection: "Alles vorlesen",
+    selectFictionTop20AutoPlay: "Nur Fiction Top 20",
     addToNotebook: "Zur Wortliste hinzufügen",
     removeFromNotebook: "Aus Wortliste entfernen",
     noTranslation: "Keine Übersetzung",
@@ -1310,6 +1553,34 @@ function getSavedIds() {
   }
 }
 
+function getSavedAutoPlayMutedIds() {
+  const keepIds = new Set(
+    words.filter((word) => word.list === "Fiction" && word.rank <= 20).map((word) => word.sourceId)
+  );
+
+  try {
+    const value = JSON.parse(localStorage.getItem(autoPlayMutedStorageKey) ?? "[]");
+    const muted = new Set<string>(Array.isArray(value) ? value : []);
+
+    if (localStorage.getItem(defaultAutoPlaySelectionMigrationKey) !== "done") {
+      for (const word of words) {
+        if (!keepIds.has(word.sourceId)) {
+          muted.add(word.sourceId);
+        }
+      }
+      localStorage.setItem(autoPlayMutedStorageKey, JSON.stringify(Array.from(muted)));
+      localStorage.setItem(defaultAutoPlaySelectionMigrationKey, "done");
+    }
+
+    return muted;
+  } catch {
+    const muted = new Set(words.filter((word) => !keepIds.has(word.sourceId)).map((word) => word.sourceId));
+    localStorage.setItem(autoPlayMutedStorageKey, JSON.stringify(Array.from(muted)));
+    localStorage.setItem(defaultAutoPlaySelectionMigrationKey, "done");
+    return muted;
+  }
+}
+
 function getSavedGeneratedExamples() {
   try {
     const value = JSON.parse(localStorage.getItem(generatedExamplesStorageKey) ?? "{}");
@@ -1362,6 +1633,34 @@ function getSavedStudyProgress() {
   } catch {
     return {};
   }
+}
+
+function getSavedSyncCode() {
+  return localStorage.getItem(syncCodeStorageKey) ?? "";
+}
+
+function getSavedSyncUpdatedAt() {
+  return Number(localStorage.getItem(syncUpdatedAtStorageKey) ?? "0");
+}
+
+function generateSyncCode(length = 8) {
+  let code = "";
+  for (let index = 0; index < length; index += 1) {
+    const randomIndex =
+      typeof crypto !== "undefined" && crypto.getRandomValues
+        ? crypto.getRandomValues(new Uint32Array(1))[0] % syncCodeCharset.length
+        : Math.floor(Math.random() * syncCodeCharset.length);
+    code += syncCodeCharset[randomIndex];
+  }
+  return code;
+}
+
+function formatSyncCode(code: string) {
+  return code.replace(/(.{4})(?=.)/g, "$1-");
+}
+
+function normalizeSyncCode(rawCode: string) {
+  return rawCode.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
 }
 
 function getSavedLanguage(): UiLanguage {
@@ -1619,6 +1918,8 @@ function WordCard({
   item,
   saved,
   onToggle,
+  autoPlayMuted,
+  onToggleAutoPlayMuted,
   onGenerateExample,
   sentence,
   exampleTranslations,
@@ -1642,6 +1943,8 @@ function WordCard({
   item: DutchWord;
   saved: boolean;
   onToggle: (id: string) => void;
+  autoPlayMuted: boolean;
+  onToggleAutoPlayMuted: (id: string) => void;
   onGenerateExample: (word: DutchWord) => void;
   sentence: string;
   exampleTranslations: Partial<Record<ExampleTranslationLanguage, string>>;
@@ -1702,6 +2005,14 @@ function WordCard({
           </button>
           <button className="icon-button" type="button" onClick={() => speak(item)} title={t.playPronunciation}>
             <Volume2 size={18} />
+          </button>
+          <button
+            className={`icon-button ${autoPlayMuted ? "" : "saved"}`}
+            type="button"
+            onClick={() => onToggleAutoPlayMuted(item.sourceId)}
+            title={autoPlayMuted ? t.excludeFromAutoPlay : t.includeInAutoPlay}
+          >
+            {autoPlayMuted ? <Square size={18} /> : <CheckSquare size={18} />}
           </button>
           <button
             className={`icon-button ${saved ? "saved" : ""}`}
@@ -2229,6 +2540,650 @@ function SpeakingPage({ t }: { t: (typeof translations)[UiLanguage] }) {
   );
 }
 
+type NewsReadingItem = {
+  id: string;
+  sourceName: string;
+  sourceHeadline: string;
+  sourceLink: string;
+  level: string;
+  dutchText: string;
+  translation: string;
+  explanation: string;
+};
+
+type ReadingGenre = "algemeen" | "cultuur" | "tech" | "sport" | "economie";
+
+const readingGenres: { key: ReadingGenre; labels: Record<UiLanguage, string> }[] = [
+  { key: "algemeen", labels: { zh: "综合", en: "General", nl: "Algemeen", es: "General", de: "Allgemein" } },
+  { key: "cultuur", labels: { zh: "文化娱乐", en: "Culture", nl: "Cultuur", es: "Cultura", de: "Kultur" } },
+  { key: "tech", labels: { zh: "科技", en: "Tech", nl: "Tech", es: "Tecnología", de: "Technik" } },
+  { key: "sport", labels: { zh: "体育", en: "Sports", nl: "Sport", es: "Deporte", de: "Sport" } },
+  { key: "economie", labels: { zh: "经济", en: "Economy", nl: "Economie", es: "Economía", de: "Wirtschaft" } }
+];
+
+async function fetchReadingGenreItems(genreKey: ReadingGenre): Promise<NewsReadingItem[]> {
+  const response = await fetch(apiUrl(`/api/news-reading?genre=${genreKey}`));
+  if (!response.ok) {
+    throw new Error("Failed to read news reading passages");
+  }
+  const data = (await response.json()) as { items?: NewsReadingItem[] };
+  return data.items ?? [];
+}
+
+function DailyReadingPage({ t, language }: { t: (typeof translations)[UiLanguage]; language: UiLanguage }) {
+  const [genre, setGenre] = useState<ReadingGenre>("algemeen");
+  const [items, setItems] = useState<NewsReadingItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [translationVisible, setTranslationVisible] = useState<Record<string, boolean>>({});
+  const [grammarVisible, setGrammarVisible] = useState<Record<string, boolean>>({});
+  const [autoPlayingGenres, setAutoPlayingGenres] = useState(false);
+  const [autoPlayingGenreKey, setAutoPlayingGenreKey] = useState<ReadingGenre | null>(null);
+  const autoPlayTokenRef = useRef(0);
+  const autoPlayingRef = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadReading() {
+      if (autoPlayingRef.current) {
+        return;
+      }
+      if (!apiAvailable) {
+        setLoading(false);
+        setFailed(false);
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const list = await fetchReadingGenreItems(genre);
+        if (active) {
+          setItems(list);
+          setFailed(false);
+        }
+      } catch {
+        if (active) {
+          setFailed(true);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadReading();
+    return () => {
+      active = false;
+    };
+  }, [genre]);
+
+  useEffect(
+    () => () => {
+      autoPlayTokenRef.current += 1;
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    },
+    []
+  );
+
+  function stopAutoPlayGenres() {
+    autoPlayTokenRef.current += 1;
+    autoPlayingRef.current = false;
+    setAutoPlayingGenres(false);
+    setAutoPlayingGenreKey(null);
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  }
+
+  async function speakReadingItems(list: NewsReadingItem[], index: number, token: number, order: ReadingGenre[], orderIndex: number) {
+    if (!("speechSynthesis" in window) || token !== autoPlayTokenRef.current) {
+      return;
+    }
+
+    const item = list[index];
+    if (!item) {
+      void playGenreInOrder(order, orderIndex + 1, token);
+      return;
+    }
+
+    const utterance = await createUtterance(item.dutchText, "nl-NL");
+    if (token !== autoPlayTokenRef.current) return;
+
+    utterance.onend = () => speakReadingItems(list, index + 1, token, order, orderIndex);
+    utterance.onerror = () => speakReadingItems(list, index + 1, token, order, orderIndex);
+    window.speechSynthesis.speak(utterance);
+  }
+
+  async function playGenreInOrder(order: ReadingGenre[], orderIndex: number, token: number) {
+    if (token !== autoPlayTokenRef.current) return;
+
+    const genreKey = order[orderIndex];
+    if (!genreKey) {
+      autoPlayingRef.current = false;
+      setAutoPlayingGenres(false);
+      setAutoPlayingGenreKey(null);
+      return;
+    }
+
+    setGenre(genreKey);
+    setAutoPlayingGenreKey(genreKey);
+    setLoading(true);
+    setFailed(false);
+
+    try {
+      const list = await fetchReadingGenreItems(genreKey);
+      if (token !== autoPlayTokenRef.current) return;
+      setItems(list);
+      setLoading(false);
+      void speakReadingItems(list, 0, token, order, orderIndex);
+    } catch {
+      if (token !== autoPlayTokenRef.current) return;
+      setFailed(true);
+      setLoading(false);
+      void playGenreInOrder(order, orderIndex + 1, token);
+    }
+  }
+
+  function startAutoPlayGenres() {
+    autoPlayTokenRef.current += 1;
+    const token = autoPlayTokenRef.current;
+    const startIndex = Math.max(
+      0,
+      readingGenres.findIndex((item) => item.key === genre)
+    );
+    const order = [...readingGenres.slice(startIndex), ...readingGenres.slice(0, startIndex)].map((item) => item.key);
+
+    autoPlayingRef.current = true;
+    setAutoPlayingGenres(true);
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    void playGenreInOrder(order, 0, token);
+  }
+
+  function toggleTranslation(id: string) {
+    setTranslationVisible((current) => ({ ...current, [id]: !current[id] }));
+  }
+
+  function toggleGrammar(id: string) {
+    setGrammarVisible((current) => ({ ...current, [id]: !current[id] }));
+  }
+
+  return (
+    <section className="reading-page">
+      <div className="reading-intro">
+        <span className="method-eyebrow">{t.modeReading}</span>
+        <h2>{t.readingTitle}</h2>
+        <p>{t.readingSubtitle}</p>
+      </div>
+
+      <div className="reading-genres" role="tablist" aria-label={t.readingTitle}>
+        {readingGenres.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            role="tab"
+            aria-selected={genre === item.key}
+            className={genre === item.key ? "active" : ""}
+            onClick={() => {
+              if (autoPlayingGenres) {
+                stopAutoPlayGenres();
+              }
+              setGenre(item.key);
+            }}
+          >
+            {item.labels[language]}
+          </button>
+        ))}
+      </div>
+
+      <div className="reading-autoplay-controls">
+        <button
+          type="button"
+          className="mini-button"
+          onClick={autoPlayingGenres ? stopAutoPlayGenres : startAutoPlayGenres}
+        >
+          {autoPlayingGenres ? <Square size={15} /> : <Volume2 size={15} />}
+          <span>{autoPlayingGenres ? t.stopAutoPlayGenres : t.autoPlayGenres}</span>
+        </button>
+        {autoPlayingGenres && autoPlayingGenreKey ? (
+          <span className="recognized">
+            {t.autoPlayingGenre(readingGenres.find((item) => item.key === autoPlayingGenreKey)?.labels[language] ?? "")}
+          </span>
+        ) : null}
+      </div>
+
+      {loading ? (
+        <p className="recognized muted">{t.readingLoading}</p>
+      ) : failed ? (
+        <p className="recognized muted">{t.readingFailed}</p>
+      ) : items.length === 0 ? (
+        <p className="recognized muted">{t.readingEmpty}</p>
+      ) : (
+        <div className="reading-list">
+          {items.map((item) => (
+            <article className="reading-card" key={item.id}>
+              <div className="reading-card-head">
+                <span className="reading-source">{item.sourceName}</span>
+                {item.sourceLink ? (
+                  <a className="reading-source-link" href={item.sourceLink} target="_blank" rel="noreferrer">
+                    {item.sourceHeadline}
+                  </a>
+                ) : (
+                  <span className="reading-source-link">{item.sourceHeadline}</span>
+                )}
+              </div>
+              <div className="repeat-box">
+                <div className="repeat-head">
+                  <span>{t.exampleSentence}</span>
+                  <button className="mini-button" type="button" onClick={() => speakText(item.dutchText)}>
+                    <Volume2 size={15} />
+                    <span>{t.playSentence}</span>
+                  </button>
+                </div>
+                <p className="reading-dutch-text">{item.dutchText}</p>
+                <div className="reading-actions">
+                  <button className="mini-button" type="button" onClick={() => toggleTranslation(item.id)}>
+                    <Languages size={15} />
+                    <span>{translationVisible[item.id] ? t.hideAnswer : t.translateExample}</span>
+                  </button>
+                  <button className="mini-button" type="button" onClick={() => toggleGrammar(item.id)}>
+                    <BookOpen size={15} />
+                    <span>{grammarVisible[item.id] ? t.hideAnswer : t.explainGrammar}</span>
+                  </button>
+                </div>
+                {translationVisible[item.id] ? <p className="example-translation">{item.translation}</p> : null}
+                {grammarVisible[item.id] ? (
+                  <div className="grammar-explanation">
+                    <strong>{t.grammarExplanation}</strong>
+                    {item.explanation.split("\n").map((line, index) => (
+                      <p key={`${item.id}-line-${index}`}>{line}</p>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+type PodcastTurn = { speaker: "A" | "B"; text: string; translation: string };
+type PodcastEpisode = {
+  id: string;
+  sourceName: string;
+  sourceHeadline: string;
+  sourceLink: string;
+  level: string;
+  turns: PodcastTurn[];
+  explanation: string;
+};
+
+function getDutchVoicePair(voices: SpeechSynthesisVoice[]) {
+  const dutchVoices = voices
+    .filter((voice) => voice.lang.toLocaleLowerCase("nl-NL").startsWith("nl"))
+    .sort((first, second) => scoreDutchVoice(second) - scoreDutchVoice(first));
+  return [dutchVoices[0], dutchVoices[1] ?? dutchVoices[0]] as const;
+}
+
+async function createPodcastUtterance(text: string, speaker: "A" | "B") {
+  const voices = await ensureVoicesLoaded();
+  const [voiceA, voiceB] = getDutchVoicePair(voices);
+  const voice = speaker === "B" ? voiceB : voiceA;
+  const utterance = new SpeechSynthesisUtterance(text);
+
+  if (voice) {
+    utterance.voice = voice;
+    utterance.lang = voice.lang;
+  } else {
+    utterance.lang = "nl-NL";
+  }
+
+  utterance.rate = 0.92;
+  utterance.pitch = speaker === "B" && voiceA === voiceB ? 1.25 : 1;
+  return utterance;
+}
+
+async function fetchPodcastGenreEpisodes(genreKey: ReadingGenre): Promise<PodcastEpisode[]> {
+  const response = await fetch(apiUrl(`/api/podcast?genre=${genreKey}`));
+  if (!response.ok) {
+    throw new Error("Failed to read podcast episodes");
+  }
+  const data = (await response.json()) as { episodes?: PodcastEpisode[] };
+  return data.episodes ?? [];
+}
+
+function PodcastPage({ t, language }: { t: (typeof translations)[UiLanguage]; language: UiLanguage }) {
+  const [genre, setGenre] = useState<ReadingGenre>("algemeen");
+  const [episodes, setEpisodes] = useState<PodcastEpisode[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [transcriptVisible, setTranscriptVisible] = useState<Record<string, boolean>>({});
+  const [playingId, setPlayingId] = useState("");
+  const [playingTurnIndex, setPlayingTurnIndex] = useState(-1);
+  const [autoPlayingGenres, setAutoPlayingGenres] = useState(false);
+  const [autoPlayingGenreKey, setAutoPlayingGenreKey] = useState<ReadingGenre | null>(null);
+  const playTokenRef = useRef(0);
+  const autoPlayingRef = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadPodcast() {
+      if (autoPlayingRef.current) {
+        return;
+      }
+      if (!apiAvailable) {
+        setLoading(false);
+        setFailed(false);
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const list = await fetchPodcastGenreEpisodes(genre);
+        if (active) {
+          setEpisodes(list);
+          setFailed(false);
+        }
+      } catch {
+        if (active) {
+          setFailed(true);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadPodcast();
+    return () => {
+      active = false;
+    };
+  }, [genre]);
+
+  useEffect(
+    () => () => {
+      playTokenRef.current += 1;
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    },
+    []
+  );
+
+  function stopPlayback() {
+    playTokenRef.current += 1;
+    autoPlayingRef.current = false;
+    setPlayingId("");
+    setPlayingTurnIndex(-1);
+    setAutoPlayingGenres(false);
+    setAutoPlayingGenreKey(null);
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  }
+
+  async function playTurn(episode: PodcastEpisode, index: number, token: number) {
+    if (!("speechSynthesis" in window) || token !== playTokenRef.current) {
+      return;
+    }
+
+    const turn = episode.turns[index];
+    if (!turn) {
+      setPlayingId("");
+      setPlayingTurnIndex(-1);
+      return;
+    }
+
+    setPlayingTurnIndex(index);
+    const utterance = await createPodcastUtterance(turn.text, turn.speaker);
+    if (token !== playTokenRef.current) return;
+
+    utterance.onend = () => {
+      void playTurn(episode, index + 1, token);
+    };
+    utterance.onerror = () => {
+      void playTurn(episode, index + 1, token);
+    };
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function togglePlayEpisode(episode: PodcastEpisode) {
+    if (playingId === episode.id) {
+      stopPlayback();
+      return;
+    }
+
+    playTokenRef.current += 1;
+    autoPlayingRef.current = false;
+    setAutoPlayingGenres(false);
+    setAutoPlayingGenreKey(null);
+    const token = playTokenRef.current;
+    setPlayingId(episode.id);
+    void playTurn(episode, 0, token);
+  }
+
+  function toggleTranscript(id: string) {
+    setTranscriptVisible((current) => ({ ...current, [id]: !current[id] }));
+  }
+
+  async function playTurnAuto(
+    episode: PodcastEpisode,
+    index: number,
+    token: number,
+    episodesToPlay: PodcastEpisode[],
+    episodeIndex: number,
+    order: ReadingGenre[],
+    orderIndex: number
+  ) {
+    if (!("speechSynthesis" in window) || token !== playTokenRef.current) {
+      return;
+    }
+
+    const turn = episode.turns[index];
+    if (!turn) {
+      void speakEpisodesInOrder(episodesToPlay, episodeIndex + 1, token, order, orderIndex);
+      return;
+    }
+
+    setPlayingTurnIndex(index);
+    const utterance = await createPodcastUtterance(turn.text, turn.speaker);
+    if (token !== playTokenRef.current) return;
+
+    utterance.onend = () => {
+      void playTurnAuto(episode, index + 1, token, episodesToPlay, episodeIndex, order, orderIndex);
+    };
+    utterance.onerror = () => {
+      void playTurnAuto(episode, index + 1, token, episodesToPlay, episodeIndex, order, orderIndex);
+    };
+    window.speechSynthesis.speak(utterance);
+  }
+
+  async function speakEpisodesInOrder(
+    episodesToPlay: PodcastEpisode[],
+    episodeIndex: number,
+    token: number,
+    order: ReadingGenre[],
+    orderIndex: number
+  ) {
+    if (token !== playTokenRef.current) return;
+
+    const episode = episodesToPlay[episodeIndex];
+    if (!episode) {
+      void playGenreInOrder(order, orderIndex + 1, token);
+      return;
+    }
+
+    setPlayingId(episode.id);
+    void playTurnAuto(episode, 0, token, episodesToPlay, episodeIndex, order, orderIndex);
+  }
+
+  async function playGenreInOrder(order: ReadingGenre[], orderIndex: number, token: number) {
+    if (token !== playTokenRef.current) return;
+
+    const genreKey = order[orderIndex];
+    if (!genreKey) {
+      autoPlayingRef.current = false;
+      setAutoPlayingGenres(false);
+      setAutoPlayingGenreKey(null);
+      setPlayingId("");
+      setPlayingTurnIndex(-1);
+      return;
+    }
+
+    setGenre(genreKey);
+    setAutoPlayingGenreKey(genreKey);
+    setLoading(true);
+    setFailed(false);
+
+    try {
+      const list = await fetchPodcastGenreEpisodes(genreKey);
+      if (token !== playTokenRef.current) return;
+      setEpisodes(list);
+      setLoading(false);
+      void speakEpisodesInOrder(list, 0, token, order, orderIndex);
+    } catch {
+      if (token !== playTokenRef.current) return;
+      setFailed(true);
+      setLoading(false);
+      void playGenreInOrder(order, orderIndex + 1, token);
+    }
+  }
+
+  function startAutoPlayGenres() {
+    playTokenRef.current += 1;
+    const token = playTokenRef.current;
+    const startIndex = Math.max(
+      0,
+      readingGenres.findIndex((item) => item.key === genre)
+    );
+    const order = [...readingGenres.slice(startIndex), ...readingGenres.slice(0, startIndex)].map((item) => item.key);
+
+    autoPlayingRef.current = true;
+    setAutoPlayingGenres(true);
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    void playGenreInOrder(order, 0, token);
+  }
+
+  return (
+    <section className="reading-page">
+      <div className="reading-intro">
+        <span className="method-eyebrow">{t.modePodcast}</span>
+        <h2>{t.podcastTitle}</h2>
+        <p>{t.podcastSubtitle}</p>
+      </div>
+
+      <div className="reading-genres" role="tablist" aria-label={t.podcastTitle}>
+        {readingGenres.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            role="tab"
+            aria-selected={genre === item.key}
+            className={genre === item.key ? "active" : ""}
+            onClick={() => {
+              stopPlayback();
+              setGenre(item.key);
+            }}
+          >
+            {item.labels[language]}
+          </button>
+        ))}
+      </div>
+
+      <div className="reading-autoplay-controls">
+        <button
+          type="button"
+          className="mini-button"
+          onClick={autoPlayingGenres ? stopPlayback : startAutoPlayGenres}
+        >
+          {autoPlayingGenres ? <Square size={15} /> : <Volume2 size={15} />}
+          <span>{autoPlayingGenres ? t.stopAutoPlayGenres : t.autoPlayGenres}</span>
+        </button>
+        {autoPlayingGenres && autoPlayingGenreKey ? (
+          <span className="recognized">
+            {t.autoPlayingGenre(readingGenres.find((item) => item.key === autoPlayingGenreKey)?.labels[language] ?? "")}
+          </span>
+        ) : null}
+      </div>
+
+      {loading ? (
+        <p className="recognized muted">{t.podcastLoading}</p>
+      ) : failed ? (
+        <p className="recognized muted">{t.podcastFailed}</p>
+      ) : episodes.length === 0 ? (
+        <p className="recognized muted">{t.podcastEmpty}</p>
+      ) : (
+        <div className="reading-list">
+          {episodes.map((episode) => (
+            <article className="reading-card podcast-card" key={episode.id}>
+              <div className="reading-card-head">
+                <span className="reading-source">{episode.sourceName}</span>
+                {episode.sourceLink ? (
+                  <a className="reading-source-link" href={episode.sourceLink} target="_blank" rel="noreferrer">
+                    {episode.sourceHeadline}
+                  </a>
+                ) : (
+                  <span className="reading-source-link">{episode.sourceHeadline}</span>
+                )}
+              </div>
+
+              <div className="podcast-controls">
+                <button type="button" className="mini-button" onClick={() => togglePlayEpisode(episode)}>
+                  {playingId === episode.id ? <Pause size={15} /> : <Play size={15} />}
+                  <span>{playingId === episode.id ? t.podcastPause : t.podcastPlay}</span>
+                </button>
+                {playingId === episode.id ? <span className="recognized">{t.podcastPlaying}</span> : null}
+                <button type="button" className="mini-button" onClick={() => toggleTranscript(episode.id)}>
+                  <BookOpen size={15} />
+                  <span>{transcriptVisible[episode.id] ? t.podcastHideTranscript : t.podcastShowTranscript}</span>
+                </button>
+              </div>
+
+              {transcriptVisible[episode.id] ? (
+                <div className="podcast-transcript">
+                  {episode.turns.map((turn, index) => (
+                    <div
+                      className={`podcast-turn ${turn.speaker === "B" ? "speaker-b" : "speaker-a"} ${
+                        playingId === episode.id && playingTurnIndex === index ? "active" : ""
+                      }`}
+                      key={`${episode.id}-turn-${index}`}
+                    >
+                      <span className="podcast-speaker">{turn.speaker}</span>
+                      <div>
+                        <p className="podcast-turn-text">{turn.text}</p>
+                        <p className="podcast-turn-translation">{turn.translation}</p>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="grammar-explanation">
+                    <strong>{t.grammarExplanation}</strong>
+                    {episode.explanation.split("\n").map((line, index) => (
+                      <p key={`${episode.id}-explain-${index}`}>{line}</p>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function App() {
   const [mode, setMode] = useState<ViewMode>("browse");
   const [language, setLanguage] = useState<UiLanguage>(getSavedLanguage);
@@ -2243,6 +3198,22 @@ export default function App() {
   const [spokenGrammar, setSpokenGrammar] = useState<Record<string, string>>(getSavedSpokenGrammar);
   const [wordAnswers, setWordAnswers] = useState<Record<string, WordAnswerTurn[]>>(getSavedWordAnswers);
   const [studyProgress, setStudyProgress] = useState<Record<string, StudyProgress>>(getSavedStudyProgress);
+  const [syncCode, setSyncCode] = useState<string>(getSavedSyncCode);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
+  const [syncCodeDraft, setSyncCodeDraft] = useState("");
+  const [syncMessage, setSyncMessage] = useState("");
+  const syncReadyRef = useRef(false);
+  const syncPushTimerRef = useRef<number | undefined>(undefined);
+  const syncPayloadRef = useRef<SyncPayload>({
+    notebook: [],
+    autoPlayMuted: [],
+    generatedExamples: {},
+    exampleTranslations: {},
+    exampleGrammar: {},
+    spokenGrammar: {},
+    wordAnswers: {},
+    studyProgress: {}
+  });
   const [generatingId, setGeneratingId] = useState("");
   const [translatingKey, setTranslatingKey] = useState("");
   const [explainingGrammarKey, setExplainingGrammarKey] = useState("");
@@ -2262,11 +3233,22 @@ export default function App() {
   const autoTranslationRequestsRef = useRef<Set<string>>(new Set());
   const autoPlayTokenRef = useRef(0);
   const [autoPlayingNotebook, setAutoPlayingNotebook] = useState(false);
+  const [autoPlayMutedIds, setAutoPlayMutedIds] = useState<Set<string>>(getSavedAutoPlayMutedIds);
+  const [loopNotebookAutoPlay, setLoopNotebookAutoPlay] = useState(false);
+  const loopNotebookAutoPlayRef = useRef(false);
   const t = translations[language];
+
+  useEffect(() => {
+    loopNotebookAutoPlayRef.current = loopNotebookAutoPlay;
+  }, [loopNotebookAutoPlay]);
 
   useEffect(() => {
     localStorage.setItem(notebookStorageKey, JSON.stringify(Array.from(savedIds)));
   }, [savedIds]);
+
+  useEffect(() => {
+    localStorage.setItem(autoPlayMutedStorageKey, JSON.stringify(Array.from(autoPlayMutedIds)));
+  }, [autoPlayMutedIds]);
 
   useEffect(() => {
     localStorage.setItem(generatedExamplesStorageKey, JSON.stringify(generatedExamples));
@@ -2291,6 +3273,198 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(studyProgressStorageKey, JSON.stringify(studyProgress));
   }, [studyProgress]);
+
+  useEffect(() => {
+    if (syncCode) {
+      localStorage.setItem(syncCodeStorageKey, syncCode);
+    } else {
+      localStorage.removeItem(syncCodeStorageKey);
+    }
+  }, [syncCode]);
+
+  function applySyncPayload(payload: SyncPayload) {
+    setSavedIds(new Set(payload.notebook ?? []));
+    setAutoPlayMutedIds(new Set(payload.autoPlayMuted ?? []));
+    setGeneratedExamples(payload.generatedExamples ?? {});
+    setExampleTranslations(payload.exampleTranslations ?? {});
+    setExampleGrammar(payload.exampleGrammar ?? {});
+    setSpokenGrammar(payload.spokenGrammar ?? {});
+    setWordAnswers(payload.wordAnswers ?? {});
+    setStudyProgress(payload.studyProgress ?? {});
+  }
+
+  useEffect(() => {
+    syncPayloadRef.current = {
+      notebook: Array.from(savedIds),
+      autoPlayMuted: Array.from(autoPlayMutedIds),
+      generatedExamples,
+      exampleTranslations,
+      exampleGrammar,
+      spokenGrammar,
+      wordAnswers,
+      studyProgress
+    };
+  }, [
+    savedIds,
+    autoPlayMutedIds,
+    generatedExamples,
+    exampleTranslations,
+    exampleGrammar,
+    spokenGrammar,
+    wordAnswers,
+    studyProgress
+  ]);
+
+  async function pullSync(code: string) {
+    const response = await fetch(apiUrl(`/api/sync-pull?code=${encodeURIComponent(code)}`));
+    if (!response.ok) {
+      throw new Error("Sync pull failed");
+    }
+    return (await response.json()) as { updatedAt?: number; payload?: SyncPayload | null };
+  }
+
+  async function pushSync(code: string) {
+    const updatedAt = Date.now();
+    const response = await fetch(apiUrl("/api/sync-push"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, updatedAt, payload: syncPayloadRef.current })
+    });
+    if (!response.ok) {
+      throw new Error("Sync push failed");
+    }
+    localStorage.setItem(syncUpdatedAtStorageKey, String(updatedAt));
+  }
+
+  useEffect(() => {
+    const initialCode = getSavedSyncCode();
+
+    if (!initialCode || !apiAvailable) {
+      syncReadyRef.current = true;
+      return;
+    }
+
+    let active = true;
+    setSyncStatus("syncing");
+
+    (async () => {
+      try {
+        const localUpdatedAt = getSavedSyncUpdatedAt();
+        const remote = await pullSync(initialCode);
+        if (!active) return;
+        if (remote.payload && (remote.updatedAt ?? 0) > localUpdatedAt) {
+          applySyncPayload(remote.payload);
+          localStorage.setItem(syncUpdatedAtStorageKey, String(remote.updatedAt ?? 0));
+        }
+        if (active) setSyncStatus("synced");
+      } catch {
+        if (active) setSyncStatus("error");
+      } finally {
+        if (active) syncReadyRef.current = true;
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+    // Runs once on mount to reconcile against whatever sync code was already saved locally.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fast path: push soon after a meaningful, user-driven change (notebook edit or a
+  // review answer). These change rarely enough that the debounce actually settles.
+  useEffect(() => {
+    if (!syncCode || !apiAvailable || !syncReadyRef.current) return;
+
+    if (syncPushTimerRef.current) {
+      window.clearTimeout(syncPushTimerRef.current);
+    }
+
+    syncPushTimerRef.current = window.setTimeout(() => {
+      setSyncStatus("syncing");
+      pushSync(syncCode)
+        .then(() => setSyncStatus("synced"))
+        .catch(() => setSyncStatus("error"));
+    }, 2000);
+
+    return () => {
+      if (syncPushTimerRef.current) {
+        window.clearTimeout(syncPushTimerRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [syncCode, savedIds, autoPlayMutedIds, studyProgress]);
+
+  // Slow path: the AI-generated caches (translations, grammar, generated examples,
+  // word answers) can update continuously in the background, which would keep
+  // resetting a change-triggered debounce forever. A periodic sweep guarantees they
+  // still reach the cloud eventually without fighting that churn.
+  useEffect(() => {
+    if (!syncCode || !apiAvailable) return;
+
+    const interval = window.setInterval(() => {
+      if (!syncReadyRef.current) return;
+      setSyncStatus("syncing");
+      pushSync(syncCode)
+        .then(() => setSyncStatus("synced"))
+        .catch(() => setSyncStatus("error"));
+    }, 30000);
+
+    return () => window.clearInterval(interval);
+  }, [syncCode]);
+
+  function handleGenerateSyncCode() {
+    syncReadyRef.current = true;
+    localStorage.setItem(syncUpdatedAtStorageKey, "0");
+    setSyncMessage("");
+    setSyncStatus("syncing");
+    setSyncCode(generateSyncCode());
+  }
+
+  function handleDisableSync() {
+    setSyncCode("");
+    localStorage.removeItem(syncUpdatedAtStorageKey);
+    setSyncStatus("idle");
+    setSyncMessage("");
+  }
+
+  async function handleLinkSyncCode() {
+    const normalized = normalizeSyncCode(syncCodeDraft);
+    if (!normalized) return;
+
+    setSyncMessage("");
+    setSyncStatus("syncing");
+
+    try {
+      const remote = await pullSync(normalized);
+      if (remote.payload) {
+        if (!window.confirm(t.syncLinkConfirm)) {
+          setSyncStatus(syncCode ? "synced" : "idle");
+          return;
+        }
+        applySyncPayload(remote.payload);
+        localStorage.setItem(syncUpdatedAtStorageKey, String(remote.updatedAt ?? 0));
+      } else {
+        localStorage.setItem(syncUpdatedAtStorageKey, "0");
+      }
+
+      syncReadyRef.current = true;
+      setSyncCode(normalized);
+      setSyncCodeDraft("");
+      setSyncStatus("synced");
+    } catch {
+      setSyncStatus("error");
+    }
+  }
+
+  async function handleCopySyncCode() {
+    try {
+      await navigator.clipboard.writeText(syncCode);
+      setSyncMessage(t.syncCopied);
+    } catch {
+      setSyncMessage(formatSyncCode(syncCode));
+    }
+  }
 
   useEffect(() => {
     localStorage.setItem(languageStorageKey, language);
@@ -2411,6 +3585,25 @@ export default function App() {
     });
   }
 
+  function toggleAutoPlayMuted(id: string) {
+    setAutoPlayMutedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function selectOnlyFictionTop20ForAutoPlay() {
+    const keepIds = new Set(
+      words.filter((word) => word.list === "Fiction" && word.rank <= 20).map((word) => word.sourceId)
+    );
+    setAutoPlayMutedIds(new Set(words.filter((word) => !keepIds.has(word.sourceId)).map((word) => word.sourceId)));
+  }
+
   function toggleAllCards() {
     setCardsFlipped((value) => !value);
     setCardFlipOverrides({});
@@ -2497,6 +3690,10 @@ export default function App() {
 
     const word = wordsToPlay[index];
     if (!word) {
+      if (loopNotebookAutoPlayRef.current && wordsToPlay.length > 0) {
+        void playNotebookWords(wordsToPlay, 0, token, includeExampleGrammar);
+        return;
+      }
       setAutoPlayingNotebook(false);
       return;
     }
@@ -2522,7 +3719,8 @@ export default function App() {
   }
 
   function startNotebookAutoPlay() {
-    if (!matchingWords.length) return;
+    const wordsToPlay = matchingWords.filter((word) => !autoPlayMutedIds.has(word.sourceId));
+    if (!wordsToPlay.length) return;
 
     autoPlayTokenRef.current += 1;
     const token = autoPlayTokenRef.current;
@@ -2530,7 +3728,7 @@ export default function App() {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
-    void playNotebookWords(matchingWords, 0, token, includeNotebookExampleGrammar);
+    void playNotebookWords(wordsToPlay, 0, token, includeNotebookExampleGrammar);
   }
 
   function moveStudy(step: number) {
@@ -2825,6 +4023,59 @@ export default function App() {
                 ))}
               </select>
             </label>
+            <details className="sync-panel">
+              <summary>
+                <RefreshCw size={16} />
+                <span>{t.syncLabel}</span>
+                {syncCode ? (
+                  <span className={`sync-dot ${syncStatus}`} aria-hidden="true" />
+                ) : null}
+              </summary>
+              <div className="sync-panel-body">
+                <p className="sync-hint">{t.syncHint}</p>
+                {syncCode ? (
+                  <>
+                    <div className="sync-code-row">
+                      <code>{formatSyncCode(syncCode)}</code>
+                      <button type="button" className="mini-button" onClick={handleCopySyncCode}>
+                        {t.syncCopy}
+                      </button>
+                    </div>
+                    <p className="recognized muted">
+                      {syncStatus === "error"
+                        ? t.syncStatusError
+                        : syncStatus === "synced"
+                          ? t.syncStatusSynced
+                          : t.syncStatusSyncing}
+                    </p>
+                    <button type="button" className="mini-button" onClick={handleDisableSync}>
+                      {t.syncDisable}
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" className="mini-button" onClick={handleGenerateSyncCode}>
+                    {t.syncGenerate}
+                  </button>
+                )}
+                <form
+                  className="sync-link-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void handleLinkSyncCode();
+                  }}
+                >
+                  <input
+                    value={syncCodeDraft}
+                    onChange={(event) => setSyncCodeDraft(event.target.value)}
+                    placeholder={t.syncEnterCodePlaceholder}
+                  />
+                  <button type="submit" className="mini-button" disabled={!syncCodeDraft.trim()}>
+                    {t.syncLink}
+                  </button>
+                </form>
+                {syncMessage ? <p className="recognized muted">{syncMessage}</p> : null}
+              </div>
+            </details>
             <div className="example-import">
               <span className="example-status">
                 {!apiAvailable
@@ -2884,13 +4135,21 @@ export default function App() {
               <BookOpen size={17} />
               <span>{t.modeGrammar}</span>
             </button>
+            <button className={mode === "reading" ? "active" : ""} onClick={() => setMode("reading")}>
+              <Languages size={17} />
+              <span>{t.modeReading}</span>
+            </button>
+            <button className={mode === "podcast" ? "active" : ""} onClick={() => setMode("podcast")}>
+              <Podcast size={17} />
+              <span>{t.modePodcast}</span>
+            </button>
             <button className={mode === "method" ? "active" : ""} onClick={() => setMode("method")}>
               <BookOpen size={17} />
               <span>{t.modeMethod}</span>
             </button>
           </div>
 
-          {mode !== "method" && mode !== "speaking" && mode !== "grammar" ? (
+          {mode !== "method" && mode !== "speaking" && mode !== "grammar" && mode !== "reading" && mode !== "podcast" ? (
             <div className="card-controls" aria-label="Card side controls">
               <button
                 className={cardsFlipped ? "active" : ""}
@@ -2915,7 +4174,7 @@ export default function App() {
           ) : null}
         </div>
 
-        {mode !== "method" && mode !== "speaking" && mode !== "grammar" ? (
+        {mode !== "method" && mode !== "speaking" && mode !== "grammar" && mode !== "reading" && mode !== "podcast" ? (
           <div className="filters" aria-label={t.filtersLabel}>
             <Filter size={17} />
             {listNames.map((name) => (
@@ -2935,6 +4194,10 @@ export default function App() {
         <MethodPage language={language} />
       ) : mode === "grammar" ? (
         <GrammarGuidePage />
+      ) : mode === "reading" ? (
+        <DailyReadingPage t={t} language={language} />
+      ) : mode === "podcast" ? (
+        <PodcastPage t={t} language={language} />
       ) : mode === "speaking" ? (
         <SpeakingPage t={t} />
       ) : mode === "study" && studyWord ? (
@@ -3104,6 +4367,14 @@ export default function App() {
                   />
                   <span>{t.autoPlayExampleGrammar}</span>
                 </label>
+                <label className="inline-toggle">
+                  <input
+                    type="checkbox"
+                    checked={loopNotebookAutoPlay}
+                    onChange={(event) => setLoopNotebookAutoPlay(event.target.checked)}
+                  />
+                  <span>{t.loopAutoPlay}</span>
+                </label>
                 <button
                   type="button"
                   onClick={autoPlayingNotebook ? stopNotebookAutoPlay : startNotebookAutoPlay}
@@ -3111,6 +4382,26 @@ export default function App() {
                 >
                   {autoPlayingNotebook ? <Square size={16} /> : <Volume2 size={16} />}
                   <span>{autoPlayingNotebook ? t.stopAutoPlayNotebook : t.autoPlayNotebook}</span>
+                </button>
+                {autoPlayMutedIds.size > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setAutoPlayMutedIds(new Set())}
+                    disabled={autoPlayingNotebook}
+                    title={t.resetAutoPlaySelection}
+                  >
+                    <RotateCcw size={16} />
+                    <span>{t.resetAutoPlaySelection}</span>
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={selectOnlyFictionTop20ForAutoPlay}
+                  disabled={autoPlayingNotebook}
+                  title={t.selectFictionTop20AutoPlay}
+                >
+                  <CheckSquare size={16} />
+                  <span>{t.selectFictionTop20AutoPlay}</span>
                 </button>
               </div>
             ) : null}
@@ -3140,6 +4431,8 @@ export default function App() {
                       item={word}
                       saved={savedIds.has(word.sourceId)}
                       onToggle={toggleSaved}
+                      autoPlayMuted={autoPlayMutedIds.has(word.sourceId)}
+                      onToggleAutoPlayMuted={toggleAutoPlayMuted}
                       onGenerateExample={handleGenerateExample}
                       sentence={sentence}
                       exampleTranslations={translationsFor(sentenceKey)}

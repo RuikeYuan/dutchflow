@@ -12,6 +12,8 @@
     "social:draft": "node scripts/social/draft-posts.mjs",
     "social:webhook": "node scripts/social/post-webhook.mjs",
     "social:reddit": "node scripts/social/post-reddit.mjs",
+    "news:generate": "node scripts/generate-news-reading.mjs",
+    "podcast:generate": "node scripts/generate-podcast.mjs",
     "ios:add": "cap add ios",
     "ios:sync": "npm run build && cap sync ios",
     "ios:open": "cap open ios"
@@ -20,6 +22,7 @@
     "@capacitor/core": "^8.4.1",
     "@capacitor/ios": "^8.4.1",
     "@vercel/blob": "^2.6.1",
+    "@vercel/kv": "^3.0.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",

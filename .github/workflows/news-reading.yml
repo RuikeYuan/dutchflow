@@ -1,0 +1,38 @@
+name: Generate Daily Reading and Podcast
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate news-inspired reading passages
+        run: npm run news:generate
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          NEWS_READING_BLOB_PATHNAME_PREFIX: ${{ secrets.NEWS_READING_BLOB_PATHNAME_PREFIX }}
+
+      - name: Generate news-inspired podcast episodes
+        run: npm run podcast:generate
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          PODCAST_BLOB_PATHNAME_PREFIX: ${{ secrets.PODCAST_BLOB_PATHNAME_PREFIX }}

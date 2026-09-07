@@ -14,3 +14,7 @@ dist
 
 # Extracted from a copyrighted EPUB; lives in private Vercel Blob storage instead.
 src/data/bookExamples.json
+
+# Generated news-inspired reading passages and podcast episodes; trial output, not committed as source.
+data/news-reading/
+data/podcast/

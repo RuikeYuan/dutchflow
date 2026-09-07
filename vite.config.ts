@@ -483,6 +483,107 @@ export default defineConfig(({ mode }) => {
           }
         });
 
+        server.middlewares.use("/api/news-reading", async (request, response) => {
+          try {
+            const knownGenres = ["algemeen", "cultuur", "tech", "sport", "economie"];
+            const url = new URL(request.url ?? "/api/news-reading", "http://localhost");
+            const requestedGenre = url.searchParams.get("genre") ?? "algemeen";
+            const genre = knownGenres.includes(requestedGenre) ? requestedGenre : "algemeen";
+            const pathname = process.env.NEWS_READING_BLOB_PATHNAME_PREFIX
+              ? `${process.env.NEWS_READING_BLOB_PATHNAME_PREFIX}${genre}.json`
+              : `news-reading/${genre}.json`;
+            const { get } = await import("@vercel/blob");
+            const result = await get(pathname, { access: "private" }).catch(() => null);
+            const data =
+              result && result.statusCode === 200 ? await new Response(result.stream).json() : { genre, level: "", items: [] };
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify(data));
+          } catch (error) {
+            response.statusCode = 500;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(
+              JSON.stringify({ error: error instanceof Error ? error.message : "Failed to read news reading passages" })
+            );
+          }
+        });
+
+        server.middlewares.use("/api/podcast", async (request, response) => {
+          try {
+            const knownGenres = ["algemeen", "cultuur", "tech", "sport", "economie"];
+            const url = new URL(request.url ?? "/api/podcast", "http://localhost");
+            const requestedGenre = url.searchParams.get("genre") ?? "algemeen";
+            const genre = knownGenres.includes(requestedGenre) ? requestedGenre : "algemeen";
+            const pathname = process.env.PODCAST_BLOB_PATHNAME_PREFIX
+              ? `${process.env.PODCAST_BLOB_PATHNAME_PREFIX}${genre}.json`
+              : `podcast/${genre}.json`;
+            const { get } = await import("@vercel/blob");
+            const result = await get(pathname, { access: "private" }).catch(() => null);
+            const data =
+              result && result.statusCode === 200
+                ? await new Response(result.stream).json()
+                : { genre, level: "", episodes: [] };
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify(data));
+          } catch (error) {
+            response.statusCode = 500;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Failed to read podcast episodes" }));
+          }
+        });
+
+        server.middlewares.use("/api/sync-pull", async (request, response) => {
+          try {
+            const url = new URL(request.url ?? "/api/sync-pull", "http://localhost");
+            const code = (url.searchParams.get("code") ?? "").trim().toUpperCase();
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+
+            if (!/^[A-Z0-9]{6,12}$/.test(code)) {
+              response.end(JSON.stringify({ updatedAt: 0, payload: null }));
+              return;
+            }
+
+            const { kv } = await import("@vercel/kv");
+            const record = await kv.get(`sync:${code}`);
+            response.end(JSON.stringify(record ?? { updatedAt: 0, payload: null }));
+          } catch (error) {
+            response.statusCode = 500;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Failed to pull sync data" }));
+          }
+        });
+
+        server.middlewares.use("/api/sync-push", async (request, response) => {
+          if (request.method !== "POST") {
+            response.statusCode = 405;
+            response.end("Method not allowed");
+            return;
+          }
+
+          try {
+            const body = await readJsonBody(request);
+            const code = String(body.code ?? "")
+              .trim()
+              .toUpperCase();
+            const updatedAt = Number(body.updatedAt);
+            const payload = body.payload;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+
+            if (!/^[A-Z0-9]{6,12}$/.test(code) || !Number.isFinite(updatedAt) || !payload || typeof payload !== "object") {
+              response.statusCode = 400;
+              response.end(JSON.stringify({ error: "Invalid sync request" }));
+              return;
+            }
+
+            const { kv } = await import("@vercel/kv");
+            await kv.set(`sync:${code}`, { updatedAt, payload }, { ex: 60 * 60 * 24 * 365 });
+            response.end(JSON.stringify({ updatedAt }));
+          } catch (error) {
+            response.statusCode = 500;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Failed to push sync data" }));
+          }
+        });
+
         server.middlewares.use("/api/speaking-practice", async (request, response) => {
           if (request.method !== "POST") {
             response.statusCode = 405;
