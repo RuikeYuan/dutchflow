@@ -1552,6 +1552,73 @@ h1 {
   margin-top: 14px;
 }
 
+.reading-autoplay-button {
+  min-height: 38px;
+  border: 1px solid var(--teal);
+  border-radius: 999px;
+  background: var(--teal);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  white-space: nowrap;
+  transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
+}
+
+.reading-autoplay-button:hover {
+  background: #115e59;
+}
+
+.reading-autoplay-button:active {
+  transform: scale(0.97);
+}
+
+.reading-autoplay-button.playing {
+  background: var(--rose);
+  border-color: var(--rose);
+}
+
+.reading-autoplay-button.playing:hover {
+  background: #9f1239;
+}
+
+.reading-autoplay-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.08);
+  color: var(--teal);
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.reading-autoplay-status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--teal);
+  animation: reading-autoplay-pulse 1200ms ease-in-out infinite;
+}
+
+@keyframes reading-autoplay-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.7);
+  }
+}
+
 .reading-list {
   margin-top: 22px;
   display: flex;

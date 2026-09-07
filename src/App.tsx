@@ -2745,14 +2745,14 @@ function DailyReadingPage({ t, language }: { t: (typeof translations)[UiLanguage
       <div className="reading-autoplay-controls">
         <button
           type="button"
-          className="mini-button"
+          className={`reading-autoplay-button ${autoPlayingGenres ? "playing" : ""}`}
           onClick={autoPlayingGenres ? stopAutoPlayGenres : startAutoPlayGenres}
         >
           {autoPlayingGenres ? <Square size={15} /> : <Volume2 size={15} />}
           <span>{autoPlayingGenres ? t.stopAutoPlayGenres : t.autoPlayGenres}</span>
         </button>
         {autoPlayingGenres && autoPlayingGenreKey ? (
-          <span className="recognized">
+          <span className="reading-autoplay-status">
             {t.autoPlayingGenre(readingGenres.find((item) => item.key === autoPlayingGenreKey)?.labels[language] ?? "")}
           </span>
         ) : null}
@@ -3106,14 +3106,14 @@ function PodcastPage({ t, language }: { t: (typeof translations)[UiLanguage]; la
       <div className="reading-autoplay-controls">
         <button
           type="button"
-          className="mini-button"
+          className={`reading-autoplay-button ${autoPlayingGenres ? "playing" : ""}`}
           onClick={autoPlayingGenres ? stopPlayback : startAutoPlayGenres}
         >
           {autoPlayingGenres ? <Square size={15} /> : <Volume2 size={15} />}
           <span>{autoPlayingGenres ? t.stopAutoPlayGenres : t.autoPlayGenres}</span>
         </button>
         {autoPlayingGenres && autoPlayingGenreKey ? (
-          <span className="recognized">
+          <span className="reading-autoplay-status">
             {t.autoPlayingGenre(readingGenres.find((item) => item.key === autoPlayingGenreKey)?.labels[language] ?? "")}
           </span>
         ) : null}
