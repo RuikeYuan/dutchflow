@@ -207,9 +207,6 @@ const translations: Record<
     speakingError: string;
     exampleSentence: string;
     playSentence: string;
-    startRepeat: string;
-    stopRepeat: string;
-    youSaid: string;
     speechUnsupported: string;
     examplesReady: (count: number) => string;
     examplesLoading: string;
@@ -333,9 +330,6 @@ const translations: Record<
     speakingError: "AI 口语陪练暂时不可用，请检查 Gemini 配置",
     exampleSentence: "例句跟读",
     playSentence: "播放例句",
-    startRepeat: "开始跟读",
-    stopRepeat: "停止",
-    youSaid: "你读的是",
     speechUnsupported: "当前浏览器不支持语音识别",
     examplesReady: (count) => `已导入 ${count} 条书中例句`,
     examplesLoading: "正在从本地 EPUB 读取书中例句...",
@@ -477,9 +471,6 @@ const translations: Record<
     speakingError: "AI speaking practice is unavailable. Check Gemini config",
     exampleSentence: "Sentence shadowing",
     playSentence: "Play sentence",
-    startRepeat: "Start repeat",
-    stopRepeat: "Stop",
-    youSaid: "You said",
     speechUnsupported: "Speech recognition is not supported in this browser",
     examplesReady: (count) => `${count} book examples imported`,
     examplesLoading: "Reading book examples from the local EPUB...",
@@ -621,9 +612,6 @@ const translations: Record<
     speakingError: "AI-spreekpartner is niet beschikbaar. Controleer Gemini-configuratie",
     exampleSentence: "Zin nazeggen",
     playSentence: "Zin afspelen",
-    startRepeat: "Nazeggen starten",
-    stopRepeat: "Stoppen",
-    youSaid: "Je zei",
     speechUnsupported: "Spraakherkenning wordt niet ondersteund in deze browser",
     examplesReady: (count) => `${count} voorbeeldzinnen geïmporteerd`,
     examplesLoading: "Voorbeeldzinnen uit de lokale EPUB lezen...",
@@ -765,9 +753,6 @@ const translations: Record<
     speakingError: "La práctica oral con IA no está disponible. Revisa Gemini",
     exampleSentence: "Repetir una frase",
     playSentence: "Reproducir frase",
-    startRepeat: "Empezar a repetir",
-    stopRepeat: "Detener",
-    youSaid: "Has dicho",
     speechUnsupported: "Este navegador no admite reconocimiento de voz",
     examplesReady: (count) => `${count} ejemplos importados`,
     examplesLoading: "Leyendo ejemplos desde el EPUB local...",
@@ -909,9 +894,6 @@ const translations: Record<
     speakingError: "KI-Sprachtraining ist nicht verfügbar. Prüfe Gemini",
     exampleSentence: "Satz nachsprechen",
     playSentence: "Satz abspielen",
-    startRepeat: "Nachsprechen starten",
-    stopRepeat: "Stoppen",
-    youSaid: "Du hast gesagt",
     speechUnsupported: "Dieser Browser unterstützt keine Spracherkennung",
     examplesReady: (count) => `${count} Beispielsätze importiert`,
     examplesLoading: "Beispiele aus der lokalen EPUB werden gelesen...",
@@ -1773,45 +1755,7 @@ function RepeatPractice({
   onExplainGrammar: (sentenceKey: string, sentence: string) => void;
   t: (typeof translations)[UiLanguage];
 }) {
-  const [listening, setListening] = useState(false);
-  const [recognized, setRecognized] = useState("");
-  const [message, setMessage] = useState("");
   const [targetLanguage, setTargetLanguage] = useState<ExampleTranslationLanguage>(defaultExampleTranslationLanguage);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-
-  function startRepeat() {
-    if (listening) {
-      recognitionRef.current?.stop();
-      setListening(false);
-      return;
-    }
-
-    const Recognition = window.SpeechRecognition ?? window.webkitSpeechRecognition;
-    if (!Recognition) {
-      setMessage(t.speechUnsupported);
-      return;
-    }
-
-    const recognition = new Recognition();
-    recognition.lang = "nl-NL";
-    recognition.interimResults = false;
-    recognition.continuous = false;
-    recognition.onresult = (event) => {
-      const lastResult = event.results[event.results.length - 1];
-      setRecognized(lastResult?.[0]?.transcript ?? "");
-      setMessage("");
-    };
-    recognition.onerror = () => {
-      setListening(false);
-    };
-    recognition.onend = () => {
-      setListening(false);
-      recognitionRef.current = null;
-    };
-    recognitionRef.current = recognition;
-    setListening(true);
-    recognition.start();
-  }
 
   return (
     <div className="repeat-box">
@@ -1823,12 +1767,6 @@ function RepeatPractice({
         </button>
       </div>
       <InteractiveSentence sentence={sentence} t={t} />
-      <div className="repeat-actions">
-        <button className="mini-button" type="button" onClick={startRepeat}>
-          {listening ? <Square size={14} /> : <Mic size={15} />}
-          <span>{listening ? t.stopRepeat : t.startRepeat}</span>
-        </button>
-      </div>
       <div className="translation-tools">
         <select
           value={targetLanguage}
@@ -1879,12 +1817,6 @@ function RepeatPractice({
         </div>
       ) : null}
       {translationMessage ? <p className="recognized muted">{translationMessage}</p> : null}
-      {recognized ? (
-        <p className="recognized">
-          <strong>{t.youSaid}:</strong> {recognized}
-        </p>
-      ) : null}
-      {message ? <p className="recognized muted">{message}</p> : null}
     </div>
   );
 }

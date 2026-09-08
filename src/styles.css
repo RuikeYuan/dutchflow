@@ -1433,8 +1433,7 @@ h1 {
   padding: 12px;
 }
 
-.repeat-head,
-.repeat-actions {
+.repeat-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2264,7 +2263,6 @@ a.reading-source-link:hover {
   }
 
   .repeat-head,
-  .repeat-actions,
   .ai-example-row,
   .translation-tools,
   .reading-actions,
