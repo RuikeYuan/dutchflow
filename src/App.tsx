@@ -119,6 +119,8 @@ const translations: Record<
     statsNotebook: string;
     statsCurrent: string;
     searchPlaceholder: string;
+    jumpToRankPlaceholder: string;
+    jumpToRankButton: string;
     viewLabel: string;
     modeBrowse: string;
     modeNotebook: string;
@@ -242,6 +244,8 @@ const translations: Record<
     statsNotebook: "单词本",
     statsCurrent: "当前",
     searchPlaceholder: "搜索荷兰语、英文释义或词性，输入编号可跳转",
+    jumpToRankPlaceholder: "跳转到第几个",
+    jumpToRankButton: "跳转",
     viewLabel: "视图",
     modeBrowse: "词频",
     modeNotebook: "单词本",
@@ -383,6 +387,8 @@ const translations: Record<
     statsNotebook: "Notebook",
     statsCurrent: "Current",
     searchPlaceholder: "Search Dutch, English meaning, or part of speech — type a number to jump to that rank",
+    jumpToRankPlaceholder: "Jump to #",
+    jumpToRankButton: "Jump",
     viewLabel: "View",
     modeBrowse: "Frequency",
     modeNotebook: "Notebook",
@@ -524,6 +530,8 @@ const translations: Record<
     statsNotebook: "Woordenlijst",
     statsCurrent: "Huidig",
     searchPlaceholder: "Zoek Nederlands, Engelse betekenis of woordsoort — typ een nummer om te springen",
+    jumpToRankPlaceholder: "Ga naar #",
+    jumpToRankButton: "Ga",
     viewLabel: "Weergave",
     modeBrowse: "Frequentie",
     modeNotebook: "Woordenlijst",
@@ -665,6 +673,8 @@ const translations: Record<
     statsNotebook: "Cuaderno",
     statsCurrent: "Actual",
     searchPlaceholder: "Buscar neerlandés, significado en inglés o categoría; escribe un número para saltar",
+    jumpToRankPlaceholder: "Ir al #",
+    jumpToRankButton: "Ir",
     viewLabel: "Vista",
     modeBrowse: "Frecuencia",
     modeNotebook: "Cuaderno",
@@ -806,6 +816,8 @@ const translations: Record<
     statsNotebook: "Wortliste",
     statsCurrent: "Aktuell",
     searchPlaceholder: "Niederländisch, englische Bedeutung oder Wortart suchen – Zahl eingeben zum Springen",
+    jumpToRankPlaceholder: "Springe zu #",
+    jumpToRankButton: "Springen",
     viewLabel: "Ansicht",
     modeBrowse: "Frequenz",
     modeNotebook: "Wortliste",
@@ -1876,6 +1888,7 @@ function WordCard({
   flipped,
   cardMeaningLanguage,
   onToggleFlip,
+  highlighted,
   t
 }: {
   item: DutchWord;
@@ -1901,6 +1914,7 @@ function WordCard({
   flipped: boolean;
   cardMeaningLanguage: CardMeaningLanguage;
   onToggleFlip: (id: string) => void;
+  highlighted: boolean;
   t: (typeof translations)[UiLanguage];
 }) {
   const meaning = cardMeaningFor(item, cardMeaningLanguage) || t.noTranslation;
@@ -1919,7 +1933,7 @@ function WordCard({
   }
 
   return (
-    <article className="word-card">
+    <article id={`word-${item.sourceId}`} className={`word-card ${highlighted ? "jump-highlight" : ""}`}>
       <div className="word-card-top">
         <div className={`word-main ${flipped ? "is-flipped" : ""}`}>
           <div className="meta-row">
@@ -3126,6 +3140,9 @@ export default function App() {
   const [mode, setMode] = useState<ViewMode>("browse");
   const [language, setLanguage] = useState<UiLanguage>(getSavedLanguage);
   const [query, setQuery] = useState("");
+  const [jumpValue, setJumpValue] = useState("");
+  const [highlightedWordId, setHighlightedWordId] = useState<string | null>(null);
+  const skipVisibleResetRef = useRef(false);
   const [selectedList, setSelectedList] = useState("All");
   const [savedIds, setSavedIds] = useState<Set<string>>(getSavedIds);
   const [bookExamples, setBookExamples] = useState<Record<string, string>>({});
@@ -3467,8 +3484,37 @@ export default function App() {
   );
 
   useEffect(() => {
+    if (skipVisibleResetRef.current) {
+      skipVisibleResetRef.current = false;
+      return;
+    }
     setVisibleLimit(180);
   }, [mode, query, selectedList]);
+
+  useEffect(() => {
+    if (!highlightedWordId) return;
+    const el = document.getElementById(`word-${highlightedWordId}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const timeout = setTimeout(() => setHighlightedWordId(null), 2000);
+    return () => clearTimeout(timeout);
+  }, [highlightedWordId]);
+
+  function jumpToRank() {
+    const rankNumber = Number(jumpValue.trim());
+    if (!Number.isFinite(rankNumber) || rankNumber <= 0) return;
+
+    const source = mode === "notebook" ? savedWords : words;
+    const filtered = source.filter((word) => selectedList === "All" || word.list === selectedList);
+    const targetIndex = filtered.findIndex((word) => word.rank === rankNumber);
+    if (targetIndex === -1) return;
+
+    if (query !== "") {
+      skipVisibleResetRef.current = true;
+      setQuery("");
+    }
+    setVisibleLimit((current) => Math.max(current, targetIndex + 20));
+    setHighlightedWordId(filtered[targetIndex].sourceId);
+  }
 
   const matchingWords = useMemo(() => {
     const source = mode === "notebook" ? savedWords : words;
@@ -4059,6 +4105,26 @@ export default function App() {
             />
           </label>
 
+          <form
+            className="jump-box"
+            onSubmit={(event) => {
+              event.preventDefault();
+              jumpToRank();
+            }}
+          >
+            <input
+              type="number"
+              min={1}
+              value={jumpValue}
+              onChange={(event) => setJumpValue(event.target.value)}
+              placeholder={t.jumpToRankPlaceholder}
+            />
+            <button type="submit" disabled={!jumpValue.trim()}>
+              <ChevronRight size={16} />
+              <span>{t.jumpToRankButton}</span>
+            </button>
+          </form>
+
           <div className="mode-switch" aria-label={t.viewLabel}>
             <button className={mode === "browse" ? "active" : ""} onClick={() => setMode("browse")}>
               <Layers3 size={17} />
@@ -4402,6 +4468,7 @@ export default function App() {
                       flipped={isCardFlipped(word.sourceId)}
                       cardMeaningLanguage={cardMeaningLanguage}
                       onToggleFlip={toggleCardFlip}
+                      highlighted={highlightedWordId === word.sourceId}
                       t={t}
                     />
                   );
