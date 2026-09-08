@@ -176,6 +176,7 @@ const translations: Record<
     showingResults: (shown: number, total: number) => string;
     loadMore: string;
     clearNotebook: string;
+    addAllToNotebook: string;
     emptyState: string;
     previous: string;
     next: string;
@@ -301,6 +302,7 @@ const translations: Record<
     showingResults: (shown, total) => `显示 ${shown} / ${total}`,
     loadMore: "加载更多",
     clearNotebook: "清空单词本",
+    addAllToNotebook: "全部加入单词本",
     emptyState: "没有匹配的单词。",
     previous: "上一个",
     next: "下一个",
@@ -444,6 +446,7 @@ const translations: Record<
     showingResults: (shown, total) => `Showing ${shown} / ${total}`,
     loadMore: "Load more",
     clearNotebook: "Clear notebook",
+    addAllToNotebook: "Add all to notebook",
     emptyState: "No matching words.",
     previous: "Previous",
     next: "Next",
@@ -587,6 +590,7 @@ const translations: Record<
     showingResults: (shown, total) => `${shown} / ${total} getoond`,
     loadMore: "Meer laden",
     clearNotebook: "Woordenlijst wissen",
+    addAllToNotebook: "Alles toevoegen aan woordenlijst",
     emptyState: "Geen passende woorden.",
     previous: "Vorige",
     next: "Volgende",
@@ -730,6 +734,7 @@ const translations: Record<
     showingResults: (shown, total) => `Mostrando ${shown} / ${total}`,
     loadMore: "Cargar más",
     clearNotebook: "Vaciar cuaderno",
+    addAllToNotebook: "Añadir todo al cuaderno",
     emptyState: "No hay palabras coincidentes.",
     previous: "Anterior",
     next: "Siguiente",
@@ -873,6 +878,7 @@ const translations: Record<
     showingResults: (shown, total) => `${shown} / ${total} angezeigt`,
     loadMore: "Mehr laden",
     clearNotebook: "Wortliste leeren",
+    addAllToNotebook: "Alles zur Wortliste hinzufügen",
     emptyState: "Keine passenden Wörter.",
     previous: "Zurück",
     next: "Weiter",
@@ -3585,6 +3591,10 @@ export default function App() {
     });
   }
 
+  function addAllWordsToNotebook() {
+    setSavedIds(new Set(words.map((word) => word.sourceId)));
+  }
+
   function toggleAutoPlayMuted(id: string) {
     setAutoPlayMutedIds((current) => {
       const next = new Set(current);
@@ -4415,6 +4425,12 @@ export default function App() {
               >
                 <RotateCcw size={16} />
                 <span>{t.clearNotebook}</span>
+              </button>
+            ) : null}
+            {mode === "browse" && savedIds.size < words.length ? (
+              <button type="button" onClick={addAllWordsToNotebook}>
+                <BookmarkCheck size={16} />
+                <span>{t.addAllToNotebook}</span>
               </button>
             ) : null}
           </div>
