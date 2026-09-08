@@ -241,7 +241,7 @@ const translations: Record<
     statsWords: "词库",
     statsNotebook: "单词本",
     statsCurrent: "当前",
-    searchPlaceholder: "搜索荷兰语、英文释义或词性",
+    searchPlaceholder: "搜索荷兰语、英文释义或词性，输入编号可跳转",
     viewLabel: "视图",
     modeBrowse: "词频",
     modeNotebook: "单词本",
@@ -382,7 +382,7 @@ const translations: Record<
     statsWords: "Words",
     statsNotebook: "Notebook",
     statsCurrent: "Current",
-    searchPlaceholder: "Search Dutch, English meaning, or part of speech",
+    searchPlaceholder: "Search Dutch, English meaning, or part of speech — type a number to jump to that rank",
     viewLabel: "View",
     modeBrowse: "Frequency",
     modeNotebook: "Notebook",
@@ -523,7 +523,7 @@ const translations: Record<
     statsWords: "Woorden",
     statsNotebook: "Woordenlijst",
     statsCurrent: "Huidig",
-    searchPlaceholder: "Zoek Nederlands, Engelse betekenis of woordsoort",
+    searchPlaceholder: "Zoek Nederlands, Engelse betekenis of woordsoort — typ een nummer om te springen",
     viewLabel: "Weergave",
     modeBrowse: "Frequentie",
     modeNotebook: "Woordenlijst",
@@ -664,7 +664,7 @@ const translations: Record<
     statsWords: "Palabras",
     statsNotebook: "Cuaderno",
     statsCurrent: "Actual",
-    searchPlaceholder: "Buscar neerlandés, significado en inglés o categoría",
+    searchPlaceholder: "Buscar neerlandés, significado en inglés o categoría; escribe un número para saltar",
     viewLabel: "Vista",
     modeBrowse: "Frecuencia",
     modeNotebook: "Cuaderno",
@@ -805,7 +805,7 @@ const translations: Record<
     statsWords: "Wörter",
     statsNotebook: "Wortliste",
     statsCurrent: "Aktuell",
-    searchPlaceholder: "Niederländisch, englische Bedeutung oder Wortart suchen",
+    searchPlaceholder: "Niederländisch, englische Bedeutung oder Wortart suchen – Zahl eingeben zum Springen",
     viewLabel: "Ansicht",
     modeBrowse: "Frequenz",
     modeNotebook: "Wortliste",
@@ -3473,10 +3473,13 @@ export default function App() {
   const matchingWords = useMemo(() => {
     const source = mode === "notebook" ? savedWords : words;
     const needle = normalize(query);
+    const trimmedQuery = query.trim();
+    const rankQuery = /^\d+$/.test(trimmedQuery) ? Number(trimmedQuery) : null;
     return source
       .filter((word) => selectedList === "All" || word.list === selectedList)
       .filter((word) => {
         if (!needle) return true;
+        if (rankQuery !== null && word.rank === rankQuery) return true;
         return (
           normalize(word.word).includes(needle) ||
           normalize(word.translation).includes(needle) ||
