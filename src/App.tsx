@@ -22,7 +22,13 @@ import {
   Volume2
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { grammarGuideChapters, grammarGuideParts, type GrammarChapter, type GrammarNode } from "./data/grammarGuide";
+import {
+  grammarGuideChapters,
+  grammarGuideParts,
+  type GrammarChapter,
+  type GrammarNode,
+  type GrammarPart
+} from "./data/grammarGuide";
 import frequencyWords from "./data/frequencyWords.json";
 
 type DutchWord = {
@@ -40,7 +46,7 @@ type ViewMode = "landing" | "browse" | "notebook" | "study" | "speaking" | "gram
 type UiLanguage = "zh" | "en" | "nl" | "es" | "de";
 type ExampleTranslationLanguage = "zh" | "en" | "de";
 type CardMeaningLanguage = "en" | "zh";
-type SpeechLanguage = "zh-CN" | "en-US" | "nl-NL";
+type SpeechLanguage = "zh-CN" | "en-US" | "nl-NL" | "es-ES" | "de-DE";
 type SpeechItem = { text: string; language: SpeechLanguage };
 type WordAnswerTurn = {
   role: "user" | "assistant";
@@ -278,6 +284,14 @@ const translations: Record<
     grammarNodeExplaining: string;
     grammarNodeExplainFailed: string;
     grammarNodeDetailedTitle: string;
+    grammarViewMindmap: string;
+    grammarViewWalk: string;
+    grammarWalkAutoRead: string;
+    grammarWalkPrev: string;
+    grammarWalkNext: string;
+    grammarWalkReadAloud: string;
+    grammarWalkStopReading: string;
+    grammarWalkChapterLabel: string;
     askWord: string;
     askingWord: string;
     wordQuestionPlaceholder: string;
@@ -454,6 +468,14 @@ const translations: Record<
     grammarNodeExplaining: "详细讲解生成中…",
     grammarNodeExplainFailed: "生成失败，请检查 Gemini 配置后重试",
     grammarNodeDetailedTitle: "详细讲解",
+    grammarViewMindmap: "思维导图",
+    grammarViewWalk: "逐条精读",
+    grammarWalkAutoRead: "翻页自动朗读",
+    grammarWalkPrev: "上一条",
+    grammarWalkNext: "下一条",
+    grammarWalkReadAloud: "朗读",
+    grammarWalkStopReading: "停止朗读",
+    grammarWalkChapterLabel: "跳转到章节",
     askWord: "问 AI",
     askingWord: "回答中...",
     wordQuestionPlaceholder: "问这个词的语法、用法、搭配、区别...",
@@ -655,6 +677,14 @@ const translations: Record<
     grammarNodeExplaining: "Generating a detailed explanation…",
     grammarNodeExplainFailed: "Failed to generate. Check the LLM config and try again",
     grammarNodeDetailedTitle: "Detailed explanation",
+    grammarViewMindmap: "Mind map",
+    grammarViewWalk: "Read through",
+    grammarWalkAutoRead: "Auto-read on page turn",
+    grammarWalkPrev: "Previous",
+    grammarWalkNext: "Next",
+    grammarWalkReadAloud: "Read aloud",
+    grammarWalkStopReading: "Stop reading",
+    grammarWalkChapterLabel: "Jump to chapter",
     askWord: "Ask AI",
     askingWord: "Answering...",
     wordQuestionPlaceholder: "Ask grammar, usage, collocations, nuance...",
@@ -857,6 +887,14 @@ const translations: Record<
     grammarNodeExplaining: "Gedetailleerde uitleg wordt gegenereerd…",
     grammarNodeExplainFailed: "Genereren mislukt. Controleer Gemini en probeer opnieuw",
     grammarNodeDetailedTitle: "Gedetailleerde uitleg",
+    grammarViewMindmap: "Mindmap",
+    grammarViewWalk: "Doorlezen",
+    grammarWalkAutoRead: "Automatisch voorlezen bij pagineren",
+    grammarWalkPrev: "Vorige",
+    grammarWalkNext: "Volgende",
+    grammarWalkReadAloud: "Voorlezen",
+    grammarWalkStopReading: "Stop met voorlezen",
+    grammarWalkChapterLabel: "Ga naar hoofdstuk",
     askWord: "Vraag AI",
     askingWord: "Antwoord...",
     wordQuestionPlaceholder: "Vraag naar grammatica, gebruik, combinaties...",
@@ -1059,6 +1097,14 @@ const translations: Record<
     grammarNodeExplaining: "Generando una explicación detallada…",
     grammarNodeExplainFailed: "No se pudo generar. Revisa Gemini e inténtalo de nuevo",
     grammarNodeDetailedTitle: "Explicación detallada",
+    grammarViewMindmap: "Mapa mental",
+    grammarViewWalk: "Lectura completa",
+    grammarWalkAutoRead: "Leer en voz alta al pasar de página",
+    grammarWalkPrev: "Anterior",
+    grammarWalkNext: "Siguiente",
+    grammarWalkReadAloud: "Leer en voz alta",
+    grammarWalkStopReading: "Detener lectura",
+    grammarWalkChapterLabel: "Ir al capítulo",
     askWord: "Preguntar IA",
     askingWord: "Respondiendo...",
     wordQuestionPlaceholder: "Pregunta gramática, uso, matices...",
@@ -1261,6 +1307,14 @@ const translations: Record<
     grammarNodeExplaining: "Ausführliche Erklärung wird erstellt…",
     grammarNodeExplainFailed: "Erstellung fehlgeschlagen. Prüfe Gemini und versuche es erneut",
     grammarNodeDetailedTitle: "Ausführliche Erklärung",
+    grammarViewMindmap: "Mindmap",
+    grammarViewWalk: "Durchlesen",
+    grammarWalkAutoRead: "Beim Blättern automatisch vorlesen",
+    grammarWalkPrev: "Zurück",
+    grammarWalkNext: "Weiter",
+    grammarWalkReadAloud: "Vorlesen",
+    grammarWalkStopReading: "Vorlesen stoppen",
+    grammarWalkChapterLabel: "Zu Kapitel springen",
     askWord: "KI fragen",
     askingWord: "Antwortet...",
     wordQuestionPlaceholder: "Frage zu Grammatik, Gebrauch, Nuancen...",
@@ -1760,14 +1814,17 @@ async function createUtterance(text: string, language: SpeechLanguage) {
   return utterance;
 }
 
-function notebookSpeechItems(wordsToPlay: DutchWord[]) {
-  return wordsToPlay.flatMap((word) =>
-    [
-      { text: word.translationZh, language: "zh-CN" as const },
-      { text: word.translation, language: "en-US" as const },
-      { text: cleanWord(word.word), language: "nl-NL" as const }
-    ].filter((item): item is SpeechItem => Boolean(item.text?.trim()))
-  );
+function notebookSpeechItems(wordsToPlay: DutchWord[]): SpeechItem[] {
+  return wordsToPlay.flatMap((word) => {
+    const raw: { text: string | undefined; language: SpeechLanguage }[] = [
+      { text: word.translationZh, language: "zh-CN" },
+      { text: word.translation, language: "en-US" },
+      { text: cleanWord(word.word), language: "nl-NL" }
+    ];
+    return raw
+      .filter((item): item is { text: string; language: SpeechLanguage } => Boolean(item.text?.trim()))
+      .map((item) => ({ text: item.text, language: item.language }));
+  });
 }
 
 function grammarExplanationSpeechItems(explanation: string): SpeechItem[] {
@@ -1867,6 +1924,21 @@ function grammarExplanationSpeechItemsForWord(explanation: string, word: DutchWo
 
   items.push(...splitEnglishWithDutchTerms(explanation.slice(lastIndex), dutchTerms));
   return items.length ? items : [{ text: explanation, language: "en-US" as const }];
+}
+
+function speechLanguageForUiLanguage(language: UiLanguage): SpeechLanguage {
+  switch (language) {
+    case "zh":
+      return "zh-CN";
+    case "nl":
+      return "nl-NL";
+    case "es":
+      return "es-ES";
+    case "de":
+      return "de-DE";
+    default:
+      return "en-US";
+  }
 }
 
 function getSavedIds() {
@@ -2384,6 +2456,7 @@ function WordCard({
 }
 
 function GrammarGuidePage({ t, language }: { t: (typeof translations)[UiLanguage]; language: UiLanguage }) {
+  const [view, setView] = useState<"mindmap" | "walk">("mindmap");
   const [selectedChapterId, setSelectedChapterId] = useState(grammarGuideChapters[0]?.id ?? "");
   const selectedChapter = grammarGuideChapters.find((chapter) => chapter.id === selectedChapterId) ?? grammarGuideChapters[0];
 
@@ -2442,56 +2515,301 @@ function GrammarGuidePage({ t, language }: { t: (typeof translations)[UiLanguage
           <span className="method-eyebrow">中文语法教练</span>
           <h2>荷兰语语法思维导图</h2>
           <p>
-            按《荷兰语语法自学教程》的结构整理成四大模块、十六个章节。点击导图节点进入章节页，先抓规则骨架，再点进具体知识点看 AI 详细讲解。
+            整理成四大模块、十六个章节、{grammarWalkPages.length} 个知识点。点击导图节点先抓规则骨架，或切换到逐条精读模式一条一条看 AI
+            详细讲解并配语音朗读。
           </p>
         </div>
-        <div className="grammar-source-note">
-          <strong>学习设计</strong>
-          <span>词法 → 句法 → 时态 → 拼写</span>
-          <span>每章：目标 / 易错点 / 规则导图</span>
+        <div className="grammar-view-toggle" role="tablist" aria-label={t.viewLabel}>
+          <button type="button" className={view === "mindmap" ? "active" : ""} onClick={() => setView("mindmap")}>
+            {t.grammarViewMindmap}
+          </button>
+          <button type="button" className={view === "walk" ? "active" : ""} onClick={() => setView("walk")}>
+            {t.grammarViewWalk}
+          </button>
         </div>
       </div>
 
-      <div className="grammar-layout">
-        <div className="grammar-map" aria-label="Grammar mind map">
-          <div className="grammar-root">荷兰语语法</div>
-          <div className="grammar-part-grid">
-            {grammarGuideParts.map((part) => (
-              <article className="grammar-part" key={part.id}>
-                <div className="grammar-part-head">
-                  <h3>{part.title}</h3>
-                  <span>{part.pageRange}</span>
-                </div>
-                <p>{part.theme}</p>
-                <div className="grammar-chapter-list">
-                  {part.chapters.map((chapter) => (
-                    <button
-                      className={chapter.id === selectedChapter.id ? "active" : ""}
-                      key={chapter.id}
-                      type="button"
-                      onClick={() => setSelectedChapterId(chapter.id)}
-                    >
-                      <span>{chapter.title}</span>
-                      <small>{chapter.pageRange}</small>
-                    </button>
-                  ))}
-                </div>
-              </article>
-            ))}
+      {view === "mindmap" ? (
+        <div className="grammar-layout">
+          <div className="grammar-map" aria-label="Grammar mind map">
+            <div className="grammar-root">荷兰语语法</div>
+            <div className="grammar-part-grid">
+              {grammarGuideParts.map((part) => (
+                <article className="grammar-part" key={part.id}>
+                  <div className="grammar-part-head">
+                    <h3>{part.title}</h3>
+                    <span>{part.pageRange}</span>
+                  </div>
+                  <p>{part.theme}</p>
+                  <div className="grammar-chapter-list">
+                    {part.chapters.map((chapter) => (
+                      <button
+                        className={chapter.id === selectedChapter.id ? "active" : ""}
+                        key={chapter.id}
+                        type="button"
+                        onClick={() => setSelectedChapterId(chapter.id)}
+                      >
+                        <span>{chapter.title}</span>
+                        <small>{chapter.pageRange}</small>
+                      </button>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <GrammarChapterPanel
-          chapter={selectedChapter}
+          <GrammarChapterPanel
+            chapter={selectedChapter}
+            t={t}
+            nodeExplanations={nodeExplanations}
+            explainingNodeKey={explainingNodeKey}
+            nodeExplainErrors={nodeExplainErrors}
+            language={language}
+            onExplainNode={handleExplainGrammarNode}
+          />
+        </div>
+      ) : (
+        <GrammarWalkReader
           t={t}
+          language={language}
           nodeExplanations={nodeExplanations}
           explainingNodeKey={explainingNodeKey}
           nodeExplainErrors={nodeExplainErrors}
-          language={language}
           onExplainNode={handleExplainGrammarNode}
         />
-      </div>
+      )}
     </section>
+  );
+}
+
+function GrammarWalkReader({
+  t,
+  language,
+  nodeExplanations,
+  explainingNodeKey,
+  nodeExplainErrors,
+  onExplainNode
+}: {
+  t: (typeof translations)[UiLanguage];
+  language: UiLanguage;
+  nodeExplanations: Record<string, string>;
+  explainingNodeKey: string;
+  nodeExplainErrors: Record<string, string>;
+  onExplainNode: (entry: GrammarNodeEntry) => void;
+}) {
+  const [pageIndex, setPageIndex] = useState(() => {
+    try {
+      const saved = Number(localStorage.getItem("grammarWalkPageIndex"));
+      return Number.isFinite(saved) && saved >= 0 && saved < grammarWalkPages.length ? saved : 0;
+    } catch {
+      return 0;
+    }
+  });
+  const [autoRead, setAutoRead] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const speechTokenRef = useRef(0);
+  const autoReadRef = useRef(autoRead);
+  autoReadRef.current = autoRead;
+
+  const page = grammarWalkPages[pageIndex];
+  const key = page ? `${page.entry.node.id}:${language}` : "";
+  const explanation = page ? nodeExplanations[key] : undefined;
+  const explaining = explainingNodeKey === key;
+  const explainError = page ? nodeExplainErrors[key] : undefined;
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("grammarWalkPageIndex", String(pageIndex));
+    } catch {
+      // ignore storage errors (private browsing, quota, etc.)
+    }
+  }, [pageIndex]);
+
+  useEffect(() => {
+    if (page && !explanation && !explaining) {
+      onExplainNode(page.entry);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page?.entry.node.id, language]);
+
+  function stopSpeaking() {
+    speechTokenRef.current += 1;
+    setIsSpeaking(false);
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  }
+
+  async function speakParagraphs(paragraphs: string[], index: number, token: number) {
+    if (!("speechSynthesis" in window) || token !== speechTokenRef.current) {
+      setIsSpeaking(false);
+      return;
+    }
+    const text = paragraphs[index];
+    if (!text) {
+      setIsSpeaking(false);
+      return;
+    }
+    const utterance = await createUtterance(text, speechLanguageForUiLanguage(language));
+    if (token !== speechTokenRef.current) {
+      setIsSpeaking(false);
+      return;
+    }
+    utterance.onend = () => void speakParagraphs(paragraphs, index + 1, token);
+    utterance.onerror = () => void speakParagraphs(paragraphs, index + 1, token);
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function playExplanation(text: string) {
+    speechTokenRef.current += 1;
+    const token = speechTokenRef.current;
+    setIsSpeaking(true);
+    void speakParagraphs(
+      text.split("\n").map((line) => line.trim()).filter(Boolean),
+      0,
+      token
+    );
+  }
+
+  useEffect(() => {
+    if (autoReadRef.current && explanation) {
+      playExplanation(explanation);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageIndex, explanation]);
+
+  useEffect(() => () => stopSpeaking(), []);
+
+  function goTo(nextIndex: number) {
+    if (nextIndex < 0 || nextIndex >= grammarWalkPages.length) return;
+    stopSpeaking();
+    setPageIndex(nextIndex);
+  }
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
+      if (event.key === "ArrowLeft") goTo(pageIndex - 1);
+      if (event.key === "ArrowRight") goTo(pageIndex + 1);
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageIndex]);
+
+  if (!page) return null;
+
+  const progress = ((pageIndex + 1) / grammarWalkPages.length) * 100;
+  const childNodes = page.entry.node.children ?? [];
+  const crumbPath = page.entry.path.slice(0, -1);
+
+  return (
+    <div className="grammar-walk">
+      <div className="grammar-walk-toolbar">
+        <label className="grammar-walk-jump">
+          <span>{t.grammarWalkChapterLabel}</span>
+          <select
+            value={page.chapter.id}
+            onChange={(event) => {
+              const index = grammarWalkPages.findIndex((walkPage) => walkPage.chapter.id === event.target.value);
+              if (index >= 0) goTo(index);
+            }}
+          >
+            {grammarGuideParts.map((part) => (
+              <optgroup label={part.title} key={part.id}>
+                {part.chapters.map((chapter) => (
+                  <option value={chapter.id} key={chapter.id}>
+                    {chapter.title}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        <label className="grammar-walk-autoread">
+          <input type="checkbox" checked={autoRead} onChange={(event) => setAutoRead(event.target.checked)} />
+          <span>{t.grammarWalkAutoRead}</span>
+        </label>
+      </div>
+
+      <div className="grammar-walk-progress">
+        <div className="grammar-walk-progress-bar" style={{ width: `${progress}%` }} />
+      </div>
+
+      <article className="grammar-walk-card" key={page.entry.node.id}>
+        <div className="grammar-walk-breadcrumb">
+          <span>{page.part.title}</span>
+          <span aria-hidden="true">/</span>
+          <span>{page.chapter.title}</span>
+          {crumbPath.length ? (
+            <>
+              <span aria-hidden="true">/</span>
+              <span>{crumbPath.join(" / ")}</span>
+            </>
+          ) : null}
+        </div>
+        <h2>{page.entry.node.title}</h2>
+        {page.entry.node.detail ? <p className="grammar-walk-hint">{page.entry.node.detail}</p> : null}
+
+        <div className="grammar-walk-explanation">
+          <div className="grammar-walk-explanation-head">
+            <strong>{t.grammarNodeDetailedTitle}</strong>
+            <button
+              type="button"
+              className="icon-button"
+              onClick={() => (isSpeaking ? stopSpeaking() : explanation ? playExplanation(explanation) : undefined)}
+              disabled={!explanation}
+              title={isSpeaking ? t.grammarWalkStopReading : t.grammarWalkReadAloud}
+            >
+              {isSpeaking ? <Square size={16} /> : <Volume2 size={16} />}
+            </button>
+          </div>
+          {explanation ? (
+            explanation
+              .split("\n")
+              .map((line) => line.trim())
+              .filter(Boolean)
+              .map((line, index) => <p key={index}>{line}</p>)
+          ) : explaining ? (
+            <p className="grammar-walk-loading">{t.grammarNodeExplaining}</p>
+          ) : explainError ? (
+            <p className="recognized muted">{explainError}</p>
+          ) : null}
+        </div>
+
+        {childNodes.length ? (
+          <div className="grammar-node-related">
+            <strong>子知识点</strong>
+            <div className="grammar-node-related-list">
+              {childNodes.map((child) => {
+                const childIndex = grammarWalkPages.findIndex((walkPage) => walkPage.entry.node.id === child.id);
+                return (
+                  <button type="button" key={child.id} onClick={() => (childIndex >= 0 ? goTo(childIndex) : undefined)}>
+                    {child.title}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+      </article>
+
+      <div className="grammar-walk-nav">
+        <button type="button" onClick={() => goTo(pageIndex - 1)} disabled={pageIndex === 0}>
+          <ChevronLeft size={16} />
+          <span>{t.grammarWalkPrev}</span>
+        </button>
+        <span className="grammar-walk-page-count">
+          {pageIndex + 1} / {grammarWalkPages.length}
+        </span>
+        <button type="button" onClick={() => goTo(pageIndex + 1)} disabled={pageIndex === grammarWalkPages.length - 1}>
+          <span>{t.grammarWalkNext}</span>
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -2680,6 +2998,16 @@ function collectGrammarNodes(nodes: GrammarNode[], path: string[] = [], depth = 
     ];
   });
 }
+
+type GrammarWalkPage = {
+  part: GrammarPart;
+  chapter: GrammarChapter;
+  entry: GrammarNodeEntry;
+};
+
+const grammarWalkPages: GrammarWalkPage[] = grammarGuideParts.flatMap((part) =>
+  part.chapters.flatMap((chapter) => collectGrammarNodes(chapter.nodes).map((entry) => ({ part, chapter, entry })))
+);
 
 function MethodPage({ language }: { language: UiLanguage }) {
   const content = methodContent[language];
