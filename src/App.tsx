@@ -4126,7 +4126,7 @@ export default function App() {
   );
 
   const studyWords = useMemo(() => {
-    const source = savedWords.length > 0 ? savedWords : words.slice(0, 100);
+    const source = selectedList === "All" ? words : words.filter((word) => word.list === selectedList);
     return [...source].sort((a, b) => {
       const aProgress = studyProgress[a.sourceId];
       const bProgress = studyProgress[b.sourceId];
@@ -4135,7 +4135,7 @@ export default function App() {
       if (aDue !== bDue) return aDue - bDue;
       return a.rank - b.rank;
     });
-  }, [savedWords, studyProgress]);
+  }, [selectedList, studyProgress]);
   const studyWord = studyWords[studyIndex] ?? studyWords[0];
   const studyWordProgress = studyWord ? studyProgress[studyWord.sourceId] : undefined;
   const now = Date.now();
