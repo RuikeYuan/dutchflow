@@ -300,7 +300,86 @@ export async function translateExample(sentence, targetLanguage, maxTokens) {
   return translated;
 }
 
-export async function explainExample(sentence, targetLanguage = "zh", maxTokens) {
+const GRAMMAR_EXPLANATION_PROMPTS = {
+  en: {
+    systemPrompt:
+      "You explain Dutch grammar for A1-A2 learners in clear spoken English. Be concise, accurate, and practical.",
+    buildUserPrompt: (sentence, grammarContext, forSpeech) =>
+      [
+        `Dutch sentence: ${sentence}`,
+        "Grammar reference context:",
+        grammarContext,
+        "",
+        forSpeech ? "Explain this Dutch sentence in English for audio playback." : "Explain this Dutch sentence in English.",
+        forSpeech ? "Use 3-5 short spoken lines." : "Use 4-6 short lines, one point per line.",
+        "Mention the sentence pattern, key words or phrases, verb form, articles/pronouns/prepositions when relevant, and one natural usage tip.",
+        forSpeech ? "Wrap every Dutch word or Dutch phrase that should be pronounced in Dutch as [[nl:word or phrase]]." : "",
+        forSpeech ? "Do not use the [[nl:...]] marker for English words." : "",
+        "Do not use Markdown tables. Do not be long."
+      ]
+        .filter(Boolean)
+        .join("\n")
+  },
+  zh: {
+    systemPrompt: "You explain Dutch grammar for Chinese-speaking A1-A2 learners. Be concise, accurate, and practical.",
+    buildUserPrompt: (sentence, grammarContext) =>
+      [
+        `Dutch sentence: ${sentence}`,
+        "参考语法框架：",
+        grammarContext,
+        "",
+        "用中文讲解这句荷兰语。",
+        "请按 4-6 行输出，每行一个要点。",
+        "必须包含：整体句型、关键词/短语、动词变化、介词/冠词/代词等细节、自然表达提示。",
+        "不要输出 Markdown 表格，不要太长。"
+      ].join("\n")
+  },
+  nl: {
+    systemPrompt:
+      "Je legt Nederlandse grammatica uit aan A1-A2 taalleerders in duidelijke, natuurlijke taal. Wees beknopt, accuraat en praktisch.",
+    buildUserPrompt: (sentence, grammarContext) =>
+      [
+        `Nederlandse zin: ${sentence}`,
+        "Grammaticale context:",
+        grammarContext,
+        "",
+        "Leg deze Nederlandse zin uit.",
+        "Gebruik 4-6 korte regels, één punt per regel.",
+        "Behandel verplicht: de zinsbouw, kernwoorden/uitdrukkingen, werkwoordsvorm, lidwoorden/voorzetsels/voornaamwoorden waar relevant, en een natuurlijke gebruikstip.",
+        "Gebruik geen Markdown-tabellen. Houd het kort."
+      ].join("\n")
+  },
+  es: {
+    systemPrompt: "Explicas la gramática neerlandesa a estudiantes hispanohablantes de nivel A1-A2. Sé conciso, preciso y práctico.",
+    buildUserPrompt: (sentence, grammarContext) =>
+      [
+        `Frase en neerlandés: ${sentence}`,
+        "Contexto gramatical de referencia:",
+        grammarContext,
+        "",
+        "Explica esta frase en neerlandés, en español.",
+        "Usa entre 4 y 6 líneas breves, una idea por línea.",
+        "Debes incluir: la estructura de la oración, palabras o frases clave, la forma verbal, artículos/preposiciones/pronombres cuando sea relevante, y un consejo de uso natural.",
+        "No uses tablas Markdown. No te extiendas demasiado."
+      ].join("\n")
+  },
+  de: {
+    systemPrompt: "Du erklärst niederländische Grammatik für deutschsprachige A1-A2-Lernende. Sei präzise, korrekt und praxisnah.",
+    buildUserPrompt: (sentence, grammarContext) =>
+      [
+        `Niederländischer Satz: ${sentence}`,
+        "Grammatik-Referenzkontext:",
+        grammarContext,
+        "",
+        "Erkläre diesen niederländischen Satz auf Deutsch.",
+        "Verwende 4-6 kurze Zeilen, einen Punkt pro Zeile.",
+        "Behandle unbedingt: den Satzbau, Schlüsselwörter/-phrasen, die Verbform, Artikel/Präpositionen/Pronomen wo relevant, und einen natürlichen Anwendungstipp.",
+        "Keine Markdown-Tabellen. Fasse dich kurz."
+      ].join("\n")
+  }
+};
+
+export async function explainExample(sentence, targetLanguage = "zh", maxTokens, forSpeech = false) {
   const grammarContext = formatGrammarGuideContext(
     getGrammarGuideContext({
       question: "Explain the grammar of this Dutch example sentence",
@@ -308,43 +387,13 @@ export async function explainExample(sentence, targetLanguage = "zh", maxTokens)
     })
   );
 
-  if (targetLanguage === "en") {
-    const systemPrompt =
-      "You explain Dutch grammar for A1-A2 learners in clear spoken English. Be concise, accurate, and practical.";
-    const userPrompt = [
-      `Dutch sentence: ${sentence}`,
-      "Grammar reference context:",
-      grammarContext,
-      "",
-      "Explain this Dutch sentence in English for audio playback.",
-      "Use 3-5 short spoken lines.",
-      "Mention the sentence pattern, key words or phrases, verb form, articles/pronouns/prepositions when relevant, and one natural usage tip.",
-      "Wrap every Dutch word or Dutch phrase that should be pronounced in Dutch as [[nl:word or phrase]].",
-      "Do not use the [[nl:...]] marker for English words.",
-      "Do not use Markdown tables. Do not be long."
-    ].join("\n");
-    const explanation = await callLlm(systemPrompt, userPrompt, 0.25, maxTokens ?? 220);
-
-    if (!explanation) {
-      throw new Error("LLM returned an empty grammar explanation");
-    }
-
-    return explanation;
-  }
-
-  const systemPrompt =
-    "You explain Dutch grammar for Chinese-speaking A1-A2 learners. Be concise, accurate, and practical.";
-  const userPrompt = [
-    `Dutch sentence: ${sentence}`,
-    "参考语法框架：",
-    grammarContext,
-    "",
-    "用中文讲解这句荷兰语。",
-    "请按 4-6 行输出，每行一个要点。",
-    "必须包含：整体句型、关键词/短语、动词变化、介词/冠词/代词等细节、自然表达提示。",
-    "不要输出 Markdown 表格，不要太长。"
-  ].join("\n");
-  const explanation = await callLlm(systemPrompt, userPrompt, 0.25, maxTokens ?? 260);
+  const prompts = GRAMMAR_EXPLANATION_PROMPTS[targetLanguage] ?? GRAMMAR_EXPLANATION_PROMPTS.en;
+  const explanation = await callLlm(
+    prompts.systemPrompt,
+    prompts.buildUserPrompt(sentence, grammarContext, forSpeech),
+    0.25,
+    maxTokens ?? (targetLanguage === "zh" ? 260 : 220)
+  );
 
   if (!explanation) {
     throw new Error("LLM returned an empty grammar explanation");

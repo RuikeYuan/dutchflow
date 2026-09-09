@@ -253,53 +253,84 @@ async function translateExample(sentence: string, targetLanguage: string) {
   return translated;
 }
 
-async function explainExample(sentence: string, targetLanguage = "zh") {
-  if (targetLanguage === "en") {
-    const systemPrompt =
-      "You explain Dutch grammar for A1-A2 learners in clear spoken English. Be concise, accurate, and practical.";
-    const userPrompt = [
-      `Dutch sentence: ${sentence}`,
-      "Explain this Dutch sentence in English for audio playback.",
-      "Use 3-5 short spoken lines.",
-      "Mention the sentence pattern, key words or phrases, verb form, articles/pronouns/prepositions when relevant, and one natural usage tip.",
-      "Wrap every Dutch word or Dutch phrase that should be pronounced in Dutch as [[nl:word or phrase]].",
-      "Do not use the [[nl:...]] marker for English words.",
-      "Do not use Markdown tables. Do not be long."
-    ].join("\n");
-    const explanation = process.env.GEMINI_API_KEY
-      ? await callGemini(`${systemPrompt}\n\n${userPrompt}`, 0.25, 220)
-      : await callOpenAiCompatible(
-          [
-            {
-              role: "system",
-              content: systemPrompt
-            },
-            {
-              role: "user",
-              content: userPrompt
-            }
-          ],
-          0.25,
-          220
-        );
-
-    if (!explanation) {
-      throw new Error("LLM returned an empty grammar explanation");
-    }
-    return explanation;
+const GRAMMAR_EXPLANATION_PROMPTS: Record<
+  string,
+  { systemPrompt: string; buildUserPrompt: (sentence: string, forSpeech: boolean) => string; maxTokens: number }
+> = {
+  en: {
+    systemPrompt:
+      "You explain Dutch grammar for A1-A2 learners in clear spoken English. Be concise, accurate, and practical.",
+    buildUserPrompt: (sentence, forSpeech) =>
+      [
+        `Dutch sentence: ${sentence}`,
+        forSpeech ? "Explain this Dutch sentence in English for audio playback." : "Explain this Dutch sentence in English.",
+        forSpeech ? "Use 3-5 short spoken lines." : "Use 4-6 short lines, one point per line.",
+        "Mention the sentence pattern, key words or phrases, verb form, articles/pronouns/prepositions when relevant, and one natural usage tip.",
+        forSpeech ? "Wrap every Dutch word or Dutch phrase that should be pronounced in Dutch as [[nl:word or phrase]]." : "",
+        forSpeech ? "Do not use the [[nl:...]] marker for English words." : "",
+        "Do not use Markdown tables. Do not be long."
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    maxTokens: 220
+  },
+  zh: {
+    systemPrompt: "You explain Dutch grammar for Chinese-speaking A1-A2 learners. Be concise, accurate, and practical.",
+    buildUserPrompt: (sentence) =>
+      [
+        `Dutch sentence: ${sentence}`,
+        "用中文讲解这句荷兰语。",
+        "请按 4-6 行输出，每行一个要点。",
+        "必须包含：整体句型、关键单词/短语、动词变化、介词/冠词/代词等细节、自然表达提示。",
+        "不要输出 Markdown 表格，不要太长。"
+      ].join("\n"),
+    maxTokens: 260
+  },
+  nl: {
+    systemPrompt:
+      "Je legt Nederlandse grammatica uit aan A1-A2 taalleerders in duidelijke, natuurlijke taal. Wees beknopt, accuraat en praktisch.",
+    buildUserPrompt: (sentence) =>
+      [
+        `Nederlandse zin: ${sentence}`,
+        "Leg deze Nederlandse zin uit.",
+        "Gebruik 4-6 korte regels, één punt per regel.",
+        "Behandel verplicht: de zinsbouw, kernwoorden/uitdrukkingen, werkwoordsvorm, lidwoorden/voorzetsels/voornaamwoorden waar relevant, en een natuurlijke gebruikstip.",
+        "Gebruik geen Markdown-tabellen. Houd het kort."
+      ].join("\n"),
+    maxTokens: 220
+  },
+  es: {
+    systemPrompt: "Explicas la gramática neerlandesa a estudiantes hispanohablantes de nivel A1-A2. Sé conciso, preciso y práctico.",
+    buildUserPrompt: (sentence) =>
+      [
+        `Frase en neerlandés: ${sentence}`,
+        "Explica esta frase en neerlandés, en español.",
+        "Usa entre 4 y 6 líneas breves, una idea por línea.",
+        "Debes incluir: la estructura de la oración, palabras o frases clave, la forma verbal, artículos/preposiciones/pronombres cuando sea relevante, y un consejo de uso natural.",
+        "No uses tablas Markdown. No te extiendas demasiado."
+      ].join("\n"),
+    maxTokens: 220
+  },
+  de: {
+    systemPrompt: "Du erklärst niederländische Grammatik für deutschsprachige A1-A2-Lernende. Sei präzise, korrekt und praxisnah.",
+    buildUserPrompt: (sentence) =>
+      [
+        `Niederländischer Satz: ${sentence}`,
+        "Erkläre diesen niederländischen Satz auf Deutsch.",
+        "Verwende 4-6 kurze Zeilen, einen Punkt pro Zeile.",
+        "Behandle unbedingt: den Satzbau, Schlüsselwörter/-phrasen, die Verbform, Artikel/Präpositionen/Pronomen wo relevant, und einen natürlichen Anwendungstipp.",
+        "Keine Markdown-Tabellen. Fasse dich kurz."
+      ].join("\n"),
+    maxTokens: 220
   }
+};
 
-  const systemPrompt =
-    "You explain Dutch grammar for Chinese-speaking A1-A2 learners. Be concise, accurate, and practical.";
-  const userPrompt = [
-    `Dutch sentence: ${sentence}`,
-    "用中文讲解这句荷兰语。",
-    "请按 4-6 行输出，每行一个要点。",
-    "必须包含：整体句型、关键单词/短语、动词变化、介词/冠词/代词等细节、自然表达提示。",
-    "不要输出 Markdown 表格，不要太长。"
-  ].join("\n");
+async function explainExample(sentence: string, targetLanguage = "zh", forSpeech = false) {
+  const prompts = GRAMMAR_EXPLANATION_PROMPTS[targetLanguage] ?? GRAMMAR_EXPLANATION_PROMPTS.en;
+  const systemPrompt = prompts.systemPrompt;
+  const userPrompt = prompts.buildUserPrompt(sentence, forSpeech);
   const explanation = process.env.GEMINI_API_KEY
-    ? await callGemini(`${systemPrompt}\n\n${userPrompt}`, 0.25, 260)
+    ? await callGemini(`${systemPrompt}\n\n${userPrompt}`, 0.25, prompts.maxTokens)
     : await callOpenAiCompatible(
         [
           {
@@ -312,7 +343,7 @@ async function explainExample(sentence: string, targetLanguage = "zh") {
           }
         ],
         0.25,
-        260
+        prompts.maxTokens
       );
 
   if (!explanation) {
@@ -465,6 +496,7 @@ export default defineConfig(({ mode }) => {
             const body = await readJsonBody(request);
             const sentence = String(body.sentence ?? "").trim();
             const targetLanguage = String(body.targetLanguage ?? "zh").trim();
+            const forSpeech = Boolean(body.forSpeech);
 
             if (!sentence) {
               response.statusCode = 400;
@@ -473,7 +505,7 @@ export default defineConfig(({ mode }) => {
               return;
             }
 
-            const explanation = await explainExample(sentence, targetLanguage);
+            const explanation = await explainExample(sentence, targetLanguage, forSpeech);
             response.setHeader("Content-Type", "application/json; charset=utf-8");
             response.end(JSON.stringify({ explanation }));
           } catch (error) {

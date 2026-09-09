@@ -4240,7 +4240,8 @@ export default function App() {
         },
         body: JSON.stringify({
           sentence,
-          targetLanguage: "en"
+          targetLanguage: "en",
+          forSpeech: true
         })
       });
 
@@ -4478,7 +4479,8 @@ export default function App() {
   }
 
   async function handleExplainGrammar(sentenceKey: string, sentence: string) {
-    if (exampleGrammar[sentenceKey]) return;
+    const grammarKey = `${sentenceKey}:${language}`;
+    if (exampleGrammar[grammarKey]) return;
     if (!apiAvailable) {
       setTranslationMessages((current) => ({ ...current, [sentenceKey]: t.grammarFailed }));
       return;
@@ -4494,7 +4496,8 @@ export default function App() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          sentence
+          sentence,
+          targetLanguage: language
         })
       });
 
@@ -4508,7 +4511,7 @@ export default function App() {
         throw new Error("Empty explanation");
       }
 
-      setExampleGrammar((current) => ({ ...current, [sentenceKey]: explanation }));
+      setExampleGrammar((current) => ({ ...current, [grammarKey]: explanation }));
     } catch {
       setTranslationMessages((current) => ({ ...current, [sentenceKey]: t.grammarFailed }));
     } finally {
@@ -4876,7 +4879,7 @@ export default function App() {
                   sentenceKey={studySentenceKey}
                   sentence={sentenceFor(studyWord)}
                   exampleTranslations={translationsFor(studySentenceKey)}
-                  grammarExplanation={exampleGrammar[studySentenceKey]}
+                  grammarExplanation={exampleGrammar[`${studySentenceKey}:${language}`]}
                   translating={translatingLanguageFor(studySentenceKey)}
                   explainingGrammar={explainingGrammarKey === studySentenceKey}
                   translationMessage={translationMessages[studySentenceKey]}
@@ -5061,7 +5064,7 @@ export default function App() {
                       onGenerateExample={handleGenerateExample}
                       sentence={sentence}
                       exampleTranslations={translationsFor(sentenceKey)}
-                      grammarExplanation={exampleGrammar[sentenceKey]}
+                      grammarExplanation={exampleGrammar[`${sentenceKey}:${language}`]}
                       translatingExample={translatingLanguageFor(sentenceKey)}
                       explainingGrammar={explainingGrammarKey === sentenceKey}
                       translationMessage={translationMessages[sentenceKey]}
