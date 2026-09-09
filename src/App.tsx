@@ -168,6 +168,8 @@ const translations: Record<
     jumpToRankPlaceholder: string;
     jumpToRankButton: string;
     viewLabel: string;
+    collapseSidebar: string;
+    expandSidebar: string;
     modeBrowse: string;
     modeNotebook: string;
     modeStudy: string;
@@ -338,6 +340,8 @@ const translations: Record<
     jumpToRankPlaceholder: "跳转到第几个",
     jumpToRankButton: "跳转",
     viewLabel: "视图",
+    collapseSidebar: "收起导航栏",
+    expandSidebar: "展开导航栏",
     modeBrowse: "词频",
     modeNotebook: "单词本",
     modeStudy: "练习",
@@ -533,6 +537,8 @@ const translations: Record<
     jumpToRankPlaceholder: "Jump to #",
     jumpToRankButton: "Jump",
     viewLabel: "View",
+    collapseSidebar: "Collapse sidebar",
+    expandSidebar: "Expand sidebar",
     modeBrowse: "Frequency",
     modeNotebook: "Notebook",
     modeStudy: "Study",
@@ -729,6 +735,8 @@ const translations: Record<
     jumpToRankPlaceholder: "Ga naar #",
     jumpToRankButton: "Ga",
     viewLabel: "Weergave",
+    collapseSidebar: "Zijbalk inklappen",
+    expandSidebar: "Zijbalk uitklappen",
     modeBrowse: "Frequentie",
     modeNotebook: "Woordenlijst",
     modeStudy: "Oefenen",
@@ -925,6 +933,8 @@ const translations: Record<
     jumpToRankPlaceholder: "Ir al #",
     jumpToRankButton: "Ir",
     viewLabel: "Vista",
+    collapseSidebar: "Contraer barra lateral",
+    expandSidebar: "Expandir barra lateral",
     modeBrowse: "Frecuencia",
     modeNotebook: "Cuaderno",
     modeStudy: "Practicar",
@@ -1121,6 +1131,8 @@ const translations: Record<
     jumpToRankPlaceholder: "Springe zu #",
     jumpToRankButton: "Springen",
     viewLabel: "Ansicht",
+    collapseSidebar: "Seitenleiste einklappen",
+    expandSidebar: "Seitenleiste ausklappen",
     modeBrowse: "Frequenz",
     modeNotebook: "Wortliste",
     modeStudy: "Üben",
@@ -3711,6 +3723,7 @@ function PodcastPage({ t, language }: { t: (typeof translations)[UiLanguage]; la
 
 export default function App() {
   const [mode, setMode] = useState<ViewMode>("landing");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [language, setLanguage] = useState<UiLanguage>(getSavedLanguage);
   const [query, setQuery] = useState("");
   const [jumpValue, setJumpValue] = useState("");
@@ -4576,20 +4589,51 @@ export default function App() {
 
   return (
     <main>
-      <header className="app-header">
-        <div className="header-grid">
-          <div>
-            <div className="eyebrow">
+      <div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
+        <aside className="sidebar">
+          <button type="button" className="sidebar-brand" onClick={() => setMode("landing")} title={t.appName}>
+            <BookOpen size={20} />
+            <span className="sidebar-brand-label">{t.appName}</span>
+          </button>
+
+          <nav className="sidebar-nav" aria-label={t.viewLabel}>
+            <button className={mode === "browse" ? "active" : ""} onClick={() => setMode("browse")} title={t.modeBrowse}>
+              <Layers3 size={18} />
+              <span>{t.modeBrowse}</span>
+            </button>
+            <button className={mode === "notebook" ? "active" : ""} onClick={() => setMode("notebook")} title={t.modeNotebook}>
+              <BookmarkCheck size={18} />
+              <span>{t.modeNotebook}</span>
+            </button>
+            <button className={mode === "study" ? "active" : ""} onClick={() => setMode("study")} title={t.modeStudy}>
+              <Shuffle size={18} />
+              <span>{t.modeStudy}</span>
+            </button>
+            <button className={mode === "speaking" ? "active" : ""} onClick={() => setMode("speaking")} title={t.modeSpeaking}>
+              <Mic size={18} />
+              <span>{t.modeSpeaking}</span>
+            </button>
+            <button className={mode === "grammar" ? "active" : ""} onClick={() => setMode("grammar")} title={t.modeGrammar}>
               <BookOpen size={18} />
-              <span>{t.appName}</span>
-            </div>
-            <h1>{t.title}</h1>
-            <p className="subtitle">{t.subtitle}</p>
-          </div>
-          <div className="header-controls">
-            <label className="language-select">
-              <Languages size={17} />
-              <span>{t.language}</span>
+              <span>{t.modeGrammar}</span>
+            </button>
+            <button className={mode === "reading" ? "active" : ""} onClick={() => setMode("reading")} title={t.modeReading}>
+              <Languages size={18} />
+              <span>{t.modeReading}</span>
+            </button>
+            <button className={mode === "podcast" ? "active" : ""} onClick={() => setMode("podcast")} title={t.modePodcast}>
+              <Podcast size={18} />
+              <span>{t.modePodcast}</span>
+            </button>
+            <button className={mode === "method" ? "active" : ""} onClick={() => setMode("method")} title={t.modeMethod}>
+              <BookOpen size={18} />
+              <span>{t.modeMethod}</span>
+            </button>
+          </nav>
+
+          <div className="sidebar-utilities">
+            <label className="sidebar-language">
+              <Languages size={16} />
               <select value={language} onChange={(event) => setLanguage(event.target.value as UiLanguage)}>
                 {(Object.keys(languageNames) as UiLanguage[]).map((key) => (
                   <option key={key} value={key}>
@@ -4651,141 +4695,119 @@ export default function App() {
                 {syncMessage ? <p className="recognized muted">{syncMessage}</p> : null}
               </div>
             </details>
-            <div className="example-import">
-              <span className="example-status">
-                {!apiAvailable
-                  ? t.examplesOffline
-                  : examplesLoading
-                    ? t.examplesLoading
-                    : examplesFailed
-                      ? t.examplesImportFailed
-                      : t.examplesReady(Object.keys(bookExamples).length)}
-              </span>
-            </div>
-            <div className="stats">
-              <div>
-                <span>{t.statsWords}</span>
-                <strong>{words.length}</strong>
-              </div>
-              <div>
-                <span>{t.statsNotebook}</span>
-                <strong>{savedIds.size}</strong>
-              </div>
-              <div>
-                <span>{t.statsCurrent}</span>
-                <strong>{t.list[selectedList] ?? selectedList}</strong>
-              </div>
-            </div>
           </div>
-        </div>
 
-        <div className="toolbar-primary">
-          <div className="mode-switch" aria-label={t.viewLabel}>
-            <button className={mode === "browse" ? "active" : ""} onClick={() => setMode("browse")}>
-              <Layers3 size={17} />
-              <span>{t.modeBrowse}</span>
-            </button>
-            <button className={mode === "notebook" ? "active" : ""} onClick={() => setMode("notebook")}>
-              <BookmarkCheck size={17} />
-              <span>{t.modeNotebook}</span>
-            </button>
-            <button className={mode === "study" ? "active" : ""} onClick={() => setMode("study")}>
-              <Shuffle size={17} />
-              <span>{t.modeStudy}</span>
-            </button>
-            <button className={mode === "speaking" ? "active" : ""} onClick={() => setMode("speaking")}>
-              <Mic size={17} />
-              <span>{t.modeSpeaking}</span>
-            </button>
-            <button className={mode === "grammar" ? "active" : ""} onClick={() => setMode("grammar")}>
-              <BookOpen size={17} />
-              <span>{t.modeGrammar}</span>
-            </button>
-            <button className={mode === "reading" ? "active" : ""} onClick={() => setMode("reading")}>
-              <Languages size={17} />
-              <span>{t.modeReading}</span>
-            </button>
-            <button className={mode === "podcast" ? "active" : ""} onClick={() => setMode("podcast")}>
-              <Podcast size={17} />
-              <span>{t.modePodcast}</span>
-            </button>
-            <button className={mode === "method" ? "active" : ""} onClick={() => setMode("method")}>
-              <BookOpen size={17} />
-              <span>{t.modeMethod}</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="toolbar-secondary">
-          <label className="search-box">
-            <Search size={18} />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={t.searchPlaceholder}
-            />
-          </label>
-
-          <form
-            className="jump-box"
-            onSubmit={(event) => {
-              event.preventDefault();
-              jumpToRank();
-            }}
+          <button
+            type="button"
+            className="sidebar-collapse-toggle"
+            onClick={() => setSidebarCollapsed((value) => !value)}
+            title={sidebarCollapsed ? t.expandSidebar : t.collapseSidebar}
           >
-            <input
-              type="number"
-              min={1}
-              value={jumpValue}
-              onChange={(event) => setJumpValue(event.target.value)}
-              placeholder={t.jumpToRankPlaceholder}
-            />
-            <button type="submit" disabled={!jumpValue.trim()}>
-              <ChevronRight size={16} />
-              <span>{t.jumpToRankButton}</span>
-            </button>
-          </form>
+            {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            <span>{t.collapseSidebar}</span>
+          </button>
+        </aside>
 
-          {mode !== "method" && mode !== "speaking" && mode !== "grammar" && mode !== "reading" && mode !== "podcast" ? (
-            <div className="card-controls" aria-label="Card side controls">
-              <button
-                className={cardsFlipped ? "active" : ""}
-                type="button"
-                onClick={toggleAllCards}
-                title="Flip all visible word cards"
-              >
-                <RotateCcw size={16} />
-                <span>{cardsFlipped ? "Definition → Dutch" : "Dutch → Definition"}</span>
-              </button>
-              <label>
-                <span>Back</span>
-                <select
-                  value={cardMeaningLanguage}
-                  onChange={(event) => setCardMeaningLanguage(event.target.value as CardMeaningLanguage)}
-                >
-                  <option value="en">English</option>
-                  <option value="zh">中文</option>
-                </select>
-              </label>
+        <div className="content-area">
+          <header className="content-topbar">
+            <div className="content-topbar-row">
+              <div className="stats">
+                <div>
+                  <span>{t.statsWords}</span>
+                  <strong>{words.length}</strong>
+                </div>
+                <div>
+                  <span>{t.statsNotebook}</span>
+                  <strong>{savedIds.size}</strong>
+                </div>
+                <div>
+                  <span>{t.statsCurrent}</span>
+                  <strong>{t.list[selectedList] ?? selectedList}</strong>
+                </div>
+              </div>
+              <div className="example-import">
+                <span className="example-status">
+                  {!apiAvailable
+                    ? t.examplesOffline
+                    : examplesLoading
+                      ? t.examplesLoading
+                      : examplesFailed
+                        ? t.examplesImportFailed
+                        : t.examplesReady(Object.keys(bookExamples).length)}
+                </span>
+              </div>
             </div>
-          ) : null}
-        </div>
 
-        {mode !== "method" && mode !== "speaking" && mode !== "grammar" && mode !== "reading" && mode !== "podcast" ? (
-          <div className="filters" aria-label={t.filtersLabel}>
-            <Filter size={17} />
-            {listNames.map((name) => (
-              <button
-                key={name}
-                className={selectedList === name ? "active" : ""}
-                onClick={() => setSelectedList(name)}
+            <div className="toolbar-secondary">
+              <label className="search-box">
+                <Search size={18} />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={t.searchPlaceholder}
+                />
+              </label>
+
+              <form
+                className="jump-box"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  jumpToRank();
+                }}
               >
-                {t.list[name] ?? name}
-              </button>
-            ))}
-          </div>
-        ) : null}
-      </header>
+                <input
+                  type="number"
+                  min={1}
+                  value={jumpValue}
+                  onChange={(event) => setJumpValue(event.target.value)}
+                  placeholder={t.jumpToRankPlaceholder}
+                />
+                <button type="submit" disabled={!jumpValue.trim()}>
+                  <ChevronRight size={16} />
+                  <span>{t.jumpToRankButton}</span>
+                </button>
+              </form>
+
+              {mode !== "method" && mode !== "speaking" && mode !== "grammar" && mode !== "reading" && mode !== "podcast" ? (
+                <div className="card-controls" aria-label="Card side controls">
+                  <button
+                    className={cardsFlipped ? "active" : ""}
+                    type="button"
+                    onClick={toggleAllCards}
+                    title="Flip all visible word cards"
+                  >
+                    <RotateCcw size={16} />
+                    <span>{cardsFlipped ? "Definition → Dutch" : "Dutch → Definition"}</span>
+                  </button>
+                  <label>
+                    <span>Back</span>
+                    <select
+                      value={cardMeaningLanguage}
+                      onChange={(event) => setCardMeaningLanguage(event.target.value as CardMeaningLanguage)}
+                    >
+                      <option value="en">English</option>
+                      <option value="zh">中文</option>
+                    </select>
+                  </label>
+                </div>
+              ) : null}
+            </div>
+
+            {mode !== "method" && mode !== "speaking" && mode !== "grammar" && mode !== "reading" && mode !== "podcast" ? (
+              <div className="filters" aria-label={t.filtersLabel}>
+                <Filter size={17} />
+                {listNames.map((name) => (
+                  <button
+                    key={name}
+                    className={selectedList === name ? "active" : ""}
+                    onClick={() => setSelectedList(name)}
+                  >
+                    {t.list[name] ?? name}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </header>
 
       {mode === "method" ? (
         <MethodPage language={language} />
@@ -5076,6 +5098,8 @@ export default function App() {
           )}
         </section>
       )}
+        </div>
+      </div>
     </main>
   );
 }
