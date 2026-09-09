@@ -299,6 +299,19 @@ h1 {
   margin: 12px auto 0;
 }
 
+.toolbar-primary {
+  max-width: 1280px;
+  margin: 14px auto 0;
+}
+
+.toolbar-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: 1280px;
+  margin: 10px auto 0;
+}
+
 .search-box {
   min-width: 0;
   flex: 1;
@@ -384,8 +397,12 @@ h1 {
 }
 
 .mode-switch {
-  display: flex;
-  gap: 8px;
+  display: inline-flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  padding: 4px;
+  border-radius: 10px;
+  background: #f2efe8;
 }
 
 .card-controls {
@@ -394,7 +411,29 @@ h1 {
   align-items: center;
 }
 
-.mode-switch button,
+.mode-switch button {
+  min-height: 32px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 13px;
+  font-weight: 700;
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+
+.mode-switch button.active {
+  background: white;
+  color: var(--ink);
+  font-weight: 800;
+  box-shadow: 0 1px 2px rgba(24, 32, 29, 0.08);
+}
+
 .card-controls button,
 .filters button,
 .study-actions button,
@@ -412,7 +451,6 @@ h1 {
   font-weight: 700;
 }
 
-.mode-switch button.active,
 .card-controls button.active,
 .filters button.active,
 .study-actions button.primary {
@@ -1449,7 +1487,10 @@ h1 {
 }
 
 .icon-button:hover,
-.mode-switch button:hover,
+.mode-switch button:not(.active):hover {
+  color: var(--ink);
+}
+
 .card-controls button:hover,
 .filters button:hover,
 .study-actions button:hover,
@@ -2259,13 +2300,24 @@ a.reading-source-link:hover {
     line-height: 1.4;
   }
 
-  .toolbar {
+  .toolbar-secondary {
     flex-direction: column;
+  }
+
+  .toolbar-secondary .search-box,
+  .toolbar-secondary .jump-box {
+    width: 100%;
+  }
+
+  .toolbar-secondary .jump-box input {
+    width: 100%;
+    flex: 1;
+    min-width: 0;
   }
 
   .mode-switch {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 
   .mode-switch button {

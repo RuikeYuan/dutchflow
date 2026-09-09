@@ -4095,36 +4095,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="toolbar">
-          <label className="search-box">
-            <Search size={18} />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={t.searchPlaceholder}
-            />
-          </label>
-
-          <form
-            className="jump-box"
-            onSubmit={(event) => {
-              event.preventDefault();
-              jumpToRank();
-            }}
-          >
-            <input
-              type="number"
-              min={1}
-              value={jumpValue}
-              onChange={(event) => setJumpValue(event.target.value)}
-              placeholder={t.jumpToRankPlaceholder}
-            />
-            <button type="submit" disabled={!jumpValue.trim()}>
-              <ChevronRight size={16} />
-              <span>{t.jumpToRankButton}</span>
-            </button>
-          </form>
-
+        <div className="toolbar-primary">
           <div className="mode-switch" aria-label={t.viewLabel}>
             <button className={mode === "browse" ? "active" : ""} onClick={() => setMode("browse")}>
               <Layers3 size={17} />
@@ -4159,6 +4130,37 @@ export default function App() {
               <span>{t.modeMethod}</span>
             </button>
           </div>
+        </div>
+
+        <div className="toolbar-secondary">
+          <label className="search-box">
+            <Search size={18} />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t.searchPlaceholder}
+            />
+          </label>
+
+          <form
+            className="jump-box"
+            onSubmit={(event) => {
+              event.preventDefault();
+              jumpToRank();
+            }}
+          >
+            <input
+              type="number"
+              min={1}
+              value={jumpValue}
+              onChange={(event) => setJumpValue(event.target.value)}
+              placeholder={t.jumpToRankPlaceholder}
+            />
+            <button type="submit" disabled={!jumpValue.trim()}>
+              <ChevronRight size={16} />
+              <span>{t.jumpToRankButton}</span>
+            </button>
+          </form>
 
           {mode !== "method" && mode !== "speaking" && mode !== "grammar" && mode !== "reading" && mode !== "podcast" ? (
             <div className="card-controls" aria-label="Card side controls">
