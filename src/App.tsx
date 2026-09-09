@@ -36,7 +36,7 @@ type DutchWord = {
   frequency?: number;
 };
 
-type ViewMode = "browse" | "notebook" | "study" | "speaking" | "grammar" | "reading" | "podcast" | "method";
+type ViewMode = "landing" | "browse" | "notebook" | "study" | "speaking" | "grammar" | "reading" | "podcast" | "method";
 type UiLanguage = "zh" | "en" | "nl" | "es" | "de";
 type ExampleTranslationLanguage = "zh" | "en" | "de";
 type CardMeaningLanguage = "en" | "zh";
@@ -108,6 +108,51 @@ const languageNames: Record<UiLanguage, string> = {
   de: "Deutsch"
 };
 
+type LandingCopy = {
+  navFeatures: string;
+  navMethod: string;
+  navData: string;
+  navCta: string;
+  heroEyebrow: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroCtaPrimary: string;
+  heroCtaSecondary: string;
+  heroScreenshotAlt: string;
+  statsWords: string;
+  statsCategories: string;
+  statsFeatures: string;
+  featuresTitle: string;
+  featuresSubtitle: string;
+  featureExampleTitle: string;
+  featureExampleBody: string;
+  featureSrsTitle: string;
+  featureSrsBody: string;
+  featureSpeakingTitle: string;
+  featureSpeakingBody: string;
+  featureReadingTitle: string;
+  featureReadingBody: string;
+  featurePodcastTitle: string;
+  featurePodcastBody: string;
+  featureSyncTitle: string;
+  featureSyncBody: string;
+  methodTitle: string;
+  methodSubtitle: string;
+  step1Title: string;
+  step1Body: string;
+  step2Title: string;
+  step2Body: string;
+  step3Title: string;
+  step3Body: string;
+  step4Title: string;
+  step4Body: string;
+  ctaTitle: string;
+  ctaSubtitle: string;
+  ctaButton: string;
+  footerLeft: string;
+  footerRight: string;
+};
+
 const translations: Record<
   UiLanguage,
   {
@@ -115,6 +160,7 @@ const translations: Record<
     title: string;
     subtitle: string;
     language: string;
+    landing: LandingCopy;
     statsWords: string;
     statsNotebook: string;
     statsCurrent: string;
@@ -240,6 +286,51 @@ const translations: Record<
     title: "荷兰语高频词学习",
     subtitle: "基于 Frequency Dictionary 词频数据，按核心词、场景词和通用词逐步学习。",
     language: "界面语言",
+    landing: {
+      navFeatures: "功能",
+      navMethod: "学习路径",
+      navData: "词库数据",
+      navCta: "开始学习",
+      heroEyebrow: "AI 驱动 · 荷兰语词频学习",
+      heroTitle: "从 5813 个高频词，\n学到能读懂真实荷兰语。",
+      heroSubtitle:
+        "按词频排序的核心词、小说、新闻、口语、网络、通用六大分类，配合 AI 例句、间隔重复练习、AI 口语陪练和每日 AI 阅读——一条从零到能读会说的路径。",
+      heroCtaPrimary: "免费开始学习",
+      heroCtaSecondary: "看看有什么功能",
+      heroScreenshotAlt: "词频卡片截图",
+      statsWords: "高频词条",
+      statsCategories: "场景分类",
+      statsFeatures: "学习功能",
+      featuresTitle: "背单词只是起点，真正学会需要这些",
+      featuresSubtitle: "每个功能都直接解决“背完就忘”“不敢开口”“看不懂真实内容”这几个荷兰语学习者最常卡住的地方。",
+      featureExampleTitle: "AI 生成例句",
+      featureExampleBody: "每个单词一键生成贴合语境的荷兰语例句，附中英翻译和语法讲解，而不是孤立背单词。",
+      featureSrsTitle: "间隔重复练习",
+      featureSrsBody: "根据记忆曲线安排复习节奏，快遗忘的词优先出现，学习时间花在刀刃上。",
+      featureSpeakingTitle: "AI 口语陪练",
+      featureSpeakingBody: "选择生活场景，AI 老师提问、你用荷兰语回答，实时纠错，敢开口才是真的会。",
+      featureReadingTitle: "每日 AI 阅读",
+      featureReadingBody: "每天生成灵感来自荷兰新闻话题的原创短文（A2–B1 难度），配中文翻译和语法讲解。",
+      featurePodcastTitle: "AI 播客对话",
+      featurePodcastBody: "两位虚拟主播用简单荷兰语聊时事，配文字稿和讲解，练听力像追剧一样自然。",
+      featureSyncTitle: "跨设备同步",
+      featureSyncBody: "一个同步码，手机和电脑之间的单词本、学习进度自动保持一致。",
+      methodTitle: "从核心词到能听懂真实对话，四步走完。",
+      methodSubtitle: "按词频学习意味着你先掌握覆盖率最高的词——通常前 2000 个高频词就能覆盖日常文本 90% 以上的内容。",
+      step1Title: "打好核心词基础",
+      step1Body: "先集中学最高频的核心词，覆盖日常表达的地基。",
+      step2Title: "按场景扩展词汇",
+      step2Body: "小说、新闻、口语、网络分类，按兴趣和需求补充。",
+      step3Title: "真实语境里巩固",
+      step3Body: "每日阅读、播客对话，让生词在真实内容里反复出现。",
+      step4Title: "开口说、被纠正",
+      step4Body: "AI 口语陪练把输入变成输出，纠错帮你把语感磨准。",
+      ctaTitle: "今天就从第一个高频词开始。",
+      ctaSubtitle: "免费使用，无需下载，浏览器打开就能学。",
+      ctaButton: "开始学习荷兰语",
+      footerLeft: "Dutch Frequency Trainer — 基于 Frequency Dictionary 词频数据",
+      footerRight: "荷兰语高频词学习"
+    },
     statsWords: "词库",
     statsNotebook: "单词本",
     statsCurrent: "当前",
@@ -383,6 +474,58 @@ const translations: Record<
     title: "Dutch Frequency Learning",
     subtitle: "Study Dutch with frequency data, moving from core words to genre and general vocabulary.",
     language: "Interface language",
+    landing: {
+      navFeatures: "Features",
+      navMethod: "Method",
+      navData: "Word data",
+      navCta: "Get started",
+      heroEyebrow: "AI-powered · Dutch frequency learning",
+      heroTitle: "From 5,813 high-frequency words\nto real Dutch fluency.",
+      heroSubtitle:
+        "Core, Fiction, Newspapers, Spoken, Web, and General — six frequency-ranked categories, paired with AI example sentences, spaced repetition, AI speaking practice, and daily AI reading. One path from zero to reading and speaking.",
+      heroCtaPrimary: "Start learning free",
+      heroCtaSecondary: "See what's inside",
+      heroScreenshotAlt: "Screenshot of word frequency cards",
+      statsWords: "high-frequency words",
+      statsCategories: "categories",
+      statsFeatures: "learning features",
+      featuresTitle: "Memorizing words is just the start",
+      featuresSubtitle:
+        "Every feature tackles the exact points where Dutch learners get stuck: forgetting words right after learning them, being afraid to speak, and not being able to follow real content.",
+      featureExampleTitle: "AI-generated examples",
+      featureExampleBody:
+        "Generate a natural Dutch example sentence for any word in one click, with translation and grammar notes — never memorize a word in isolation.",
+      featureSrsTitle: "Spaced repetition",
+      featureSrsBody:
+        "Review timing follows your forgetting curve — words you're about to forget resurface first, so your time goes where it matters.",
+      featureSpeakingTitle: "AI speaking practice",
+      featureSpeakingBody:
+        "Pick a real-life scenario, answer an AI tutor's questions in Dutch, and get corrected on the spot. Speaking is the only way to really know a language.",
+      featureReadingTitle: "Daily AI reading",
+      featureReadingBody:
+        "Short original passages generated daily (A2–B1 level), inspired by Dutch news, with translation and grammar notes.",
+      featurePodcastTitle: "AI podcast dialogues",
+      featurePodcastBody:
+        "Two AI hosts discuss current events in simple Dutch, with transcripts and grammar notes — listening practice that feels like a podcast, not homework.",
+      featureSyncTitle: "Cross-device sync",
+      featureSyncBody: "One sync code keeps your saved words and progress in step across phone and computer.",
+      methodTitle: "From core words to real conversations, in four steps.",
+      methodSubtitle:
+        "Learning by frequency means mastering the highest-coverage words first — the top 2,000 alone typically cover over 90% of everyday text.",
+      step1Title: "Build your core vocabulary",
+      step1Body: "Start with the most frequent core words — the foundation of everyday expression.",
+      step2Title: "Expand by scenario",
+      step2Body: "Add Fiction, Newspapers, Spoken, or Web vocabulary based on your interests and needs.",
+      step3Title: "Reinforce in real context",
+      step3Body: "Daily reading and podcast dialogues put new words in front of you again and again, in real content.",
+      step4Title: "Speak, and get corrected",
+      step4Body: "AI speaking practice turns input into output, and corrections sharpen your intuition.",
+      ctaTitle: "Start with word #1, today.",
+      ctaSubtitle: "Free to use, nothing to install — just open your browser and start.",
+      ctaButton: "Start learning Dutch",
+      footerLeft: "Dutch Frequency Trainer — built on Frequency Dictionary word-frequency data",
+      footerRight: "Dutch high-frequency vocabulary"
+    },
     statsWords: "Words",
     statsNotebook: "Notebook",
     statsCurrent: "Current",
@@ -526,6 +669,59 @@ const translations: Record<
     title: "Nederlands leren met frequentiewoorden",
     subtitle: "Leer Nederlands met frequentiedata, van kernwoorden naar genres en algemene woordenschat.",
     language: "Interfacetaal",
+    landing: {
+      navFeatures: "Functies",
+      navMethod: "Methode",
+      navData: "Woordgegevens",
+      navCta: "Beginnen",
+      heroEyebrow: "AI-gestuurd · Nederlands leren op frequentie",
+      heroTitle: "Van 5.813 hoogfrequente woorden\nnaar echte vaardigheid in het Nederlands.",
+      heroSubtitle:
+        "Kern, Fictie, Kranten, Gesproken, Web en Algemeen — zes categorieën gerangschikt op frequentie, gecombineerd met AI-voorbeeldzinnen, herhaling op basis van je vergeetcurve, AI-spreekoefeningen en dagelijks AI-leesmateriaal. Eén route van nul naar lezen en spreken.",
+      heroCtaPrimary: "Gratis beginnen",
+      heroCtaSecondary: "Bekijk de functies",
+      heroScreenshotAlt: "Screenshot van woordfrequentiekaarten",
+      statsWords: "hoogfrequente woorden",
+      statsCategories: "categorieën",
+      statsFeatures: "leerfuncties",
+      featuresTitle: "Woorden stampen is nog maar het begin",
+      featuresSubtitle:
+        "Elke functie pakt precies de punten aan waar leerders van het Nederlands vastlopen: woorden meteen weer vergeten, niet durven spreken, en echte content niet kunnen volgen.",
+      featureExampleTitle: "AI-voorbeeldzinnen",
+      featureExampleBody:
+        "Genereer met één klik een natuurlijke Nederlandse voorbeeldzin bij elk woord, met vertaling en grammatica-uitleg — nooit een woord los uit zijn verband leren.",
+      featureSrsTitle: "Herhaling op maat",
+      featureSrsBody:
+        "De herhalingstiming volgt jouw vergeetcurve — woorden die je bijna vergeet komen als eerste terug, zodat je tijd gaat naar wat telt.",
+      featureSpeakingTitle: "AI-spreekoefening",
+      featureSpeakingBody:
+        "Kies een alledaagse situatie, beantwoord de vragen van een AI-docent in het Nederlands en krijg direct feedback. Spreken is de enige manier om een taal echt te beheersen.",
+      featureReadingTitle: "Dagelijks AI-leesmateriaal",
+      featureReadingBody:
+        "Elke dag een nieuwe, originele tekst (niveau A2–B1) geïnspireerd op Nederlands nieuws, met vertaling en grammatica-uitleg.",
+      featurePodcastTitle: "AI-podcastgesprekken",
+      featurePodcastBody:
+        "Twee AI-presentatoren bespreken actualiteiten in eenvoudig Nederlands, met transcript en uitleg — luisteroefening die aanvoelt als een podcast, geen huiswerk.",
+      featureSyncTitle: "Synchroniseren tussen apparaten",
+      featureSyncBody:
+        "Eén synchronisatiecode houdt je opgeslagen woorden en voortgang gelijk tussen telefoon en computer.",
+      methodTitle: "In vier stappen van kernwoorden naar echte gesprekken.",
+      methodSubtitle:
+        "Leren op basis van frequentie betekent eerst de woorden met de hoogste dekking beheersen — de top 2.000 dekt vaak al meer dan 90% van alledaagse tekst.",
+      step1Title: "Bouw je kernwoordenschat op",
+      step1Body: "Begin met de meest voorkomende kernwoorden — de basis van alledaagse taal.",
+      step2Title: "Breid uit per scenario",
+      step2Body: "Voeg woordenschat toe uit Fictie, Kranten, Gesproken of Web, afhankelijk van je interesses en behoeften.",
+      step3Title: "Verstevig in echte context",
+      step3Body: "Dagelijks lezen en podcastgesprekken laten nieuwe woorden telkens opnieuw zien, in echte content.",
+      step4Title: "Spreek, en krijg feedback",
+      step4Body: "AI-spreekoefening maakt van input output, en correcties scherpen je taalgevoel aan.",
+      ctaTitle: "Begin vandaag nog met woord nummer 1.",
+      ctaSubtitle: "Gratis te gebruiken, niets te installeren — open gewoon je browser en begin.",
+      ctaButton: "Begin met Nederlands leren",
+      footerLeft: "Dutch Frequency Trainer — gebaseerd op frequentiedata van Frequency Dictionary",
+      footerRight: "Hoogfrequente Nederlandse woordenschat"
+    },
     statsWords: "Woorden",
     statsNotebook: "Woordenlijst",
     statsCurrent: "Huidig",
@@ -669,6 +865,59 @@ const translations: Record<
     title: "Aprende neerlandés con palabras frecuentes",
     subtitle: "Estudia neerlandés con datos de frecuencia, desde palabras básicas hasta vocabulario general y por género.",
     language: "Idioma de la interfaz",
+    landing: {
+      navFeatures: "Funciones",
+      navMethod: "Método",
+      navData: "Datos léxicos",
+      navCta: "Empezar",
+      heroEyebrow: "Impulsado por IA · Neerlandés por frecuencia",
+      heroTitle: "De 5813 palabras de alta frecuencia\na una fluidez real en neerlandés.",
+      heroSubtitle:
+        "Core, Ficción, Prensa, Oral, Web y General: seis categorías ordenadas por frecuencia, combinadas con frases de ejemplo generadas por IA, repetición espaciada, práctica oral con IA y lectura diaria generada por IA. Un solo camino de cero a leer y hablar.",
+      heroCtaPrimary: "Empezar gratis",
+      heroCtaSecondary: "Ver las funciones",
+      heroScreenshotAlt: "Captura de las tarjetas de frecuencia de palabras",
+      statsWords: "palabras de alta frecuencia",
+      statsCategories: "categorías",
+      statsFeatures: "funciones de aprendizaje",
+      featuresTitle: "Memorizar palabras es solo el principio",
+      featuresSubtitle:
+        "Cada función resuelve justo los puntos donde se atascan quienes aprenden neerlandés: olvidar las palabras nada más aprenderlas, no atreverse a hablar y no poder seguir contenido real.",
+      featureExampleTitle: "Ejemplos generados por IA",
+      featureExampleBody:
+        "Genera con un clic una frase de ejemplo natural en neerlandés para cualquier palabra, con traducción y notas de gramática — nunca memorices una palabra aislada.",
+      featureSrsTitle: "Repetición espaciada",
+      featureSrsBody:
+        "El ritmo de repaso sigue tu curva de olvido: las palabras que estás a punto de olvidar reaparecen primero, así que tu tiempo se invierte donde importa.",
+      featureSpeakingTitle: "Práctica oral con IA",
+      featureSpeakingBody:
+        "Elige una situación real, responde en neerlandés a las preguntas de un tutor de IA y recibe corrección al instante. Hablar es la única forma de dominar de verdad un idioma.",
+      featureReadingTitle: "Lectura diaria con IA",
+      featureReadingBody:
+        "Textos originales breves generados cada día (nivel A2–B1), inspirados en noticias neerlandesas, con traducción y notas de gramática.",
+      featurePodcastTitle: "Diálogos de podcast con IA",
+      featurePodcastBody:
+        "Dos presentadores de IA comentan la actualidad en neerlandés sencillo, con transcripción y explicaciones — práctica de escucha que se siente como un podcast, no como deberes.",
+      featureSyncTitle: "Sincronización entre dispositivos",
+      featureSyncBody:
+        "Un código de sincronización mantiene tus palabras guardadas y tu progreso iguales entre el móvil y el ordenador.",
+      methodTitle: "De las palabras básicas a conversaciones reales, en cuatro pasos.",
+      methodSubtitle:
+        "Aprender por frecuencia significa dominar primero las palabras de mayor cobertura: las 2000 más frecuentes suelen cubrir más del 90% del texto cotidiano.",
+      step1Title: "Construye tu vocabulario básico",
+      step1Body: "Empieza por las palabras más frecuentes: la base de la expresión cotidiana.",
+      step2Title: "Amplía por escenario",
+      step2Body: "Añade vocabulario de Ficción, Prensa, Oral o Web según tus intereses y necesidades.",
+      step3Title: "Refuerza en contexto real",
+      step3Body: "La lectura diaria y los diálogos de podcast ponen las palabras nuevas frente a ti una y otra vez, en contenido real.",
+      step4Title: "Habla, y recibe corrección",
+      step4Body: "La práctica oral con IA convierte la entrada en salida, y las correcciones afinan tu intuición.",
+      ctaTitle: "Empieza hoy mismo por la palabra número 1.",
+      ctaSubtitle: "Gratis, sin nada que instalar: abre el navegador y empieza.",
+      ctaButton: "Empezar a aprender neerlandés",
+      footerLeft: "Dutch Frequency Trainer — basado en datos de frecuencia de Frequency Dictionary",
+      footerRight: "Vocabulario neerlandés de alta frecuencia"
+    },
     statsWords: "Palabras",
     statsNotebook: "Cuaderno",
     statsCurrent: "Actual",
@@ -812,6 +1061,59 @@ const translations: Record<
     title: "Niederländisch mit häufigen Wörtern lernen",
     subtitle: "Lerne Niederländisch mit Frequenzdaten, von Grundwortschatz bis zu Genre- und Allgemeinwortschatz.",
     language: "Oberflächensprache",
+    landing: {
+      navFeatures: "Funktionen",
+      navMethod: "Methode",
+      navData: "Wortdaten",
+      navCta: "Loslegen",
+      heroEyebrow: "KI-gestützt · Niederländisch nach Häufigkeit lernen",
+      heroTitle: "Von 5813 hochfrequenten Wörtern\nzu echter Sprachkompetenz im Niederländischen.",
+      heroSubtitle:
+        "Kern, Fiktion, Zeitungen, Gesprochen, Web und Allgemein — sechs nach Häufigkeit sortierte Kategorien, kombiniert mit KI-Beispielsätzen, Spaced Repetition, KI-Sprachtraining und täglichem KI-Lesematerial. Ein Weg von null zum Lesen und Sprechen.",
+      heroCtaPrimary: "Kostenlos starten",
+      heroCtaSecondary: "Funktionen ansehen",
+      heroScreenshotAlt: "Screenshot der Wortfrequenz-Karten",
+      statsWords: "hochfrequente Wörter",
+      statsCategories: "Kategorien",
+      statsFeatures: "Lernfunktionen",
+      featuresTitle: "Vokabeln pauken ist erst der Anfang",
+      featuresSubtitle:
+        "Jede Funktion setzt genau dort an, wo Niederländisch-Lernende hängen bleiben: Wörter gleich wieder vergessen, sich nicht trauen zu sprechen und echte Inhalte nicht verstehen.",
+      featureExampleTitle: "KI-generierte Beispiele",
+      featureExampleBody:
+        "Erzeuge mit einem Klick einen natürlichen niederländischen Beispielsatz zu jedem Wort, mit Übersetzung und Grammatikhinweisen — nie ein Wort isoliert lernen.",
+      featureSrsTitle: "Spaced Repetition",
+      featureSrsBody:
+        "Der Wiederholungsrhythmus folgt deiner Vergessenskurve — Wörter, die du bald vergisst, tauchen zuerst wieder auf, damit deine Zeit dort ankommt, wo sie zählt.",
+      featureSpeakingTitle: "KI-Sprachtraining",
+      featureSpeakingBody:
+        "Wähle eine Alltagssituation, beantworte die Fragen eines KI-Tutors auf Niederländisch und erhalte sofort Korrekturen. Sprechen ist der einzige Weg, eine Sprache wirklich zu beherrschen.",
+      featureReadingTitle: "Tägliches KI-Lesematerial",
+      featureReadingBody:
+        "Täglich neue, originale Kurztexte (Niveau A2–B1), inspiriert von niederländischen Nachrichten, mit Übersetzung und Grammatikhinweisen.",
+      featurePodcastTitle: "KI-Podcast-Dialoge",
+      featurePodcastBody:
+        "Zwei KI-Moderatoren besprechen aktuelle Themen in einfachem Niederländisch, mit Transkript und Erklärungen — Hörtraining, das sich wie ein Podcast anfühlt, nicht wie Hausaufgaben.",
+      featureSyncTitle: "Geräteübergreifende Synchronisierung",
+      featureSyncBody:
+        "Ein Sync-Code hält deine gespeicherten Wörter und deinen Fortschritt zwischen Handy und Computer auf demselben Stand.",
+      methodTitle: "In vier Schritten von Kernwörtern zu echten Gesprächen.",
+      methodSubtitle:
+        "Lernen nach Häufigkeit heißt, zuerst die Wörter mit der höchsten Abdeckung zu beherrschen — allein die Top 2000 decken meist über 90% alltäglicher Texte ab.",
+      step1Title: "Kernwortschatz aufbauen",
+      step1Body: "Beginne mit den häufigsten Kernwörtern — der Grundlage alltäglicher Ausdrucksweise.",
+      step2Title: "Nach Szenario erweitern",
+      step2Body: "Ergänze Wortschatz aus Fiktion, Zeitungen, Gesprochen oder Web, je nach Interesse und Bedarf.",
+      step3Title: "Im echten Kontext festigen",
+      step3Body: "Tägliches Lesen und Podcast-Dialoge bringen neue Wörter immer wieder vor Augen, in echten Inhalten.",
+      step4Title: "Sprechen und korrigiert werden",
+      step4Body: "KI-Sprachtraining macht aus Input Output, und Korrekturen schärfen dein Sprachgefühl.",
+      ctaTitle: "Starte noch heute mit Wort Nummer eins.",
+      ctaSubtitle: "Kostenlos nutzbar, nichts zu installieren — einfach den Browser öffnen und loslegen.",
+      ctaButton: "Niederländisch lernen starten",
+      footerLeft: "Dutch Frequency Trainer — basierend auf Frequenzdaten von Frequency Dictionary",
+      footerRight: "Hochfrequenter niederländischer Wortschatz"
+    },
     statsWords: "Wörter",
     statsNotebook: "Wortliste",
     statsCurrent: "Aktuell",
@@ -2522,6 +2824,277 @@ async function fetchReadingGenreItems(genreKey: ReadingGenre): Promise<NewsReadi
   return data.items ?? [];
 }
 
+function LandingPage({
+  t,
+  language,
+  onLanguageChange,
+  onStart
+}: {
+  t: (typeof translations)[UiLanguage];
+  language: UiLanguage;
+  onLanguageChange: (language: UiLanguage) => void;
+  onStart: () => void;
+}) {
+  const l = t.landing;
+  const previewWords = words.slice(0, 3);
+  const previewMeaningLanguage: CardMeaningLanguage = language === "zh" ? "zh" : "en";
+  const categoryStats: { list: string; count: number }[] = [
+    { list: "Core", count: 939 },
+    { list: "Fiction", count: 1079 },
+    { list: "Newspapers", count: 1124 },
+    { list: "Spoken", count: 153 },
+    { list: "Web", count: 521 },
+    { list: "General", count: 1997 }
+  ];
+
+  const featureCards: { icon: JSX.Element; title: string; body: string; tint: string; iconColor: string }[] = [
+    {
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8" />
+        </svg>
+      ),
+      title: l.featureExampleTitle,
+      body: l.featureExampleBody,
+      tint: "#ffedd5",
+      iconColor: "#c2410c"
+    },
+    {
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M3 12a9 9 0 0 1 15.3-6.4L21 8" />
+          <path d="M21 3v5h-5" />
+          <path d="M21 12a9 9 0 0 1-15.3 6.4L3 16" />
+          <path d="M3 21v-5h5" />
+        </svg>
+      ),
+      title: l.featureSrsTitle,
+      body: l.featureSrsBody,
+      tint: "#e0f2fe",
+      iconColor: "#075985"
+    },
+    {
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <rect x="9" y="2" width="6" height="12" rx="3" />
+          <path d="M5 10a7 7 0 0 0 14 0M12 19v3M9 22h6" />
+        </svg>
+      ),
+      title: l.featureSpeakingTitle,
+      body: l.featureSpeakingBody,
+      tint: "#ffe4e6",
+      iconColor: "#9f1239"
+    },
+    {
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M4 4h13a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4Z" />
+          <path d="M7 8h9M7 12h9M7 16h5" />
+        </svg>
+      ),
+      title: l.featureReadingTitle,
+      body: l.featureReadingBody,
+      tint: "#fef3c7",
+      iconColor: "#92400e"
+    },
+    {
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <circle cx="12" cy="12" r="9" />
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 3v2M12 19v2" />
+        </svg>
+      ),
+      title: l.featurePodcastTitle,
+      body: l.featurePodcastBody,
+      tint: "#e0e7ff",
+      iconColor: "#3730a3"
+    },
+    {
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M17 2.1l4 4-4 4" />
+          <path d="M3 12.1v-2a4 4 0 0 1 4-4h14" />
+          <path d="M7 21.9l-4-4 4-4" />
+          <path d="M21 11.9v2a4 4 0 0 1-4 4H3" />
+        </svg>
+      ),
+      title: l.featureSyncTitle,
+      body: l.featureSyncBody,
+      tint: "#f5f5f4",
+      iconColor: "#44403c"
+    }
+  ];
+
+  const steps = [
+    { n: "1", title: l.step1Title, body: l.step1Body },
+    { n: "2", title: l.step2Title, body: l.step2Body },
+    { n: "3", title: l.step3Title, body: l.step3Body },
+    { n: "4", title: l.step4Title, body: l.step4Body }
+  ];
+
+  return (
+    <div className="landing-page">
+      <div className="landing-nav">
+        <div className="landing-wrap landing-nav-row">
+          <div className="landing-brand">
+            <BookOpen size={22} />
+            <span>Dutch Frequency Trainer</span>
+          </div>
+          <div className="landing-nav-links">
+            <a href="#landing-features">{l.navFeatures}</a>
+            <a href="#landing-method">{l.navMethod}</a>
+            <label className="landing-lang-select">
+              <select value={language} onChange={(event) => onLanguageChange(event.target.value as UiLanguage)}>
+                {(Object.keys(languageNames) as UiLanguage[]).map((key) => (
+                  <option key={key} value={key}>
+                    {languageNames[key]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="button" className="landing-nav-cta" onClick={onStart}>
+              {l.navCta}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="landing-wrap landing-hero">
+        <div>
+          <div className="landing-eyebrow">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" />
+            </svg>
+            {l.heroEyebrow}
+          </div>
+          <h1 className="landing-hero-title">{l.heroTitle}</h1>
+          <p className="landing-hero-subtitle">{l.heroSubtitle}</p>
+          <div className="landing-hero-actions">
+            <button type="button" className="landing-cta-button" onClick={onStart}>
+              {l.heroCtaPrimary}
+            </button>
+            <a href="#landing-features" className="landing-secondary-link">
+              {l.heroCtaSecondary}
+              <ChevronRight size={15} />
+            </a>
+          </div>
+          <div className="landing-hero-stats">
+            <div>
+              <strong>{words.length}</strong>
+              <span>{l.statsWords}</span>
+            </div>
+            <div className="landing-hero-stats-divider" />
+            <div>
+              <strong>{categoryStats.length}</strong>
+              <span>{l.statsCategories}</span>
+            </div>
+            <div className="landing-hero-stats-divider" />
+            <div>
+              <strong>{featureCards.length}</strong>
+              <span>{l.statsFeatures}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="landing-hero-visual" aria-hidden="true">
+          <div className="landing-hero-glow" />
+          <div className="landing-hero-window">
+            <div className="landing-hero-window-bar">
+              <span className="landing-dot landing-dot-red" />
+              <span className="landing-dot landing-dot-amber" />
+              <span className="landing-dot landing-dot-green" />
+              <span className="landing-hero-window-title">{l.heroScreenshotAlt}</span>
+            </div>
+            <div className="landing-hero-window-body">
+              {previewWords.map((word) => (
+                <div className="landing-preview-card" key={word.sourceId}>
+                  <div className="meta-row">
+                    <span className="rank">#{word.rank}</span>
+                    <span className={`pill ${listTone[word.list] ?? "tone-general"}`}>
+                      {t.list[word.list] ?? word.list}
+                    </span>
+                  </div>
+                  <div className="landing-preview-word">{word.word}</div>
+                  <div className="landing-preview-meaning">{cardMeaningFor(word, previewMeaningLanguage)}</div>
+                  <div className="meter">
+                    <span style={{ width: `${Math.min(word.frequency ?? 0, 100)}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="landing-proof">
+        <div className="landing-wrap landing-proof-row">
+          {categoryStats.map((item) => (
+            <span key={item.list}>
+              {t.list[item.list] ?? item.list} {item.count}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div id="landing-features" className="landing-wrap landing-features">
+        <div className="landing-section-intro">
+          <div className="landing-section-eyebrow">{l.navFeatures}</div>
+          <h2>{l.featuresTitle}</h2>
+          <p>{l.featuresSubtitle}</p>
+        </div>
+        <div className="landing-feature-grid">
+          {featureCards.map((card) => (
+            <div className="landing-feature-card" key={card.title}>
+              <div className="landing-feature-icon" style={{ background: card.tint, color: card.iconColor }}>
+                {card.icon}
+              </div>
+              <h3>{card.title}</h3>
+              <p>{card.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div id="landing-method" className="landing-wrap">
+        <div className="landing-method">
+          <div className="landing-method-intro">
+            <div className="landing-section-eyebrow landing-method-eyebrow">{l.navMethod}</div>
+            <h2>{l.methodTitle}</h2>
+            <p>{l.methodSubtitle}</p>
+          </div>
+          <div className="landing-steps">
+            {steps.map((step) => (
+              <div className="landing-step" key={step.n}>
+                <div className="landing-step-num">{step.n}</div>
+                <div>
+                  <div className="landing-step-title">{step.title}</div>
+                  <div className="landing-step-body">{step.body}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="landing-wrap landing-final-cta">
+        <h2>{l.ctaTitle}</h2>
+        <p>{l.ctaSubtitle}</p>
+        <button type="button" className="landing-cta-button landing-cta-button-large" onClick={onStart}>
+          {l.ctaButton}
+        </button>
+      </div>
+
+      <div className="landing-footer">
+        <div className="landing-wrap landing-footer-row">
+          <span>{l.footerLeft}</span>
+          <span>{l.footerRight}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DailyReadingPage({ t, language }: { t: (typeof translations)[UiLanguage]; language: UiLanguage }) {
   const [genre, setGenre] = useState<ReadingGenre>("algemeen");
   const [items, setItems] = useState<NewsReadingItem[]>([]);
@@ -3137,7 +3710,7 @@ function PodcastPage({ t, language }: { t: (typeof translations)[UiLanguage]; la
 }
 
 export default function App() {
-  const [mode, setMode] = useState<ViewMode>("browse");
+  const [mode, setMode] = useState<ViewMode>("landing");
   const [language, setLanguage] = useState<UiLanguage>(getSavedLanguage);
   const [query, setQuery] = useState("");
   const [jumpValue, setJumpValue] = useState("");
@@ -3989,6 +4562,17 @@ export default function App() {
 
   const studyCardFlipped = studyWord ? isCardFlipped(studyWord.sourceId) : cardsFlipped;
   const studySentenceKey = studyWord ? sentenceKeyFor(studyWord) : "";
+
+  if (mode === "landing") {
+    return (
+      <LandingPage
+        t={t}
+        language={language}
+        onLanguageChange={setLanguage}
+        onStart={() => setMode("browse")}
+      />
+    );
+  }
 
   return (
     <main>
