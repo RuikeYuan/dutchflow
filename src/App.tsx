@@ -274,6 +274,10 @@ const translations: Record<
     explainingGrammar: string;
     grammarExplanation: string;
     grammarFailed: string;
+    grammarNodeExplainButton: string;
+    grammarNodeExplaining: string;
+    grammarNodeExplainFailed: string;
+    grammarNodeDetailedTitle: string;
     askWord: string;
     askingWord: string;
     wordQuestionPlaceholder: string;
@@ -446,6 +450,10 @@ const translations: Record<
     explainingGrammar: "讲解中...",
     grammarExplanation: "语法细节",
     grammarFailed: "语法讲解失败，请检查 Gemini 配置",
+    grammarNodeExplainButton: "生成详细讲解",
+    grammarNodeExplaining: "详细讲解生成中…",
+    grammarNodeExplainFailed: "生成失败，请检查 Gemini 配置后重试",
+    grammarNodeDetailedTitle: "详细讲解",
     askWord: "问 AI",
     askingWord: "回答中...",
     wordQuestionPlaceholder: "问这个词的语法、用法、搭配、区别...",
@@ -643,6 +651,10 @@ const translations: Record<
     explainingGrammar: "Explaining...",
     grammarExplanation: "Grammar details",
     grammarFailed: "Could not explain grammar. Check the LLM config",
+    grammarNodeExplainButton: "Get a detailed explanation",
+    grammarNodeExplaining: "Generating a detailed explanation…",
+    grammarNodeExplainFailed: "Failed to generate. Check the LLM config and try again",
+    grammarNodeDetailedTitle: "Detailed explanation",
     askWord: "Ask AI",
     askingWord: "Answering...",
     wordQuestionPlaceholder: "Ask grammar, usage, collocations, nuance...",
@@ -841,6 +853,10 @@ const translations: Record<
     explainingGrammar: "Uitleg...",
     grammarExplanation: "Grammatica",
     grammarFailed: "Grammatica-uitleg mislukt. Controleer Gemini",
+    grammarNodeExplainButton: "Genereer een gedetailleerde uitleg",
+    grammarNodeExplaining: "Gedetailleerde uitleg wordt gegenereerd…",
+    grammarNodeExplainFailed: "Genereren mislukt. Controleer Gemini en probeer opnieuw",
+    grammarNodeDetailedTitle: "Gedetailleerde uitleg",
     askWord: "Vraag AI",
     askingWord: "Antwoord...",
     wordQuestionPlaceholder: "Vraag naar grammatica, gebruik, combinaties...",
@@ -1039,6 +1055,10 @@ const translations: Record<
     explainingGrammar: "Explicando...",
     grammarExplanation: "Detalles gramaticales",
     grammarFailed: "No se pudo explicar la gramática. Revisa Gemini",
+    grammarNodeExplainButton: "Generar una explicación detallada",
+    grammarNodeExplaining: "Generando una explicación detallada…",
+    grammarNodeExplainFailed: "No se pudo generar. Revisa Gemini e inténtalo de nuevo",
+    grammarNodeDetailedTitle: "Explicación detallada",
     askWord: "Preguntar IA",
     askingWord: "Respondiendo...",
     wordQuestionPlaceholder: "Pregunta gramática, uso, matices...",
@@ -1237,6 +1257,10 @@ const translations: Record<
     explainingGrammar: "Erklärt...",
     grammarExplanation: "Grammatikdetails",
     grammarFailed: "Grammatikerklärung fehlgeschlagen. Prüfe Gemini",
+    grammarNodeExplainButton: "Ausführliche Erklärung erstellen",
+    grammarNodeExplaining: "Ausführliche Erklärung wird erstellt…",
+    grammarNodeExplainFailed: "Erstellung fehlgeschlagen. Prüfe Gemini und versuche es erneut",
+    grammarNodeDetailedTitle: "Ausführliche Erklärung",
     askWord: "KI fragen",
     askingWord: "Antwortet...",
     wordQuestionPlaceholder: "Frage zu Grammatik, Gebrauch, Nuancen...",
@@ -2359,9 +2383,57 @@ function WordCard({
   );
 }
 
-function GrammarGuidePage() {
+function GrammarGuidePage({ t, language }: { t: (typeof translations)[UiLanguage]; language: UiLanguage }) {
   const [selectedChapterId, setSelectedChapterId] = useState(grammarGuideChapters[0]?.id ?? "");
   const selectedChapter = grammarGuideChapters.find((chapter) => chapter.id === selectedChapterId) ?? grammarGuideChapters[0];
+
+  const [nodeExplanations, setNodeExplanations] = useState<Record<string, string>>({});
+  const [explainingNodeKey, setExplainingNodeKey] = useState("");
+  const [nodeExplainErrors, setNodeExplainErrors] = useState<Record<string, string>>({});
+
+  async function handleExplainGrammarNode(entry: GrammarNodeEntry) {
+    const key = `${entry.node.id}:${language}`;
+    if (nodeExplanations[key] || explainingNodeKey === key) return;
+    if (!apiAvailable) {
+      setNodeExplainErrors((current) => ({ ...current, [key]: t.grammarNodeExplainFailed }));
+      return;
+    }
+
+    setExplainingNodeKey(key);
+    setNodeExplainErrors((current) => ({ ...current, [key]: "" }));
+
+    try {
+      const response = await fetch(apiUrl("/api/explain-grammar-node"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          nodeTitle: entry.node.title,
+          path: entry.path.join(" / "),
+          hint: entry.node.detail ?? "",
+          targetLanguage: language
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to explain grammar node");
+      }
+
+      const data = (await response.json()) as { explanation?: string };
+      const explanation = data.explanation?.trim();
+      if (!explanation) {
+        throw new Error("Empty explanation");
+      }
+
+      const formatted = explanation.replace(/\s*(\d\.\s)/g, "\n$1").trim();
+      setNodeExplanations((current) => ({ ...current, [key]: formatted }));
+    } catch {
+      setNodeExplainErrors((current) => ({ ...current, [key]: t.grammarNodeExplainFailed }));
+    } finally {
+      setExplainingNodeKey("");
+    }
+  }
 
   return (
     <section className="grammar-page">
@@ -2370,7 +2442,7 @@ function GrammarGuidePage() {
           <span className="method-eyebrow">中文语法教练</span>
           <h2>荷兰语语法思维导图</h2>
           <p>
-            按《荷兰语语法自学教程》的结构整理成四大模块、十六个章节。点击导图节点进入章节页，先抓规则骨架，再回到词卡里问 AI 具体用法。
+            按《荷兰语语法自学教程》的结构整理成四大模块、十六个章节。点击导图节点进入章节页，先抓规则骨架，再点进具体知识点看 AI 详细讲解。
           </p>
         </div>
         <div className="grammar-source-note">
@@ -2409,13 +2481,37 @@ function GrammarGuidePage() {
           </div>
         </div>
 
-        <GrammarChapterPanel chapter={selectedChapter} />
+        <GrammarChapterPanel
+          chapter={selectedChapter}
+          t={t}
+          nodeExplanations={nodeExplanations}
+          explainingNodeKey={explainingNodeKey}
+          nodeExplainErrors={nodeExplainErrors}
+          language={language}
+          onExplainNode={handleExplainGrammarNode}
+        />
       </div>
     </section>
   );
 }
 
-function GrammarChapterPanel({ chapter }: { chapter: GrammarChapter }) {
+function GrammarChapterPanel({
+  chapter,
+  t,
+  language,
+  nodeExplanations,
+  explainingNodeKey,
+  nodeExplainErrors,
+  onExplainNode
+}: {
+  chapter: GrammarChapter;
+  t: (typeof translations)[UiLanguage];
+  language: UiLanguage;
+  nodeExplanations: Record<string, string>;
+  explainingNodeKey: string;
+  nodeExplainErrors: Record<string, string>;
+  onExplainNode: (entry: GrammarNodeEntry) => void;
+}) {
   const [selectedNodeId, setSelectedNodeId] = useState(chapter.nodes[0]?.id ?? "");
   const nodeEntries = useMemo(() => collectGrammarNodes(chapter.nodes), [chapter]);
   const selectedNode = nodeEntries.find((entry) => entry.node.id === selectedNodeId) ?? nodeEntries[0];
@@ -2461,7 +2557,19 @@ function GrammarChapterPanel({ chapter }: { chapter: GrammarChapter }) {
               />
             ))}
           </div>
-          {selectedNode ? <GrammarNodeDetail entry={selectedNode} chapter={chapter} /> : null}
+          {selectedNode ? (
+            <GrammarNodeDetail
+              entry={selectedNode}
+              chapter={chapter}
+              t={t}
+              language={language}
+              explanation={nodeExplanations[`${selectedNode.node.id}:${language}`]}
+              explaining={explainingNodeKey === `${selectedNode.node.id}:${language}`}
+              explainError={nodeExplainErrors[`${selectedNode.node.id}:${language}`]}
+              onExplain={() => onExplainNode(selectedNode)}
+              onSelectNode={setSelectedNodeId}
+            />
+          ) : null}
         </div>
       </div>
     </article>
@@ -2500,10 +2608,23 @@ function GrammarNodeView({
 
 function GrammarNodeDetail({
   entry,
-  chapter
+  chapter,
+  t,
+  explanation,
+  explaining,
+  explainError,
+  onExplain,
+  onSelectNode
 }: {
   entry: GrammarNodeEntry;
   chapter: GrammarChapter;
+  t: (typeof translations)[UiLanguage];
+  language: UiLanguage;
+  explanation?: string;
+  explaining: boolean;
+  explainError?: string;
+  onExplain: () => void;
+  onSelectNode: (id: string) => void;
 }) {
   const childNodes = entry.node.children ?? [];
 
@@ -2513,16 +2634,32 @@ function GrammarNodeDetail({
       <h3>{entry.node.title}</h3>
       <p className="grammar-node-path">{entry.path.join(" / ")}</p>
       <p>{entry.node.detail ?? "这个节点是章节结构中的概念入口，可以从它的子节点继续展开学习。"}</p>
+
       <div className="grammar-node-study">
-        <strong>怎么学</strong>
-        <p>先看规则作用，再看它在例句中的位置，最后回到词卡里问 AI：“这个词在这里为什么这样用？”</p>
+        <strong>{t.grammarNodeDetailedTitle}</strong>
+        {explanation ? (
+          explanation.split("\n").map((line, index) => <p key={`${entry.node.id}-line-${index}`}>{line}</p>)
+        ) : (
+          <>
+            <button type="button" className="mini-button" onClick={onExplain} disabled={explaining}>
+              <Sparkles size={15} />
+              <span>{explaining ? t.grammarNodeExplaining : t.grammarNodeExplainButton}</span>
+            </button>
+            {explainError ? <p className="recognized muted">{explainError}</p> : null}
+          </>
+        )}
       </div>
+
       {childNodes.length ? (
         <div className="grammar-node-related">
           <strong>子知识点</strong>
-          {childNodes.map((child) => (
-            <p key={child.id}>{child.title}</p>
-          ))}
+          <div className="grammar-node-related-list">
+            {childNodes.map((child) => (
+              <button type="button" key={child.id} onClick={() => onSelectNode(child.id)}>
+                {child.title}
+              </button>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="grammar-node-related">
@@ -4815,7 +4952,7 @@ export default function App() {
       {mode === "method" ? (
         <MethodPage language={language} />
       ) : mode === "grammar" ? (
-        <GrammarGuidePage />
+        <GrammarGuidePage t={t} language={language} />
       ) : mode === "reading" ? (
         <DailyReadingPage t={t} language={language} />
       ) : mode === "podcast" ? (

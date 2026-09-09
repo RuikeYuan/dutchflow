@@ -1325,6 +1325,32 @@ main {
   font-size: 0.84rem;
 }
 
+.grammar-node-related-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.grammar-node-related-list button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #f9f7f1;
+  color: var(--ink);
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.grammar-node-related-list button:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.grammar-node-study .mini-button {
+  margin-top: 8px;
+}
+
 .result-head {
   display: flex;
   align-items: center;
