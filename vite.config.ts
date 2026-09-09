@@ -363,19 +363,21 @@ const GRAMMAR_NODE_PROMPTS: Record<
         `荷兰语语法知识点：${pathText} / ${nodeTitle}`,
         hint ? `已有简要提示：${hint}` : "",
         "",
-        "请对这个具体的语法知识点做详细讲解，帮助学习者真正掌握，而不是泛泛而谈。",
-        "按顺序写出以下几部分：",
-        "1. 用一两句话说明这个知识点的核心规则或用法。",
-        "2. 如果有构成规则或变形规则，具体给出规则和形式。",
-        "3. 给出 2-3 个包含这个知识点的荷兰语例句，每个例句后面附中文翻译。",
-        "4. 指出中文母语学习者在这个知识点上最容易犯的 1-2 个错误。",
-        "5. 给一个简短的记忆或练习建议。",
-        "这 5 个部分必须各自独立成行（用换行分隔），不要写成一整段。",
+        "请对这个具体的语法知识点做详细、系统的讲解，帮助学习者真正掌握，而不是泛泛而谈或点到为止。",
+        "按顺序写出以下几部分，内容要具体、扎实：",
+        "1. 用两三句话说明这个知识点的核心规则、适用范围或用法。",
+        "2. 如果有构成规则或变形规则，具体给出规则和形式；如果分几种情况，请分别说明每种情况。",
+        "3. 给出 3-4 个包含这个知识点的荷兰语例句，覆盖不同的使用场景或人称/时态，每个例句后面附中文翻译。",
+        "4. 指出中文母语学习者在这个知识点上最容易犯的 2-3 个错误，说明为什么会错、正确的做法是什么。",
+        "5. 如果这个知识点容易和另一个相近的语法点混淆，用一两句话说明两者的区别；如果没有明显容易混淆的点，可以省略这一条。",
+        "6. 给一个简短的记忆技巧，并附一个可以让学习者自我检测的小练习或小问题。",
+        "以上每个部分必须独立成行（用换行分隔），不要写成一整段；只有这 6 个大点本身在行首用数字加句点标出序号。",
+        "第 3 点的多个例句和第 4 点的多条错误如果需要分行列出，每条另起一行但不要再单独加数字编号（不要出现嵌套编号），可以用“- ”开头或者不加任何前缀。",
         "不要输出 Markdown 表格或加粗符号，不要有多余的开场白，直接开始讲解。"
       ]
         .filter(Boolean)
         .join("\n"),
-    maxTokens: 520
+    maxTokens: 760
   },
   en: {
     systemPrompt:
@@ -385,19 +387,21 @@ const GRAMMAR_NODE_PROMPTS: Record<
         `Dutch grammar topic: ${pathText} / ${nodeTitle}`,
         hint ? `Existing short hint: ${hint}` : "",
         "",
-        "Give a detailed explanation of this specific grammar point so the learner truly understands it, not just a one-line summary.",
-        "Structure your answer in this order:",
-        "1. One or two sentences on the core rule or usage.",
-        "2. If there is a formation or inflection rule, spell it out concretely.",
-        "3. Give 2-3 Dutch example sentences that illustrate this point, each followed by its English translation.",
-        "4. Point out 1-2 common mistakes learners make with this point.",
-        "5. Give one short memory or practice tip.",
-        "Put each of these 5 parts on its own line (separated by line breaks) — do not run them together into one paragraph.",
+        "Give a detailed, systematic explanation of this specific grammar point so the learner truly understands it, not just a one-line summary.",
+        "Structure your answer in this order, with concrete, substantial content:",
+        "1. Two or three sentences on the core rule, scope, or usage.",
+        "2. If there is a formation or inflection rule, spell it out concretely; if it has several cases, cover each one.",
+        "3. Give 3-4 Dutch example sentences that illustrate this point across different contexts, persons, or tenses, each followed by its English translation.",
+        "4. Point out 2-3 common mistakes learners make with this point, explaining why the mistake happens and what the correct form is.",
+        "5. If this point is easily confused with a closely related grammar point, briefly explain the difference in one or two sentences; omit this if there is no obvious point of confusion.",
+        "6. Give one short memory tip, plus a small self-check question or exercise the learner can try.",
+        "Put each of these parts on its own line (separated by line breaks) — do not run them together into one paragraph; only these 6 top-level parts get a number and a period at the start of the line.",
+        "If part 3's multiple examples or part 4's multiple mistakes need their own lines, put each on its own line but do NOT add a separate number to each one (no nested numbering) — use a \"- \" prefix or no prefix at all.",
         "Do not use Markdown tables or bold markers, and do not add a preamble — start directly with the explanation."
       ]
         .filter(Boolean)
         .join("\n"),
-    maxTokens: 460
+    maxTokens: 680
   },
   nl: {
     systemPrompt:
@@ -407,19 +411,21 @@ const GRAMMAR_NODE_PROMPTS: Record<
         `Nederlands grammaticaonderwerp: ${pathText} / ${nodeTitle}`,
         hint ? `Bestaande korte hint: ${hint}` : "",
         "",
-        "Geef een gedetailleerde uitleg van dit specifieke grammaticapunt, zodat de leerder het echt begrijpt, niet slechts een eenregelige samenvatting.",
-        "Structureer je antwoord in deze volgorde:",
-        "1. Eén of twee zinnen over de kernregel of het gebruik.",
-        "2. Als er een vorm- of verbuigingsregel is, leg die concreet uit.",
-        "3. Geef 2-3 Nederlandse voorbeeldzinnen die dit punt illustreren, elk met een korte toelichting waarom de vorm zo is.",
-        "4. Wijs op 1-2 veelgemaakte fouten die taalleerders bij dit punt maken.",
-        "5. Geef één korte geheugensteun of oefentip.",
-        "Zet elk van deze 5 onderdelen op een eigen regel (gescheiden door regeleinden) — voeg ze niet samen tot één alinea.",
+        "Geef een gedetailleerde, systematische uitleg van dit specifieke grammaticapunt, zodat de leerder het echt begrijpt, niet slechts een eenregelige samenvatting.",
+        "Structureer je antwoord in deze volgorde, met concrete, inhoudelijke uitleg:",
+        "1. Twee of drie zinnen over de kernregel, het toepassingsgebied of het gebruik.",
+        "2. Als er een vorm- of verbuigingsregel is, leg die concreet uit; behandel elk geval apart als er meerdere zijn.",
+        "3. Geef 3-4 Nederlandse voorbeeldzinnen die dit punt illustreren in verschillende contexten, personen of tijden, elk met een korte toelichting waarom de vorm zo is.",
+        "4. Wijs op 2-3 veelgemaakte fouten die taalleerders bij dit punt maken, en leg uit waarom die fout ontstaat en wat de juiste vorm is.",
+        "5. Als dit punt makkelijk verward wordt met een verwant grammaticapunt, leg het verschil in één of twee zinnen uit; laat dit weg als er geen duidelijk verwarringspunt is.",
+        "6. Geef één korte geheugensteun, plus een kleine zelftoetsvraag of oefening die de leerder kan proberen.",
+        "Zet elk van deze onderdelen op een eigen regel (gescheiden door regeleinden) — voeg ze niet samen tot één alinea; alleen deze 6 hoofdonderdelen krijgen een nummer en een punt aan het begin van de regel.",
+        "Als de meerdere voorbeelden bij punt 3 of de meerdere fouten bij punt 4 elk op een eigen regel moeten staan, geef ze dan geen eigen nummer (geen geneste nummering) — gebruik een \"- \" ervoor of helemaal geen voorvoegsel.",
         "Gebruik geen Markdown-tabellen of vetgedrukte tekens, en begin niet met een inleidende zin — begin direct met de uitleg."
       ]
         .filter(Boolean)
         .join("\n"),
-    maxTokens: 460
+    maxTokens: 680
   },
   es: {
     systemPrompt:
@@ -429,19 +435,21 @@ const GRAMMAR_NODE_PROMPTS: Record<
         `Tema de gramática neerlandesa: ${pathText} / ${nodeTitle}`,
         hint ? `Pista breve existente: ${hint}` : "",
         "",
-        "Da una explicación detallada de este punto gramatical concreto para que el estudiante lo entienda de verdad, no solo un resumen de una línea.",
-        "Estructura tu respuesta en este orden:",
-        "1. Una o dos frases sobre la regla o el uso principal.",
-        "2. Si hay una regla de formación o flexión, explícala de forma concreta.",
-        "3. Da 2-3 frases de ejemplo en neerlandés que ilustren este punto, cada una seguida de su traducción al español.",
-        "4. Señala 1-2 errores comunes que cometen los estudiantes con este punto.",
-        "5. Da un consejo breve para recordarlo o practicarlo.",
-        "Pon cada una de estas 5 partes en su propia línea (separadas por saltos de línea) — no las juntes en un solo párrafo.",
+        "Da una explicación detallada y sistemática de este punto gramatical concreto para que el estudiante lo entienda de verdad, no solo un resumen de una línea.",
+        "Estructura tu respuesta en este orden, con contenido concreto y sustancioso:",
+        "1. Dos o tres frases sobre la regla principal, su alcance o su uso.",
+        "2. Si hay una regla de formación o flexión, explícala de forma concreta; si tiene varios casos, cubre cada uno.",
+        "3. Da 3-4 frases de ejemplo en neerlandés que ilustren este punto en distintos contextos, personas o tiempos verbales, cada una seguida de su traducción al español.",
+        "4. Señala 2-3 errores comunes que cometen los estudiantes con este punto, explicando por qué ocurre el error y cuál es la forma correcta.",
+        "5. Si este punto se confunde fácilmente con otro punto gramatical relacionado, explica la diferencia en una o dos frases; omite esto si no hay un punto de confusión evidente.",
+        "6. Da un consejo breve para recordarlo, más una pequeña pregunta o ejercicio de autoevaluación que el estudiante pueda probar.",
+        "Pon cada una de estas partes en su propia línea (separadas por saltos de línea) — no las juntes en un solo párrafo; solo estas 6 partes principales llevan un número y un punto al inicio de la línea.",
+        "Si los varios ejemplos del punto 3 o los varios errores del punto 4 necesitan ir cada uno en su propia línea, no les pongas su propio número (nada de numeración anidada) — usa un prefijo \"- \" o ningún prefijo.",
         "No uses tablas Markdown ni negritas, y no añadas una introducción — empieza directamente con la explicación."
       ]
         .filter(Boolean)
         .join("\n"),
-    maxTokens: 460
+    maxTokens: 680
   },
   de: {
     systemPrompt:
@@ -451,19 +459,21 @@ const GRAMMAR_NODE_PROMPTS: Record<
         `Niederländisches Grammatikthema: ${pathText} / ${nodeTitle}`,
         hint ? `Vorhandener kurzer Hinweis: ${hint}` : "",
         "",
-        "Gib eine ausführliche Erklärung zu diesem konkreten Grammatikpunkt, damit der Lernende ihn wirklich versteht, nicht nur eine einzeilige Zusammenfassung.",
-        "Strukturiere deine Antwort in dieser Reihenfolge:",
-        "1. Ein bis zwei Sätze zur Kernregel oder Verwendung.",
-        "2. Falls es eine Bildungs- oder Flexionsregel gibt, erkläre sie konkret.",
-        "3. Gib 2-3 niederländische Beispielsätze, die diesen Punkt veranschaulichen, jeweils gefolgt von der deutschen Übersetzung.",
-        "4. Weise auf 1-2 häufige Fehler hin, die Lernende bei diesem Punkt machen.",
-        "5. Gib einen kurzen Merk- oder Übungstipp.",
-        "Setze jeden dieser 5 Teile in eine eigene Zeile (durch Zeilenumbrüche getrennt) — fasse sie nicht zu einem einzigen Absatz zusammen.",
+        "Gib eine ausführliche, systematische Erklärung zu diesem konkreten Grammatikpunkt, damit der Lernende ihn wirklich versteht, nicht nur eine einzeilige Zusammenfassung.",
+        "Strukturiere deine Antwort in dieser Reihenfolge, mit konkretem, gehaltvollem Inhalt:",
+        "1. Zwei bis drei Sätze zur Kernregel, ihrem Geltungsbereich oder ihrer Verwendung.",
+        "2. Falls es eine Bildungs- oder Flexionsregel gibt, erkläre sie konkret; behandle jeden Fall einzeln, falls es mehrere gibt.",
+        "3. Gib 3-4 niederländische Beispielsätze, die diesen Punkt in unterschiedlichen Kontexten, Personen oder Zeitformen veranschaulichen, jeweils gefolgt von der deutschen Übersetzung.",
+        "4. Weise auf 2-3 häufige Fehler hin, die Lernende bei diesem Punkt machen, und erkläre, warum der Fehler entsteht und was die korrekte Form ist.",
+        "5. Falls dieser Punkt leicht mit einem verwandten Grammatikpunkt verwechselt wird, erkläre den Unterschied in ein bis zwei Sätzen; lasse dies weg, wenn es keinen offensichtlichen Verwechslungspunkt gibt.",
+        "6. Gib einen kurzen Merktipp sowie eine kleine Selbsttestfrage oder Übung, die der Lernende ausprobieren kann.",
+        "Setze jeden dieser Teile in eine eigene Zeile (durch Zeilenumbrüche getrennt) — fasse sie nicht zu einem einzigen Absatz zusammen; nur diese 6 Hauptteile bekommen am Zeilenanfang eine Nummer mit Punkt.",
+        "Falls die mehreren Beispiele bei Punkt 3 oder die mehreren Fehler bei Punkt 4 jeweils eine eigene Zeile brauchen, gib ihnen keine eigene Nummer (keine verschachtelte Nummerierung) — verwende ein \"- \" davor oder gar kein Präfix.",
         "Verwende keine Markdown-Tabellen oder Fettschrift, und beginne nicht mit einer Einleitung — starte direkt mit der Erklärung."
       ]
         .filter(Boolean)
         .join("\n"),
-    maxTokens: 460
+    maxTokens: 680
   }
 };
 

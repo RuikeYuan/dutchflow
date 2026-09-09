@@ -2583,6 +2583,30 @@ function GrammarGuidePage({ t, language }: { t: (typeof translations)[UiLanguage
   );
 }
 
+function GrammarExplanationBlocks({ text }: { text: string }) {
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return (
+    <div className="grammar-explanation-blocks">
+      {lines.map((line, index) => {
+        const match = line.match(/^(\d{1,2})[.、]\s*(.+)$/);
+        if (match) {
+          return (
+            <div className="grammar-explanation-step" key={index}>
+              <span className="grammar-explanation-step-num">{match[1]}</span>
+              <p>{match[2]}</p>
+            </div>
+          );
+        }
+        return <p key={index}>{line}</p>;
+      })}
+    </div>
+  );
+}
+
 function GrammarWalkReader({
   t,
   language,
@@ -2767,11 +2791,7 @@ function GrammarWalkReader({
             </button>
           </div>
           {explanation ? (
-            explanation
-              .split("\n")
-              .map((line) => line.trim())
-              .filter(Boolean)
-              .map((line, index) => <p key={index}>{line}</p>)
+            <GrammarExplanationBlocks text={explanation} />
           ) : explaining ? (
             <p className="grammar-walk-loading">{t.grammarNodeExplaining}</p>
           ) : explainError ? (
@@ -2956,7 +2976,7 @@ function GrammarNodeDetail({
       <div className="grammar-node-study">
         <strong>{t.grammarNodeDetailedTitle}</strong>
         {explanation ? (
-          explanation.split("\n").map((line, index) => <p key={`${entry.node.id}-line-${index}`}>{line}</p>)
+          <GrammarExplanationBlocks text={explanation} />
         ) : (
           <>
             <button type="button" className="mini-button" onClick={onExplain} disabled={explaining}>
