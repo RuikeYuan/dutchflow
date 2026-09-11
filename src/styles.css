@@ -2072,10 +2072,58 @@ a.reading-source-link:hover {
 }
 
 .reading-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 10px;
+}
+
+.reading-actions .mini-button {
+  flex: 1 1 140px;
+}
+
+.reading-long {
+  margin-top: 10px;
+}
+
+.reading-long-body {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+  padding: 14px;
+}
+
+.reading-long-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reading-long-article {
+  margin-top: 12px;
+}
+
+.reading-long-article + .reading-long-article {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.reading-long-article h3 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  color: var(--ink);
+}
+
+.reading-long-article p {
+  margin: 8px 0 0;
+  color: #3f4b43;
+  line-height: 1.65;
+}
+
+.reading-long-translation h3,
+.reading-long-translation p {
+  color: var(--muted);
 }
 
 .podcast-controls {

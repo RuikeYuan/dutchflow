@@ -249,6 +249,59 @@ export async function generateNewsReading({ headline, summary, sourceName, level
   return passage;
 }
 
+export async function generateLongNewsReading({ headline, summary, sourceName, level = "A2-B1" }) {
+  const systemPrompt =
+    "You write original long-form Dutch reading passages for language learners. You take inspiration from a real news topic but you never copy, translate, or closely paraphrase the source text - you write an entirely new, multi-paragraph article of your own about the same general subject.";
+  const userPrompt = [
+    `News topic for inspiration (source: ${sourceName ?? "unknown"}):`,
+    `Headline: ${headline}`,
+    summary ? `Summary: ${summary}` : "",
+    "",
+    `Write one original Dutch reading passage (4-6 short paragraphs, about 250-350 words total) at ${level} level about this general topic.`,
+    'Start with a short original Dutch title, then the separator "|||" on its own, then the article body as separate paragraphs, each separated by "|||" on its own.',
+    'Example shape: Title text|||First paragraph.|||Second paragraph.|||Third paragraph.',
+    'Do not use "|||" anywhere except as that separator, and do not use any other formatting (no blank lines, no markdown, no numbering).',
+    "Do not mention or quote the source. Do not attribute invented statements to real, specifically named people, companies, or officials - if someone needs to say something, describe it generically (for example 'volgens een woordvoerder' or 'zeggen buurtbewoners') rather than inventing a real name.",
+    "Return only the title and passage in that exact format - no explanation, no extra text."
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const passage = await callLlm(systemPrompt, userPrompt, 0.65, 900);
+
+  if (!passage) {
+    throw new Error("LLM returned an empty long news reading passage");
+  }
+
+  return passage;
+}
+
+export async function translateLongNewsReading(longText, targetLanguage, maxTokens = 900) {
+  const languageName =
+    targetLanguage === "zh"
+      ? "Simplified Chinese"
+      : targetLanguage === "de"
+        ? "German"
+        : targetLanguage === "es"
+          ? "Spanish"
+          : targetLanguage === "nl"
+            ? "Dutch"
+            : "English";
+  const systemPrompt = "Translate Dutch reading passages for language learners. Return only the translation, no explanation.";
+  const userPrompt = [
+    `Translate this Dutch passage into ${languageName}.`,
+    'It uses "|||" as a separator between its title and paragraphs. Keep every "|||" separator exactly as-is, in the same positions - translate only the surrounding text.',
+    "",
+    longText
+  ].join("\n");
+  const translated = await callLlm(systemPrompt, userPrompt, 0.2, maxTokens);
+
+  if (!translated) {
+    throw new Error("LLM returned an empty translation");
+  }
+
+  return translated;
+}
+
 export async function generatePodcastDialogue({ headline, summary, sourceName, level = "A2-B1" }) {
   const systemPrompt =
     "You write short original Dutch podcast dialogues for language learners. Two hosts, A and B, discuss a topic in simple, natural spoken Dutch. You take inspiration from a real news topic but you never copy, translate, or closely paraphrase the source text - you invent your own dialogue about the same general subject.";

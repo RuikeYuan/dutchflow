@@ -188,6 +188,12 @@ const translations: Record<
     readingLoading: string;
     readingFailed: string;
     readingEmpty: string;
+    readingLongButton: string;
+    readingLongHide: string;
+    readingLongLoading: string;
+    readingLongFailed: string;
+    readingLongPlay: string;
+    readingLongStop: string;
     autoPlayGenres: string;
     stopAutoPlayGenres: string;
     autoPlayingGenre: (label: string) => string;
@@ -370,6 +376,12 @@ const translations: Record<
     readingTitle: "每日阅读",
     readingSubtitle: "AI 根据当天荷兰新闻话题原创的简短阅读材料，配中文翻译和语法讲解。",
     readingLoading: "正在加载阅读材料…",
+    readingLongButton: "生成长阅读全文",
+    readingLongHide: "收起长阅读",
+    readingLongLoading: "长阅读生成中…",
+    readingLongFailed: "生成失败，请检查 Gemini 配置后重试",
+    readingLongPlay: "朗读全文",
+    readingLongStop: "停止朗读",
     readingFailed: "加载阅读材料失败，请稍后重试。",
     readingEmpty: "暂时没有阅读材料，请稍后再来看看。",
     autoPlayGenres: "从此分类起自动朗读全部",
@@ -579,6 +591,12 @@ const translations: Record<
     readingTitle: "Daily Reading",
     readingSubtitle: "Short original Dutch passages inspired by today's news, with translation and grammar notes.",
     readingLoading: "Loading reading passages...",
+    readingLongButton: "Generate a full long read",
+    readingLongHide: "Hide long read",
+    readingLongLoading: "Generating the long read...",
+    readingLongFailed: "Failed to generate. Check the LLM config and try again",
+    readingLongPlay: "Read the full text aloud",
+    readingLongStop: "Stop reading",
     readingFailed: "Failed to load reading passages. Please try again later.",
     readingEmpty: "No reading passages yet. Check back later.",
     autoPlayGenres: "Auto-play all, starting from this category",
@@ -789,6 +807,12 @@ const translations: Record<
     readingTitle: "Dagelijks lezen",
     readingSubtitle: "Korte originele Nederlandse teksten geïnspireerd op het nieuws van vandaag, met vertaling en grammatica-uitleg.",
     readingLoading: "Leesteksten laden...",
+    readingLongButton: "Genereer een volledige lange tekst",
+    readingLongHide: "Lange tekst verbergen",
+    readingLongLoading: "Lange tekst wordt gegenereerd...",
+    readingLongFailed: "Genereren mislukt. Controleer Gemini en probeer opnieuw",
+    readingLongPlay: "Hele tekst voorlezen",
+    readingLongStop: "Stop met voorlezen",
     readingFailed: "Laden van leesteksten mislukt. Probeer het later opnieuw.",
     readingEmpty: "Nog geen leesteksten. Kom later terug.",
     autoPlayGenres: "Alles automatisch afspelen vanaf deze categorie",
@@ -999,6 +1023,12 @@ const translations: Record<
     readingTitle: "Lectura diaria",
     readingSubtitle: "Textos breves originales en neerlandés inspirados en las noticias de hoy, con traducción y notas de gramática.",
     readingLoading: "Cargando textos de lectura...",
+    readingLongButton: "Generar una lectura larga completa",
+    readingLongHide: "Ocultar lectura larga",
+    readingLongLoading: "Generando la lectura larga...",
+    readingLongFailed: "No se pudo generar. Revisa Gemini e inténtalo de nuevo",
+    readingLongPlay: "Leer el texto completo en voz alta",
+    readingLongStop: "Detener lectura",
     readingFailed: "No se pudieron cargar los textos de lectura. Inténtalo de nuevo más tarde.",
     readingEmpty: "Todavía no hay textos de lectura. Vuelve más tarde.",
     autoPlayGenres: "Reproducir todo automáticamente desde esta categoría",
@@ -1209,6 +1239,12 @@ const translations: Record<
     readingTitle: "Tägliches Lesen",
     readingSubtitle: "Kurze originale niederländische Texte, inspiriert von aktuellen Nachrichten, mit Übersetzung und Grammatikerklärung.",
     readingLoading: "Lesetexte werden geladen...",
+    readingLongButton: "Vollständigen Langtext erstellen",
+    readingLongHide: "Langtext ausblenden",
+    readingLongLoading: "Langtext wird erstellt...",
+    readingLongFailed: "Erstellung fehlgeschlagen. Prüfe Gemini und versuche es erneut",
+    readingLongPlay: "Ganzen Text vorlesen",
+    readingLongStop: "Vorlesen stoppen",
     readingFailed: "Lesetexte konnten nicht geladen werden. Bitte später erneut versuchen.",
     readingEmpty: "Noch keine Lesetexte. Schau später wieder vorbei.",
     autoPlayGenres: "Alles automatisch abspielen ab dieser Kategorie",
@@ -3604,6 +3640,14 @@ function DailyReadingPage({ t, language }: { t: (typeof translations)[UiLanguage
   const autoPlayTokenRef = useRef(0);
   const autoPlayingRef = useRef(false);
 
+  const [longReadingByItem, setLongReadingByItem] = useState<Record<string, { longText: string; translation: string }>>({});
+  const [longReadingLoadingId, setLongReadingLoadingId] = useState("");
+  const [longReadingErrors, setLongReadingErrors] = useState<Record<string, string>>({});
+  const [longReadingVisible, setLongReadingVisible] = useState<Record<string, boolean>>({});
+  const [longReadingTranslationVisible, setLongReadingTranslationVisible] = useState<Record<string, boolean>>({});
+  const [speakingLongReadingId, setSpeakingLongReadingId] = useState("");
+  const longReadingSpeechTokenRef = useRef(0);
+
   useEffect(() => {
     let active = true;
 
@@ -3645,12 +3689,109 @@ function DailyReadingPage({ t, language }: { t: (typeof translations)[UiLanguage
   useEffect(
     () => () => {
       autoPlayTokenRef.current += 1;
+      longReadingSpeechTokenRef.current += 1;
       if ("speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
     },
     []
   );
+
+  async function handleExpandReading(item: NewsReadingItem) {
+    if (longReadingByItem[item.id] || longReadingLoadingId === item.id) {
+      setLongReadingVisible((current) => ({ ...current, [item.id]: true }));
+      return;
+    }
+    if (!apiAvailable) {
+      setLongReadingErrors((current) => ({ ...current, [item.id]: t.readingLongFailed }));
+      return;
+    }
+
+    setLongReadingLoadingId(item.id);
+    setLongReadingErrors((current) => ({ ...current, [item.id]: "" }));
+    setLongReadingVisible((current) => ({ ...current, [item.id]: true }));
+
+    try {
+      const response = await fetch(apiUrl("/api/expand-news-reading"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          headline: item.sourceHeadline,
+          sourceName: item.sourceName,
+          level: item.level,
+          targetLanguage: language
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to expand news reading");
+      }
+
+      const data = (await response.json()) as { longText?: string; translation?: string };
+      const longText = data.longText?.trim();
+      if (!longText) {
+        throw new Error("Empty long text");
+      }
+
+      setLongReadingByItem((current) => ({
+        ...current,
+        [item.id]: { longText, translation: data.translation?.trim() ?? "" }
+      }));
+    } catch {
+      setLongReadingErrors((current) => ({ ...current, [item.id]: t.readingLongFailed }));
+    } finally {
+      setLongReadingLoadingId("");
+    }
+  }
+
+  function toggleLongReading(id: string) {
+    setLongReadingVisible((current) => ({ ...current, [id]: !current[id] }));
+  }
+
+  function toggleLongReadingTranslation(id: string) {
+    setLongReadingTranslationVisible((current) => ({ ...current, [id]: !current[id] }));
+  }
+
+  function stopLongReadingSpeech() {
+    longReadingSpeechTokenRef.current += 1;
+    setSpeakingLongReadingId("");
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  }
+
+  async function speakLongReadingParagraphs(paragraphs: string[], index: number, token: number) {
+    if (!("speechSynthesis" in window) || token !== longReadingSpeechTokenRef.current) {
+      setSpeakingLongReadingId("");
+      return;
+    }
+    const text = paragraphs[index];
+    if (!text) {
+      setSpeakingLongReadingId("");
+      return;
+    }
+    const utterance = await createUtterance(text, "nl-NL");
+    if (token !== longReadingSpeechTokenRef.current) {
+      setSpeakingLongReadingId("");
+      return;
+    }
+    utterance.onend = () => void speakLongReadingParagraphs(paragraphs, index + 1, token);
+    utterance.onerror = () => void speakLongReadingParagraphs(paragraphs, index + 1, token);
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function playLongReading(id: string, longText: string) {
+    longReadingSpeechTokenRef.current += 1;
+    const token = longReadingSpeechTokenRef.current;
+    setSpeakingLongReadingId(id);
+    const paragraphs = longText
+      .split(/\|\|\|/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    void speakLongReadingParagraphs(paragraphs, 0, token);
+  }
 
   function stopAutoPlayGenres() {
     autoPlayTokenRef.current += 1;
@@ -3818,6 +3959,10 @@ function DailyReadingPage({ t, language }: { t: (typeof translations)[UiLanguage
                     <BookOpen size={15} />
                     <span>{grammarVisible[item.id] ? t.hideAnswer : t.explainGrammar}</span>
                   </button>
+                  <button className="mini-button" type="button" onClick={() => handleExpandReading(item)} disabled={longReadingLoadingId === item.id}>
+                    <BookOpen size={15} />
+                    <span>{longReadingVisible[item.id] ? t.readingLongHide : t.readingLongButton}</span>
+                  </button>
                 </div>
                 {translationVisible[item.id] ? <p className="example-translation">{item.translation}</p> : null}
                 {grammarVisible[item.id] ? (
@@ -3828,12 +3973,92 @@ function DailyReadingPage({ t, language }: { t: (typeof translations)[UiLanguage
                     ))}
                   </div>
                 ) : null}
+                {longReadingVisible[item.id] ? (
+                  <div className="reading-long">
+                    {longReadingByItem[item.id] ? (
+                      <ReadingLongText
+                        entry={longReadingByItem[item.id]}
+                        t={t}
+                        speaking={speakingLongReadingId === item.id}
+                        translationVisible={Boolean(longReadingTranslationVisible[item.id])}
+                        onToggleTranslation={() => toggleLongReadingTranslation(item.id)}
+                        onPlay={() => playLongReading(item.id, longReadingByItem[item.id].longText)}
+                        onStop={stopLongReadingSpeech}
+                      />
+                    ) : longReadingLoadingId === item.id ? (
+                      <p className="recognized muted">{t.readingLongLoading}</p>
+                    ) : longReadingErrors[item.id] ? (
+                      <p className="recognized muted">{longReadingErrors[item.id]}</p>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </article>
           ))}
         </div>
       )}
     </section>
+  );
+}
+
+function ReadingLongText({
+  entry,
+  t,
+  speaking,
+  translationVisible,
+  onToggleTranslation,
+  onPlay,
+  onStop
+}: {
+  entry: { longText: string; translation: string };
+  t: (typeof translations)[UiLanguage];
+  speaking: boolean;
+  translationVisible: boolean;
+  onToggleTranslation: () => void;
+  onPlay: () => void;
+  onStop: () => void;
+}) {
+  const dutchBlocks = entry.longText
+    .split(/\|\|\|/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  const dutchTitle = dutchBlocks.length > 1 ? dutchBlocks[0] : "";
+  const dutchParagraphs = dutchBlocks.length > 1 ? dutchBlocks.slice(1) : dutchBlocks;
+
+  const translationBlocks = entry.translation
+    .split(/\|\|\|/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  const translationTitle = translationBlocks.length > 1 ? translationBlocks[0] : "";
+  const translationParagraphs = translationBlocks.length > 1 ? translationBlocks.slice(1) : translationBlocks;
+
+  return (
+    <div className="reading-long-body">
+      <div className="reading-long-toolbar">
+        <button type="button" className="mini-button" onClick={speaking ? onStop : onPlay}>
+          {speaking ? <Square size={15} /> : <Volume2 size={15} />}
+          <span>{speaking ? t.readingLongStop : t.readingLongPlay}</span>
+        </button>
+        <button type="button" className="mini-button" onClick={onToggleTranslation}>
+          <Languages size={15} />
+          <span>{translationVisible ? t.hideAnswer : t.translateExample}</span>
+        </button>
+      </div>
+      <article className="reading-long-article">
+        {dutchTitle ? <h3>{dutchTitle}</h3> : null}
+        {dutchParagraphs.map((paragraph, index) => (
+          <p key={index}>{paragraph}</p>
+        ))}
+      </article>
+      {translationVisible ? (
+        <article className="reading-long-article reading-long-translation">
+          {translationTitle ? <h3>{translationTitle}</h3> : null}
+          {translationParagraphs.map((paragraph, index) => (
+            <p key={index}>{paragraph}</p>
+          ))}
+        </article>
+      ) : null}
+    </div>
   );
 }
 

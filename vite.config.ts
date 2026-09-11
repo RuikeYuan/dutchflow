@@ -221,7 +221,7 @@ async function generateExample(word: string, translation: string, partOfSpeech: 
   return example;
 }
 
-async function translateExample(sentence: string, targetLanguage: string) {
+async function translateExample(sentence: string, targetLanguage: string, maxTokens = 80) {
   const languageName =
     targetLanguage === "zh"
       ? "Simplified Chinese"
@@ -231,7 +231,7 @@ async function translateExample(sentence: string, targetLanguage: string) {
   const systemPrompt = "Translate Dutch example sentences for language learners. Return only the translation, no explanation.";
   const userPrompt = `Translate this Dutch sentence into ${languageName}:\n${sentence}`;
   const translated = process.env.GEMINI_API_KEY
-    ? await callGemini(`${systemPrompt}\n\n${userPrompt}`, 0.2, 80)
+    ? await callGemini(`${systemPrompt}\n\n${userPrompt}`, 0.2, maxTokens)
     : await callOpenAiCompatible(
         [
           {
@@ -244,7 +244,98 @@ async function translateExample(sentence: string, targetLanguage: string) {
           }
         ],
         0.2,
-        80
+        maxTokens
+      );
+
+  if (!translated) {
+    throw new Error("LLM returned an empty translation");
+  }
+  return translated;
+}
+
+async function generateLongNewsReading({
+  headline,
+  summary,
+  sourceName,
+  level = "A2-B1"
+}: {
+  headline: string;
+  summary?: string;
+  sourceName?: string;
+  level?: string;
+}) {
+  const systemPrompt =
+    "You write original long-form Dutch reading passages for language learners. You take inspiration from a real news topic but you never copy, translate, or closely paraphrase the source text - you write an entirely new, multi-paragraph article of your own about the same general subject.";
+  const userPrompt = [
+    `News topic for inspiration (source: ${sourceName ?? "unknown"}):`,
+    `Headline: ${headline}`,
+    summary ? `Summary: ${summary}` : "",
+    "",
+    `Write one original Dutch reading passage (4-6 short paragraphs, about 250-350 words total) at ${level} level about this general topic.`,
+    'Start with a short original Dutch title, then the separator "|||" on its own, then the article body as separate paragraphs, each separated by "|||" on its own.',
+    'Example shape: Title text|||First paragraph.|||Second paragraph.|||Third paragraph.',
+    'Do not use "|||" anywhere except as that separator, and do not use any other formatting (no blank lines, no markdown, no numbering).',
+    "Do not mention or quote the source. Do not attribute invented statements to real, specifically named people, companies, or officials - if someone needs to say something, describe it generically (for example 'volgens een woordvoerder' or 'zeggen buurtbewoners') rather than inventing a real name.",
+    "Return only the title and passage in that exact format - no explanation, no extra text."
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const passage = process.env.GEMINI_API_KEY
+    ? await callGemini(`${systemPrompt}\n\n${userPrompt}`, 0.65, 900)
+    : await callOpenAiCompatible(
+        [
+          {
+            role: "system",
+            content: systemPrompt
+          },
+          {
+            role: "user",
+            content: userPrompt
+          }
+        ],
+        0.65,
+        900
+      );
+
+  if (!passage) {
+    throw new Error("LLM returned an empty long news reading passage");
+  }
+  return passage;
+}
+
+async function translateLongNewsReading(longText: string, targetLanguage: string, maxTokens = 900) {
+  const languageName =
+    targetLanguage === "zh"
+      ? "Simplified Chinese"
+      : targetLanguage === "de"
+        ? "German"
+        : targetLanguage === "es"
+          ? "Spanish"
+          : targetLanguage === "nl"
+            ? "Dutch"
+            : "English";
+  const systemPrompt = "Translate Dutch reading passages for language learners. Return only the translation, no explanation.";
+  const userPrompt = [
+    `Translate this Dutch passage into ${languageName}.`,
+    'It uses "|||" as a separator between its title and paragraphs. Keep every "|||" separator exactly as-is, in the same positions - translate only the surrounding text.',
+    "",
+    longText
+  ].join("\n");
+  const translated = process.env.GEMINI_API_KEY
+    ? await callGemini(`${systemPrompt}\n\n${userPrompt}`, 0.2, maxTokens)
+    : await callOpenAiCompatible(
+        [
+          {
+            role: "system",
+            content: systemPrompt
+          },
+          {
+            role: "user",
+            content: userPrompt
+          }
+        ],
+        0.2,
+        maxTokens
       );
 
   if (!translated) {
@@ -634,6 +725,41 @@ export default defineConfig(({ mode }) => {
             response.statusCode = 500;
             response.setHeader("Content-Type", "application/json; charset=utf-8");
             response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Failed to translate example" }));
+          }
+        });
+
+        server.middlewares.use("/api/expand-news-reading", async (request, response) => {
+          if (request.method !== "POST") {
+            response.statusCode = 405;
+            response.end("Method not allowed");
+            return;
+          }
+
+          try {
+            const body = await readJsonBody(request);
+            const headline = String(body.headline ?? "").trim();
+            const summary = String(body.summary ?? "").trim();
+            const sourceName = String(body.sourceName ?? "").trim();
+            const level = String(body.level ?? "A2-B1").trim();
+            const targetLanguage = String(body.targetLanguage ?? "zh").trim();
+
+            if (!headline) {
+              response.statusCode = 400;
+              response.setHeader("Content-Type", "application/json; charset=utf-8");
+              response.end(JSON.stringify({ error: "Missing headline" }));
+              return;
+            }
+
+            const longText = await generateLongNewsReading({ headline, summary, sourceName, level });
+            const translation = await translateLongNewsReading(longText, targetLanguage, 900);
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify({ longText, translation }));
+          } catch (error) {
+            response.statusCode = 500;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(
+              JSON.stringify({ error: error instanceof Error ? error.message : "Failed to expand news reading" })
+            );
           }
         });
 
