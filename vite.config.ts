@@ -1,6 +1,6 @@
 import react from "@vitejs/plugin-react";
 import fs from "node:fs/promises";
-import type { IncomingMessage } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import process from "node:process";
 import JSZip from "jszip";
 import { defineConfig, loadEnv } from "vite";
@@ -123,7 +123,7 @@ function getEpubPath() {
 
 async function callGemini(prompt: string, temperature: number, maxOutputTokens: number) {
   const apiKey = process.env.GEMINI_API_KEY;
-  const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash-lite";
+  const model = process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite";
 
   if (!apiKey) {
     throw new Error("Missing GEMINI_API_KEY");
@@ -646,6 +646,72 @@ async function getSpeakingReply(
   };
 }
 
+type SupabaseUser = { id: string; email?: string };
+
+async function getAuthedUser(request: IncomingMessage): Promise<SupabaseUser | null> {
+  const header = request.headers.authorization;
+  if (!header || !header.startsWith("Bearer ")) return null;
+  const token = header.slice(7).trim();
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+  if (!token || !supabaseUrl || !supabaseAnonKey) return null;
+
+  try {
+    const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${token}` }
+    });
+    if (!response.ok) return null;
+    const user = (await response.json()) as SupabaseUser;
+    return user?.id ? user : null;
+  } catch {
+    return null;
+  }
+}
+
+async function isPremiumUser(userId: string): Promise<boolean> {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!userId || !supabaseUrl || !serviceRoleKey) return false;
+
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=is_premium`,
+      { headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` } }
+    );
+    if (!response.ok) return false;
+    const rows = (await response.json()) as Array<{ is_premium?: boolean }>;
+    return Boolean(rows?.[0]?.is_premium);
+  } catch {
+    return false;
+  }
+}
+
+function sendAuthError(response: ServerResponse, status: number, message: string) {
+  response.statusCode = status;
+  response.setHeader("Content-Type", "application/json; charset=utf-8");
+  response.end(JSON.stringify({ error: message }));
+}
+
+async function requireUserDev(request: IncomingMessage, response: ServerResponse): Promise<SupabaseUser | null> {
+  const user = await getAuthedUser(request);
+  if (!user) {
+    sendAuthError(response, 401, "Sign-in required");
+    return null;
+  }
+  return user;
+}
+
+async function requirePremiumDev(request: IncomingMessage, response: ServerResponse): Promise<SupabaseUser | null> {
+  const user = await requireUserDev(request, response);
+  if (!user) return null;
+  const premium = await isPremiumUser(user.id);
+  if (!premium) {
+    sendAuthError(response, 402, "Premium membership required");
+    return null;
+  }
+  return user;
+}
+
 export default defineConfig(({ mode }) => {
   Object.assign(process.env, loadEnv(mode, process.cwd(), ""));
 
@@ -675,6 +741,7 @@ export default defineConfig(({ mode }) => {
             response.end("Method not allowed");
             return;
           }
+          if (!(await requirePremiumDev(request, response))) return;
 
           try {
             const body = await readJsonBody(request);
@@ -705,6 +772,7 @@ export default defineConfig(({ mode }) => {
             response.end("Method not allowed");
             return;
           }
+          if (!(await requirePremiumDev(request, response))) return;
 
           try {
             const body = await readJsonBody(request);
@@ -734,6 +802,7 @@ export default defineConfig(({ mode }) => {
             response.end("Method not allowed");
             return;
           }
+          if (!(await requirePremiumDev(request, response))) return;
 
           try {
             const body = await readJsonBody(request);
@@ -769,6 +838,7 @@ export default defineConfig(({ mode }) => {
             response.end("Method not allowed");
             return;
           }
+          if (!(await requirePremiumDev(request, response))) return;
 
           try {
             const body = await readJsonBody(request);
@@ -799,6 +869,7 @@ export default defineConfig(({ mode }) => {
             response.end("Method not allowed");
             return;
           }
+          if (!(await requirePremiumDev(request, response))) return;
 
           try {
             const body = await readJsonBody(request);
@@ -927,12 +998,61 @@ export default defineConfig(({ mode }) => {
           }
         });
 
+        server.middlewares.use("/api/account-sync-pull", async (request, response) => {
+          const user = await requireUserDev(request, response);
+          if (!user) return;
+
+          try {
+            const { kv } = await import("@vercel/kv");
+            const record = await kv.get(`account-sync:${user.id}`);
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify(record ?? { updatedAt: 0, payload: null }));
+          } catch (error) {
+            response.statusCode = 500;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Failed to pull sync data" }));
+          }
+        });
+
+        server.middlewares.use("/api/account-sync-push", async (request, response) => {
+          if (request.method !== "POST") {
+            response.statusCode = 405;
+            response.end("Method not allowed");
+            return;
+          }
+
+          const user = await requireUserDev(request, response);
+          if (!user) return;
+
+          try {
+            const body = await readJsonBody(request);
+            const updatedAt = Number(body.updatedAt);
+            const payload = body.payload;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+
+            if (!Number.isFinite(updatedAt) || !payload || typeof payload !== "object") {
+              response.statusCode = 400;
+              response.end(JSON.stringify({ error: "Invalid sync request" }));
+              return;
+            }
+
+            const { kv } = await import("@vercel/kv");
+            await kv.set(`account-sync:${user.id}`, { updatedAt, payload }, { ex: 60 * 60 * 24 * 365 });
+            response.end(JSON.stringify({ updatedAt }));
+          } catch (error) {
+            response.statusCode = 500;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Failed to push sync data" }));
+          }
+        });
+
         server.middlewares.use("/api/speaking-practice", async (request, response) => {
           if (request.method !== "POST") {
             response.statusCode = 405;
             response.end("Method not allowed");
             return;
           }
+          if (!(await requirePremiumDev(request, response))) return;
 
           try {
             const body = await readJsonBody(request);

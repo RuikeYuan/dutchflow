@@ -1,7 +1,9 @@
 import { badRequest, fail, handleOptions, ok, readJsonBody, requireMethod, translateExample } from "./_lib/ai.js";
+import { requirePremium } from "./_lib/auth.js";
 
 export default async function handler(request, response) {
   if (handleOptions(request, response) || !requireMethod(request, response, "POST")) return;
+  if (!(await requirePremium(request, response))) return;
 
   try {
     const body = await readJsonBody(request);

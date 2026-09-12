@@ -1,6 +1,6 @@
 ﻿import { formatGrammarGuideContext, getGrammarGuideContext } from "./grammar-guide.js";
 
-function sendJson(response, statusCode, payload) {
+export function sendJson(response, statusCode, payload) {
   response.statusCode = statusCode;
   response.setHeader("Content-Type", "application/json; charset=utf-8");
   response.setHeader("Access-Control-Allow-Origin", "*");
@@ -100,7 +100,7 @@ function isTransientStatus(status) {
 
 async function callGemini(prompt, temperature, maxOutputTokens) {
   const apiKey = process.env.GEMINI_API_KEY;
-  const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash-lite";
+  const model = process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite";
 
   if (!apiKey) {
     throw new Error("Missing GEMINI_API_KEY");

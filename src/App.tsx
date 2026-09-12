@@ -30,6 +30,7 @@ import {
   type GrammarPart
 } from "./data/grammarGuide";
 import frequencyWords from "./data/frequencyWords.json";
+import { authAvailable, supabase, type Session } from "./lib/supabaseClient";
 
 type DutchWord = {
   rank: number;
@@ -68,6 +69,11 @@ type GrammarNodeEntry = {
   path: string[];
   depth: number;
 };
+type PremiumGate = {
+  isPremium: boolean;
+  authHeaders: () => Record<string, string>;
+  requestPremium: () => void;
+};
 
 const words = frequencyWords as DutchWord[];
 const defaultNotebookWordCount = 3000;
@@ -92,9 +98,7 @@ const wordAnswersStorageKey = "dutch-frequency-app-word-answers";
 const autoPlayMutedStorageKey = "dutch-frequency-app-autoplay-muted";
 const defaultAutoPlaySelectionMigrationKey = "dutch-frequency-app-default-autoplay-selection-fiction20";
 const studyProgressStorageKey = "dutch-frequency-app-study-progress";
-const syncCodeStorageKey = "dutch-frequency-app-sync-code";
 const syncUpdatedAtStorageKey = "dutch-frequency-app-sync-updated-at";
-const syncCodeCharset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const listNames = ["All", "Core", "Fiction", "Newspapers", "Spoken", "Web", "General"];
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
 const apiAvailable = import.meta.env.DEV || import.meta.env.PROD || Boolean(apiBaseUrl);
@@ -303,6 +307,23 @@ const translations: Record<
     wordQuestionPlaceholder: string;
     wordAnswer: string;
     wordAnswerFailed: string;
+    authSignInTitle: string;
+    authSignInGoogle: string;
+    authSignInEmailLabel: string;
+    authEmailPlaceholder: string;
+    authSendLink: string;
+    authSending: string;
+    authEmailSent: string;
+    authEmailError: string;
+    authSignOut: string;
+    authSignedInAs: (email: string) => string;
+    authPremiumBadge: string;
+    authRequiredNotebookTitle: string;
+    authRequiredStudyTitle: string;
+    authRequiredHint: string;
+    authPremiumRequiredTitle: string;
+    authPremiumRequiredHint: string;
+    authModalClose: string;
     list: Record<string, string>;
     pos: Record<string, string>;
   }
@@ -493,6 +514,23 @@ const translations: Record<
     wordQuestionPlaceholder: "问这个词的语法、用法、搭配、区别...",
     wordAnswer: "AI 问答",
     wordAnswerFailed: "AI 问答失败，请检查 LLM 配置",
+    authSignInTitle: "登录账号",
+    authSignInGoogle: "使用 Google 登录",
+    authSignInEmailLabel: "或用邮箱获取登录链接",
+    authEmailPlaceholder: "you@example.com",
+    authSendLink: "发送登录链接",
+    authSending: "发送中…",
+    authEmailSent: "登录链接已发送，请查收邮箱",
+    authEmailError: "发送失败，请重试",
+    authSignOut: "退出登录",
+    authSignedInAs: (email: string) => `已登录：${email}`,
+    authPremiumBadge: "会员",
+    authRequiredNotebookTitle: "登录后才能使用单词本",
+    authRequiredStudyTitle: "登录后才能使用学习模式",
+    authRequiredHint: "登录后，单词本和学习进度会自动跨设备同步。",
+    authPremiumRequiredTitle: "这是会员专属功能",
+    authPremiumRequiredHint: "AI 生成的例句、语法讲解、长阅读和口语练习等功能需要会员权限，会员开通功能正在准备中。",
+    authModalClose: "关闭",
     list: {
       All: "全部",
       Core: "核心",
@@ -708,6 +746,24 @@ const translations: Record<
     wordQuestionPlaceholder: "Ask grammar, usage, collocations, nuance...",
     wordAnswer: "AI answer",
     wordAnswerFailed: "Could not answer. Check the LLM config",
+    authSignInTitle: "Sign in",
+    authSignInGoogle: "Continue with Google",
+    authSignInEmailLabel: "Or get a sign-in link by email",
+    authEmailPlaceholder: "you@example.com",
+    authSendLink: "Send sign-in link",
+    authSending: "Sending…",
+    authEmailSent: "Check your email for a sign-in link",
+    authEmailError: "Could not send the link. Please try again",
+    authSignOut: "Sign out",
+    authSignedInAs: (email: string) => `Signed in as ${email}`,
+    authPremiumBadge: "Premium",
+    authRequiredNotebookTitle: "Sign in to use the notebook",
+    authRequiredStudyTitle: "Sign in to use Study mode",
+    authRequiredHint: "Once signed in, your notebook and study progress sync automatically across devices.",
+    authPremiumRequiredTitle: "This is a premium feature",
+    authPremiumRequiredHint:
+      "AI-generated examples, grammar explanations, long reading, and speaking practice require premium membership. Self-serve upgrades are coming soon.",
+    authModalClose: "Close",
     list: {
       All: "All",
       Core: "Core",
@@ -924,6 +980,24 @@ const translations: Record<
     wordQuestionPlaceholder: "Vraag naar grammatica, gebruik, combinaties...",
     wordAnswer: "AI-antwoord",
     wordAnswerFailed: "Antwoord mislukt. Controleer de LLM-configuratie",
+    authSignInTitle: "Inloggen",
+    authSignInGoogle: "Doorgaan met Google",
+    authSignInEmailLabel: "Of ontvang een inloglink per e-mail",
+    authEmailPlaceholder: "jij@voorbeeld.com",
+    authSendLink: "Inloglink versturen",
+    authSending: "Versturen…",
+    authEmailSent: "Controleer je e-mail voor een inloglink",
+    authEmailError: "Versturen mislukt. Probeer het opnieuw",
+    authSignOut: "Uitloggen",
+    authSignedInAs: (email: string) => `Ingelogd als ${email}`,
+    authPremiumBadge: "Premium",
+    authRequiredNotebookTitle: "Log in om het woordenboekje te gebruiken",
+    authRequiredStudyTitle: "Log in om Studiemodus te gebruiken",
+    authRequiredHint: "Na het inloggen synchroniseren je woordenboekje en studievoortgang automatisch tussen apparaten.",
+    authPremiumRequiredTitle: "Dit is een premiumfunctie",
+    authPremiumRequiredHint:
+      "AI-gegenereerde voorbeeldzinnen, grammatica-uitleg, lange leesteksten en spreekoefeningen vereisen een premium-account. Zelf upgraden komt binnenkort beschikbaar.",
+    authModalClose: "Sluiten",
     list: {
       All: "Alles",
       Core: "Kern",
@@ -1140,6 +1214,24 @@ const translations: Record<
     wordQuestionPlaceholder: "Pregunta gramática, uso, matices...",
     wordAnswer: "Respuesta IA",
     wordAnswerFailed: "No se pudo responder. Revisa el LLM",
+    authSignInTitle: "Iniciar sesión",
+    authSignInGoogle: "Continuar con Google",
+    authSignInEmailLabel: "O recibe un enlace de acceso por correo",
+    authEmailPlaceholder: "tu@ejemplo.com",
+    authSendLink: "Enviar enlace de acceso",
+    authSending: "Enviando…",
+    authEmailSent: "Revisa tu correo para el enlace de acceso",
+    authEmailError: "No se pudo enviar. Inténtalo de nuevo",
+    authSignOut: "Cerrar sesión",
+    authSignedInAs: (email: string) => `Sesión iniciada como ${email}`,
+    authPremiumBadge: "Premium",
+    authRequiredNotebookTitle: "Inicia sesión para usar el cuaderno",
+    authRequiredStudyTitle: "Inicia sesión para usar el modo de estudio",
+    authRequiredHint: "Al iniciar sesión, tu cuaderno y tu progreso se sincronizan automáticamente entre dispositivos.",
+    authPremiumRequiredTitle: "Esta es una función premium",
+    authPremiumRequiredHint:
+      "Los ejemplos generados por IA, las explicaciones de gramática, la lectura larga y la práctica oral requieren membresía premium. La opción de autoservicio llegará pronto.",
+    authModalClose: "Cerrar",
     list: {
       All: "Todo",
       Core: "Básico",
@@ -1356,6 +1448,24 @@ const translations: Record<
     wordQuestionPlaceholder: "Frage zu Grammatik, Gebrauch, Nuancen...",
     wordAnswer: "KI-Antwort",
     wordAnswerFailed: "Antwort fehlgeschlagen. Prüfe die LLM-Konfiguration",
+    authSignInTitle: "Anmelden",
+    authSignInGoogle: "Weiter mit Google",
+    authSignInEmailLabel: "Oder erhalte einen Anmeldelink per E-Mail",
+    authEmailPlaceholder: "du@beispiel.com",
+    authSendLink: "Anmeldelink senden",
+    authSending: "Wird gesendet…",
+    authEmailSent: "Prüfe deine E-Mails auf den Anmeldelink",
+    authEmailError: "Senden fehlgeschlagen. Bitte erneut versuchen",
+    authSignOut: "Abmelden",
+    authSignedInAs: (email: string) => `Angemeldet als ${email}`,
+    authPremiumBadge: "Premium",
+    authRequiredNotebookTitle: "Melde dich an, um das Vokabelheft zu nutzen",
+    authRequiredStudyTitle: "Melde dich an, um den Lernmodus zu nutzen",
+    authRequiredHint: "Nach der Anmeldung werden dein Vokabelheft und dein Lernfortschritt automatisch geräteübergreifend synchronisiert.",
+    authPremiumRequiredTitle: "Dies ist eine Premium-Funktion",
+    authPremiumRequiredHint:
+      "KI-generierte Beispiele, Grammatikerklärungen, Langlesetexte und Sprechübungen erfordern eine Premium-Mitgliedschaft. Ein Selbstbedienungs-Upgrade folgt in Kürze.",
+    authModalClose: "Schließen",
     list: {
       All: "Alle",
       Core: "Kern",
@@ -2081,32 +2191,8 @@ function getSavedStudyProgress() {
   }
 }
 
-function getSavedSyncCode() {
-  return localStorage.getItem(syncCodeStorageKey) ?? "";
-}
-
 function getSavedSyncUpdatedAt() {
   return Number(localStorage.getItem(syncUpdatedAtStorageKey) ?? "0");
-}
-
-function generateSyncCode(length = 8) {
-  let code = "";
-  for (let index = 0; index < length; index += 1) {
-    const randomIndex =
-      typeof crypto !== "undefined" && crypto.getRandomValues
-        ? crypto.getRandomValues(new Uint32Array(1))[0] % syncCodeCharset.length
-        : Math.floor(Math.random() * syncCodeCharset.length);
-    code += syncCodeCharset[randomIndex];
-  }
-  return code;
-}
-
-function formatSyncCode(code: string) {
-  return code.replace(/(.{4})(?=.)/g, "$1-");
-}
-
-function normalizeSyncCode(rawCode: string) {
-  return rawCode.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
 }
 
 function getSavedLanguage(): UiLanguage {
@@ -2491,7 +2577,15 @@ function WordCard({
   );
 }
 
-function GrammarGuidePage({ t, language }: { t: (typeof translations)[UiLanguage]; language: UiLanguage }) {
+function GrammarGuidePage({
+  t,
+  language,
+  premiumGate
+}: {
+  t: (typeof translations)[UiLanguage];
+  language: UiLanguage;
+  premiumGate: PremiumGate;
+}) {
   const [view, setView] = useState<"mindmap" | "walk">("mindmap");
   const [selectedChapterId, setSelectedChapterId] = useState(grammarGuideChapters[0]?.id ?? "");
   const selectedChapter = grammarGuideChapters.find((chapter) => chapter.id === selectedChapterId) ?? grammarGuideChapters[0];
@@ -2507,6 +2601,10 @@ function GrammarGuidePage({ t, language }: { t: (typeof translations)[UiLanguage
       setNodeExplainErrors((current) => ({ ...current, [key]: t.grammarNodeExplainFailed }));
       return;
     }
+    if (!premiumGate.isPremium) {
+      premiumGate.requestPremium();
+      return;
+    }
 
     setExplainingNodeKey(key);
     setNodeExplainErrors((current) => ({ ...current, [key]: "" }));
@@ -2515,7 +2613,8 @@ function GrammarGuidePage({ t, language }: { t: (typeof translations)[UiLanguage
       const response = await fetch(apiUrl("/api/explain-grammar-node"), {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...premiumGate.authHeaders()
         },
         body: JSON.stringify({
           nodeTitle: entry.node.title,
@@ -3136,7 +3235,7 @@ function MethodPage({ language }: { language: UiLanguage }) {
   );
 }
 
-function SpeakingPage({ t }: { t: (typeof translations)[UiLanguage] }) {
+function SpeakingPage({ t, premiumGate }: { t: (typeof translations)[UiLanguage]; premiumGate: PremiumGate }) {
   const [scenarioId, setScenarioId] = useState(speakingScenarios[0].id);
   const [turns, setTurns] = useState<SpeakingTurn[]>([
     {
@@ -3159,6 +3258,10 @@ function SpeakingPage({ t }: { t: (typeof translations)[UiLanguage] }) {
   async function sendAnswer(answer: string) {
     const text = answer.trim();
     if (!text || avatarState === "thinking") return;
+    if (!premiumGate.isPremium) {
+      premiumGate.requestPremium();
+      return;
+    }
 
     const nextTurns: SpeakingTurn[] = [...turns, { role: "learner", text }];
     setTurns(nextTurns);
@@ -3170,7 +3273,8 @@ function SpeakingPage({ t }: { t: (typeof translations)[UiLanguage] }) {
       const response = await fetch("/api/speaking-practice", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...premiumGate.authHeaders()
         },
         body: JSON.stringify({
           scenario: scenario.prompt,
@@ -3628,7 +3732,15 @@ function LandingPage({
   );
 }
 
-function DailyReadingPage({ t, language }: { t: (typeof translations)[UiLanguage]; language: UiLanguage }) {
+function DailyReadingPage({
+  t,
+  language,
+  premiumGate
+}: {
+  t: (typeof translations)[UiLanguage];
+  language: UiLanguage;
+  premiumGate: PremiumGate;
+}) {
   const [genre, setGenre] = useState<ReadingGenre>("algemeen");
   const [items, setItems] = useState<NewsReadingItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -3706,6 +3818,10 @@ function DailyReadingPage({ t, language }: { t: (typeof translations)[UiLanguage
       setLongReadingErrors((current) => ({ ...current, [item.id]: t.readingLongFailed }));
       return;
     }
+    if (!premiumGate.isPremium) {
+      premiumGate.requestPremium();
+      return;
+    }
 
     setLongReadingLoadingId(item.id);
     setLongReadingErrors((current) => ({ ...current, [item.id]: "" }));
@@ -3715,7 +3831,8 @@ function DailyReadingPage({ t, language }: { t: (typeof translations)[UiLanguage
       const response = await fetch(apiUrl("/api/expand-news-reading"), {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...premiumGate.authHeaders()
         },
         body: JSON.stringify({
           headline: item.sourceHeadline,
@@ -4431,7 +4548,95 @@ function PodcastPage({ t, language }: { t: (typeof translations)[UiLanguage]; la
   );
 }
 
+function AuthGateSection({
+  t,
+  title,
+  onSignIn
+}: {
+  t: (typeof translations)[UiLanguage];
+  title: string;
+  onSignIn: () => void;
+}) {
+  return (
+    <section className="auth-gate">
+      <div className="auth-gate-card">
+        <h2>{title}</h2>
+        <p>{t.authRequiredHint}</p>
+        <button className="primary" type="button" onClick={onSignIn}>
+          {t.authSignInTitle}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function AuthModal({
+  t,
+  reason,
+  email,
+  onEmailChange,
+  onGoogle,
+  onSendEmailLink,
+  sending,
+  statusMessage,
+  onClose
+}: {
+  t: (typeof translations)[UiLanguage];
+  reason: "login" | "premium";
+  email: string;
+  onEmailChange: (value: string) => void;
+  onGoogle: () => void;
+  onSendEmailLink: () => void;
+  sending: boolean;
+  statusMessage: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="auth-modal-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="auth-modal" onClick={(event) => event.stopPropagation()}>
+        <button className="icon-button auth-modal-close" type="button" onClick={onClose} aria-label={t.authModalClose}>
+          ×
+        </button>
+        <h2>{reason === "premium" ? t.authPremiumRequiredTitle : t.authSignInTitle}</h2>
+        {reason === "premium" ? <p className="auth-modal-hint">{t.authPremiumRequiredHint}</p> : null}
+        <button className="auth-google-button" type="button" onClick={onGoogle}>
+          {t.authSignInGoogle}
+        </button>
+        <div className="auth-modal-divider">
+          <span>{t.authSignInEmailLabel}</span>
+        </div>
+        <form
+          className="auth-email-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSendEmailLink();
+          }}
+        >
+          <input
+            type="email"
+            value={email}
+            onChange={(event) => onEmailChange(event.target.value)}
+            placeholder={t.authEmailPlaceholder}
+            required
+          />
+          <button className="mini-button" type="submit" disabled={sending || !email.trim()}>
+            {sending ? t.authSending : t.authSendLink}
+          </button>
+        </form>
+        {statusMessage ? <p className="ai-status">{statusMessage}</p> : null}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [isPremium, setIsPremium] = useState(false);
+  const [authPrompt, setAuthPrompt] = useState<"login" | "premium" | null>(null);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authStatusMessage, setAuthStatusMessage] = useState("");
+  const [authSending, setAuthSending] = useState(false);
+  const user = session?.user ?? null;
   const [mode, setMode] = useState<ViewMode>("landing");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [language, setLanguage] = useState<UiLanguage>(getSavedLanguage);
@@ -4449,10 +4654,7 @@ export default function App() {
   const [spokenGrammar, setSpokenGrammar] = useState<Record<string, string>>(getSavedSpokenGrammar);
   const [wordAnswers, setWordAnswers] = useState<Record<string, WordAnswerTurn[]>>(getSavedWordAnswers);
   const [studyProgress, setStudyProgress] = useState<Record<string, StudyProgress>>(getSavedStudyProgress);
-  const [syncCode, setSyncCode] = useState<string>(getSavedSyncCode);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
-  const [syncCodeDraft, setSyncCodeDraft] = useState("");
-  const [syncMessage, setSyncMessage] = useState("");
   const syncReadyRef = useRef(false);
   const syncPushTimerRef = useRef<number | undefined>(undefined);
   const syncPayloadRef = useRef<SyncPayload>({
@@ -4490,6 +4692,134 @@ export default function App() {
   const t = translations[language];
 
   useEffect(() => {
+    if (!supabase) return;
+
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (active) setSession(data.session);
+    });
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+    });
+
+    return () => {
+      active = false;
+      subscription.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!supabase || !user) {
+      setIsPremium(false);
+      return;
+    }
+
+    let active = true;
+    supabase
+      .from("profiles")
+      .select("is_premium")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }: { data: { is_premium?: boolean } | null }) => {
+        if (active) setIsPremium(Boolean(data?.is_premium));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (user) setAuthPrompt(null);
+  }, [user]);
+
+  const previousUserIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const previousId = previousUserIdRef.current;
+    const currentId = user?.id ?? null;
+
+    if (previousId && previousId !== currentId) {
+      applySyncPayload({
+        notebook: [],
+        autoPlayMuted: [],
+        generatedExamples: {},
+        exampleTranslations: {},
+        exampleGrammar: {},
+        spokenGrammar: {},
+        wordAnswers: {},
+        studyProgress: {}
+      });
+      localStorage.removeItem(syncUpdatedAtStorageKey);
+    }
+
+    previousUserIdRef.current = currentId;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  function authHeaders(): Record<string, string> {
+    const token = session?.access_token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  function ensureLoggedIn(): boolean {
+    if (!user) {
+      setAuthPrompt("login");
+      return false;
+    }
+    return true;
+  }
+
+  function ensurePremiumAccess(): boolean {
+    if (!user) {
+      setAuthPrompt("login");
+      return false;
+    }
+    if (!isPremium) {
+      setAuthPrompt("premium");
+      return false;
+    }
+    return true;
+  }
+
+  async function handleSignInWithGoogle() {
+    if (!supabase) return;
+    setAuthStatusMessage("");
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin }
+    });
+  }
+
+  async function handleSendEmailLink() {
+    if (!supabase || !authEmail.trim()) return;
+    setAuthSending(true);
+    setAuthStatusMessage("");
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: authEmail.trim(),
+        options: { emailRedirectTo: window.location.origin }
+      });
+      setAuthStatusMessage(error ? t.authEmailError : t.authEmailSent);
+    } catch {
+      setAuthStatusMessage(t.authEmailError);
+    } finally {
+      setAuthSending(false);
+    }
+  }
+
+  async function handleSignOut() {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+  }
+
+  const premiumGate: PremiumGate = {
+    isPremium,
+    authHeaders,
+    requestPremium: () => setAuthPrompt(user ? "premium" : "login")
+  };
+
+  useEffect(() => {
     loopNotebookAutoPlayRef.current = loopNotebookAutoPlay;
   }, [loopNotebookAutoPlay]);
 
@@ -4525,14 +4855,6 @@ export default function App() {
     localStorage.setItem(studyProgressStorageKey, JSON.stringify(studyProgress));
   }, [studyProgress]);
 
-  useEffect(() => {
-    if (syncCode) {
-      localStorage.setItem(syncCodeStorageKey, syncCode);
-    } else {
-      localStorage.removeItem(syncCodeStorageKey);
-    }
-  }, [syncCode]);
-
   function applySyncPayload(payload: SyncPayload) {
     setSavedIds(new Set(payload.notebook ?? []));
     setAutoPlayMutedIds(new Set(payload.autoPlayMuted ?? []));
@@ -4566,20 +4888,20 @@ export default function App() {
     studyProgress
   ]);
 
-  async function pullSync(code: string) {
-    const response = await fetch(apiUrl(`/api/sync-pull?code=${encodeURIComponent(code)}`));
+  async function pullSync() {
+    const response = await fetch(apiUrl("/api/account-sync-pull"), { headers: authHeaders() });
     if (!response.ok) {
       throw new Error("Sync pull failed");
     }
     return (await response.json()) as { updatedAt?: number; payload?: SyncPayload | null };
   }
 
-  async function pushSync(code: string) {
+  async function pushSync() {
     const updatedAt = Date.now();
-    const response = await fetch(apiUrl("/api/sync-push"), {
+    const response = await fetch(apiUrl("/api/account-sync-push"), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, updatedAt, payload: syncPayloadRef.current })
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ updatedAt, payload: syncPayloadRef.current })
     });
     if (!response.ok) {
       throw new Error("Sync push failed");
@@ -4587,21 +4909,22 @@ export default function App() {
     localStorage.setItem(syncUpdatedAtStorageKey, String(updatedAt));
   }
 
+  // Whenever the user signs in, pull whatever the account already has (if it is
+  // newer than what is on this device) before starting to push local changes up.
   useEffect(() => {
-    const initialCode = getSavedSyncCode();
-
-    if (!initialCode || !apiAvailable) {
-      syncReadyRef.current = true;
+    if (!user || !apiAvailable) {
+      syncReadyRef.current = !user ? true : syncReadyRef.current;
       return;
     }
 
     let active = true;
+    syncReadyRef.current = false;
     setSyncStatus("syncing");
 
     (async () => {
       try {
         const localUpdatedAt = getSavedSyncUpdatedAt();
-        const remote = await pullSync(initialCode);
+        const remote = await pullSync();
         if (!active) return;
         if (remote.payload && (remote.updatedAt ?? 0) > localUpdatedAt) {
           applySyncPayload(remote.payload);
@@ -4618,14 +4941,13 @@ export default function App() {
     return () => {
       active = false;
     };
-    // Runs once on mount to reconcile against whatever sync code was already saved locally.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user?.id]);
 
   // Fast path: push soon after a meaningful, user-driven change (notebook edit or a
   // review answer). These change rarely enough that the debounce actually settles.
   useEffect(() => {
-    if (!syncCode || !apiAvailable || !syncReadyRef.current) return;
+    if (!user || !apiAvailable || !syncReadyRef.current) return;
 
     if (syncPushTimerRef.current) {
       window.clearTimeout(syncPushTimerRef.current);
@@ -4633,7 +4955,7 @@ export default function App() {
 
     syncPushTimerRef.current = window.setTimeout(() => {
       setSyncStatus("syncing");
-      pushSync(syncCode)
+      pushSync()
         .then(() => setSyncStatus("synced"))
         .catch(() => setSyncStatus("error"));
     }, 2000);
@@ -4644,78 +4966,25 @@ export default function App() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [syncCode, savedIds, autoPlayMutedIds, studyProgress]);
+  }, [user?.id, savedIds, autoPlayMutedIds, studyProgress]);
 
   // Slow path: the AI-generated caches (translations, grammar, generated examples,
   // word answers) can update continuously in the background, which would keep
   // resetting a change-triggered debounce forever. A periodic sweep guarantees they
   // still reach the cloud eventually without fighting that churn.
   useEffect(() => {
-    if (!syncCode || !apiAvailable) return;
+    if (!user || !apiAvailable) return;
 
     const interval = window.setInterval(() => {
       if (!syncReadyRef.current) return;
       setSyncStatus("syncing");
-      pushSync(syncCode)
+      pushSync()
         .then(() => setSyncStatus("synced"))
         .catch(() => setSyncStatus("error"));
     }, 30000);
 
     return () => window.clearInterval(interval);
-  }, [syncCode]);
-
-  function handleGenerateSyncCode() {
-    syncReadyRef.current = true;
-    localStorage.setItem(syncUpdatedAtStorageKey, "0");
-    setSyncMessage("");
-    setSyncStatus("syncing");
-    setSyncCode(generateSyncCode());
-  }
-
-  function handleDisableSync() {
-    setSyncCode("");
-    localStorage.removeItem(syncUpdatedAtStorageKey);
-    setSyncStatus("idle");
-    setSyncMessage("");
-  }
-
-  async function handleLinkSyncCode() {
-    const normalized = normalizeSyncCode(syncCodeDraft);
-    if (!normalized) return;
-
-    setSyncMessage("");
-    setSyncStatus("syncing");
-
-    try {
-      const remote = await pullSync(normalized);
-      if (remote.payload) {
-        if (!window.confirm(t.syncLinkConfirm)) {
-          setSyncStatus(syncCode ? "synced" : "idle");
-          return;
-        }
-        applySyncPayload(remote.payload);
-        localStorage.setItem(syncUpdatedAtStorageKey, String(remote.updatedAt ?? 0));
-      } else {
-        localStorage.setItem(syncUpdatedAtStorageKey, "0");
-      }
-
-      syncReadyRef.current = true;
-      setSyncCode(normalized);
-      setSyncCodeDraft("");
-      setSyncStatus("synced");
-    } catch {
-      setSyncStatus("error");
-    }
-  }
-
-  async function handleCopySyncCode() {
-    try {
-      await navigator.clipboard.writeText(syncCode);
-      setSyncMessage(t.syncCopied);
-    } catch {
-      setSyncMessage(formatSyncCode(syncCode));
-    }
-  }
+  }, [user?.id]);
 
   useEffect(() => {
     localStorage.setItem(languageStorageKey, language);
@@ -4940,13 +5209,14 @@ export default function App() {
   async function getSpokenGrammarExplanation(sentenceKey: string, sentence: string) {
     const cached = spokenGrammar[sentenceKey];
     if (cached) return cached;
-    if (!apiAvailable) return "";
+    if (!apiAvailable || !isPremium) return "";
 
     try {
       const response = await fetch(apiUrl("/api/explain-example"), {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...authHeaders()
         },
         body: JSON.stringify({
           sentence,
@@ -5065,7 +5335,7 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (!apiAvailable || translatingKey) return;
+    if (!apiAvailable || translatingKey || !isPremium) return;
 
     const candidates = mode === "study" && studyWord ? [studyWord] : visibleWords;
     const nextWord = candidates.find((word) => {
@@ -5083,13 +5353,14 @@ export default function App() {
     const cacheKey = `${sentenceKey}:${defaultExampleTranslationLanguage}`;
     autoTranslationRequestsRef.current.add(`${cacheKey}:${sentence}`);
     void handleTranslateExample(sentenceKey, sentence, defaultExampleTranslationLanguage);
-  }, [bookExamples, exampleTranslations, generatedExamples, mode, studyWord, translatingKey, visibleWords]);
+  }, [bookExamples, exampleTranslations, generatedExamples, isPremium, mode, studyWord, translatingKey, visibleWords]);
 
   async function handleGenerateExample(word: DutchWord) {
     if (!apiAvailable) {
       setGenerationMessages((current) => ({ ...current, [word.sourceId]: t.generationFailed }));
       return;
     }
+    if (!ensurePremiumAccess()) return;
 
     setGeneratingId(word.sourceId);
     setGenerationMessages((current) => ({ ...current, [word.sourceId]: "" }));
@@ -5098,7 +5369,8 @@ export default function App() {
       const response = await fetch(apiUrl("/api/generate-example"), {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...authHeaders()
         },
         body: JSON.stringify({
           word: word.word,
@@ -5153,6 +5425,7 @@ export default function App() {
       setTranslationMessages((current) => ({ ...current, [sentenceKey]: t.translationFailed }));
       return;
     }
+    if (!ensurePremiumAccess()) return;
 
     const cacheKey = `${sentenceKey}:${targetLanguage}`;
     setTranslatingKey(cacheKey);
@@ -5162,7 +5435,8 @@ export default function App() {
       const response = await fetch(apiUrl("/api/translate-example"), {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...authHeaders()
         },
         body: JSON.stringify({
           sentence,
@@ -5195,6 +5469,7 @@ export default function App() {
       setTranslationMessages((current) => ({ ...current, [sentenceKey]: t.grammarFailed }));
       return;
     }
+    if (!ensurePremiumAccess()) return;
 
     setExplainingGrammarKey(sentenceKey);
     setTranslationMessages((current) => ({ ...current, [sentenceKey]: "" }));
@@ -5203,7 +5478,8 @@ export default function App() {
       const response = await fetch(apiUrl("/api/explain-example"), {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...authHeaders()
         },
         body: JSON.stringify({
           sentence,
@@ -5234,6 +5510,7 @@ export default function App() {
       setWordAnswerMessages((current) => ({ ...current, [word.sourceId]: t.wordAnswerFailed }));
       return;
     }
+    if (!ensurePremiumAccess()) return;
 
     const previousTurns = wordAnswers[word.sourceId] ?? [];
     const userTurn: WordAnswerTurn = { role: "user", text: question };
@@ -5248,7 +5525,8 @@ export default function App() {
       const response = await fetch(apiUrl("/api/ask-word"), {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...authHeaders()
         },
         body: JSON.stringify({
           word: word.word,
@@ -5301,6 +5579,7 @@ export default function App() {
   }
 
   return (
+    <>
     <main>
       <div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
         <aside className="sidebar">
@@ -5355,24 +5634,17 @@ export default function App() {
                 ))}
               </select>
             </label>
-            <details className="sync-panel">
+            <details className="sync-panel" open={Boolean(user)}>
               <summary>
                 <RefreshCw size={16} />
-                <span>{t.syncLabel}</span>
-                {syncCode ? (
-                  <span className={`sync-dot ${syncStatus}`} aria-hidden="true" />
-                ) : null}
+                <span>{user ? t.syncLabel : t.authSignInTitle}</span>
+                {user ? <span className={`sync-dot ${syncStatus}`} aria-hidden="true" /> : null}
               </summary>
               <div className="sync-panel-body">
-                <p className="sync-hint">{t.syncHint}</p>
-                {syncCode ? (
+                {user ? (
                   <>
-                    <div className="sync-code-row">
-                      <code>{formatSyncCode(syncCode)}</code>
-                      <button type="button" className="mini-button" onClick={handleCopySyncCode}>
-                        {t.syncCopy}
-                      </button>
-                    </div>
+                    <p className="sync-hint">{t.authSignedInAs(user.email ?? "")}</p>
+                    {isPremium ? <span className="auth-premium-badge">{t.authPremiumBadge}</span> : null}
                     <p className="recognized muted">
                       {syncStatus === "error"
                         ? t.syncStatusError
@@ -5380,32 +5652,18 @@ export default function App() {
                           ? t.syncStatusSynced
                           : t.syncStatusSyncing}
                     </p>
-                    <button type="button" className="mini-button" onClick={handleDisableSync}>
-                      {t.syncDisable}
+                    <button type="button" className="mini-button" onClick={handleSignOut}>
+                      {t.authSignOut}
                     </button>
                   </>
                 ) : (
-                  <button type="button" className="mini-button" onClick={handleGenerateSyncCode}>
-                    {t.syncGenerate}
-                  </button>
+                  <>
+                    <p className="sync-hint">{t.authRequiredHint}</p>
+                    <button type="button" className="mini-button" onClick={() => setAuthPrompt("login")}>
+                      {t.authSignInTitle}
+                    </button>
+                  </>
                 )}
-                <form
-                  className="sync-link-form"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void handleLinkSyncCode();
-                  }}
-                >
-                  <input
-                    value={syncCodeDraft}
-                    onChange={(event) => setSyncCodeDraft(event.target.value)}
-                    placeholder={t.syncEnterCodePlaceholder}
-                  />
-                  <button type="submit" className="mini-button" disabled={!syncCodeDraft.trim()}>
-                    {t.syncLink}
-                  </button>
-                </form>
-                {syncMessage ? <p className="recognized muted">{syncMessage}</p> : null}
               </div>
             </details>
           </div>
@@ -5522,16 +5780,22 @@ export default function App() {
             ) : null}
           </header>
 
-      {mode === "method" ? (
+      {(mode === "notebook" || mode === "study") && !user ? (
+        <AuthGateSection
+          t={t}
+          title={mode === "notebook" ? t.authRequiredNotebookTitle : t.authRequiredStudyTitle}
+          onSignIn={() => setAuthPrompt("login")}
+        />
+      ) : mode === "method" ? (
         <MethodPage language={language} />
       ) : mode === "grammar" ? (
-        <GrammarGuidePage t={t} language={language} />
+        <GrammarGuidePage t={t} language={language} premiumGate={premiumGate} />
       ) : mode === "reading" ? (
-        <DailyReadingPage t={t} language={language} />
+        <DailyReadingPage t={t} language={language} premiumGate={premiumGate} />
       ) : mode === "podcast" ? (
         <PodcastPage t={t} language={language} />
       ) : mode === "speaking" ? (
-        <SpeakingPage t={t} />
+        <SpeakingPage t={t} premiumGate={premiumGate} />
       ) : mode === "study" && studyWord ? (
         <section className="study-layout">
           <article className="study-card">
@@ -5814,5 +6078,19 @@ export default function App() {
         </div>
       </div>
     </main>
+    {authPrompt ? (
+      <AuthModal
+        t={t}
+        reason={authPrompt}
+        email={authEmail}
+        onEmailChange={setAuthEmail}
+        onGoogle={handleSignInWithGoogle}
+        onSendEmailLink={handleSendEmailLink}
+        sending={authSending}
+        statusMessage={authStatusMessage}
+        onClose={() => setAuthPrompt(null)}
+      />
+    ) : null}
+    </>
   );
 }
