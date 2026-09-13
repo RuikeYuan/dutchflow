@@ -4917,23 +4917,28 @@ export default function App() {
   ]);
 
   async function pullSync() {
-    const response = await fetch(apiUrl("/api/account-sync-pull"), { headers: authHeaders() });
-    if (!response.ok) {
-      throw new Error("Sync pull failed");
-    }
-    return (await response.json()) as { updatedAt?: number; payload?: SyncPayload | null };
+    if (!supabase || !user) return { updatedAt: 0, payload: null };
+    const { data, error } = await supabase
+      .from("sync_data")
+      .select("payload, updated_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (error) throw error;
+    return {
+      updatedAt: data ? new Date(data.updated_at as string).getTime() : 0,
+      payload: (data?.payload as SyncPayload | undefined) ?? null
+    };
   }
 
   async function pushSync() {
+    if (!supabase || !user) return;
     const updatedAt = Date.now();
-    const response = await fetch(apiUrl("/api/account-sync-push"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify({ updatedAt, payload: syncPayloadRef.current })
+    const { error } = await supabase.from("sync_data").upsert({
+      user_id: user.id,
+      payload: syncPayloadRef.current,
+      updated_at: new Date(updatedAt).toISOString()
     });
-    if (!response.ok) {
-      throw new Error("Sync push failed");
-    }
+    if (error) throw error;
     localStorage.setItem(syncUpdatedAtStorageKey, String(updatedAt));
   }
 
@@ -4998,6 +5003,32 @@ export default function App() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", pullIfReady);
       window.clearInterval(interval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // Instant path: subscribe to Supabase Realtime so a change pushed from another
+  // device/tab re-pulls here immediately, instead of waiting for a refocus or the
+  // periodic fallback above.
+  useEffect(() => {
+    if (!supabase || !user) return;
+    const client = supabase;
+
+    const channel = client
+      .channel(`sync-data-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "sync_data", filter: `user_id=eq.${user.id}` },
+        () => {
+          if (!syncReadyRef.current) return;
+          setSyncStatus("syncing");
+          void runPull();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      client.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);

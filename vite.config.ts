@@ -945,54 +945,6 @@ export default defineConfig(({ mode }) => {
           }
         });
 
-        server.middlewares.use("/api/account-sync-pull", async (request, response) => {
-          const user = await requireUserDev(request, response);
-          if (!user) return;
-
-          try {
-            const { kv } = await import("@vercel/kv");
-            const record = await kv.get(`account-sync:${user.id}`);
-            response.setHeader("Content-Type", "application/json; charset=utf-8");
-            response.end(JSON.stringify(record ?? { updatedAt: 0, payload: null }));
-          } catch (error) {
-            response.statusCode = 500;
-            response.setHeader("Content-Type", "application/json; charset=utf-8");
-            response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Failed to pull sync data" }));
-          }
-        });
-
-        server.middlewares.use("/api/account-sync-push", async (request, response) => {
-          if (request.method !== "POST") {
-            response.statusCode = 405;
-            response.end("Method not allowed");
-            return;
-          }
-
-          const user = await requireUserDev(request, response);
-          if (!user) return;
-
-          try {
-            const body = await readJsonBody(request);
-            const updatedAt = Number(body.updatedAt);
-            const payload = body.payload;
-            response.setHeader("Content-Type", "application/json; charset=utf-8");
-
-            if (!Number.isFinite(updatedAt) || !payload || typeof payload !== "object") {
-              response.statusCode = 400;
-              response.end(JSON.stringify({ error: "Invalid sync request" }));
-              return;
-            }
-
-            const { kv } = await import("@vercel/kv");
-            await kv.set(`account-sync:${user.id}`, { updatedAt, payload }, { ex: 60 * 60 * 24 * 365 });
-            response.end(JSON.stringify({ updatedAt }));
-          } catch (error) {
-            response.statusCode = 500;
-            response.setHeader("Content-Type", "application/json; charset=utf-8");
-            response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Failed to push sync data" }));
-          }
-        });
-
         server.middlewares.use("/api/speaking-practice", async (request, response) => {
           if (request.method !== "POST") {
             response.statusCode = 405;
