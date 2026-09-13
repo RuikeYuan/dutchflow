@@ -829,7 +829,6 @@ export default defineConfig(({ mode }) => {
             response.end("Method not allowed");
             return;
           }
-          if (!(await requirePremiumDev(request, response))) return;
 
           try {
             const body = await readJsonBody(request);
@@ -895,7 +894,6 @@ export default defineConfig(({ mode }) => {
             response.end("Method not allowed");
             return;
           }
-          if (!(await requirePremiumDev(request, response))) return;
 
           try {
             const body = await readJsonBody(request);

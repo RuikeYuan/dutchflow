@@ -470,6 +470,64 @@ main {
   font: inherit;
 }
 
+.auth-tab-toggle {
+  display: flex;
+  gap: 6px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f5f3ec;
+}
+
+.auth-tab-toggle button {
+  flex: 1;
+  min-height: 30px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-tab-toggle button.active {
+  background: white;
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(45, 38, 28, 0.14);
+}
+
+.auth-password-form {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-password-form input {
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  padding: 0 10px;
+  font: inherit;
+}
+
+.auth-password-submit {
+  justify-content: center;
+  min-height: 36px;
+}
+
+.auth-flow-switch {
+  border: none;
+  background: none;
+  color: var(--teal);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 0;
+  text-align: center;
+}
+
 .pricing-page {
   max-width: 960px;
   margin: 0 auto;

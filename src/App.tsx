@@ -337,6 +337,19 @@ const translations: Record<
     authPremiumRequiredHint: string;
     authModalClose: string;
     authLinkExpired: string;
+    authTabMagicLink: string;
+    authTabPassword: string;
+    authFlowLogin: string;
+    authFlowRegister: string;
+    authPasswordPlaceholder: string;
+    authPasswordSignIn: string;
+    authPasswordSignInSending: string;
+    authPasswordSignUp: string;
+    authPasswordSignUpSending: string;
+    authPasswordSignUpSuccess: string;
+    authPasswordError: string;
+    authSwitchToRegister: string;
+    authSwitchToLogin: string;
     accountLabel: string;
     modePricing: string;
     pricingHeroTitle: string;
@@ -566,6 +579,19 @@ const translations: Record<
     authPremiumRequiredHint: "AI 生成的例句、语法讲解、长阅读和口语练习等功能需要会员权限，会员开通功能正在准备中。",
     authModalClose: "关闭",
     authLinkExpired: "登录链接已过期，请重新获取一个",
+    authTabMagicLink: "邮件链接",
+    authTabPassword: "邮箱密码",
+    authFlowLogin: "登录",
+    authFlowRegister: "注册",
+    authPasswordPlaceholder: "密码（至少 6 位）",
+    authPasswordSignIn: "登录",
+    authPasswordSignInSending: "登录中…",
+    authPasswordSignUp: "注册",
+    authPasswordSignUpSending: "注册中…",
+    authPasswordSignUpSuccess: "注册成功，请查收邮箱完成验证后再登录",
+    authPasswordError: "邮箱或密码不正确",
+    authSwitchToRegister: "还没有账号？去注册",
+    authSwitchToLogin: "已有账号？去登录",
     accountLabel: "账户",
     modePricing: "会员",
     pricingHeroTitle: "解锁全部 AI 功能",
@@ -827,6 +853,19 @@ const translations: Record<
       "AI-generated examples, grammar explanations, long reading, and speaking practice require premium membership. Self-serve upgrades are coming soon.",
     authModalClose: "Close",
     authLinkExpired: "That sign-in link expired — please request a new one",
+    authTabMagicLink: "Email link",
+    authTabPassword: "Email & password",
+    authFlowLogin: "Log in",
+    authFlowRegister: "Register",
+    authPasswordPlaceholder: "Password (6+ characters)",
+    authPasswordSignIn: "Log in",
+    authPasswordSignInSending: "Logging in…",
+    authPasswordSignUp: "Register",
+    authPasswordSignUpSending: "Registering…",
+    authPasswordSignUpSuccess: "Registered! Check your email to confirm before logging in.",
+    authPasswordError: "Incorrect email or password",
+    authSwitchToRegister: "No account yet? Register",
+    authSwitchToLogin: "Already have an account? Log in",
     accountLabel: "Account",
     modePricing: "Premium",
     pricingHeroTitle: "Unlock every AI feature",
@@ -1094,6 +1133,19 @@ const translations: Record<
       "AI-gegenereerde voorbeeldzinnen, grammatica-uitleg, lange leesteksten en spreekoefeningen vereisen een premium-account. Zelf upgraden komt binnenkort beschikbaar.",
     authModalClose: "Sluiten",
     authLinkExpired: "Die inloglink is verlopen — vraag een nieuwe aan",
+    authTabMagicLink: "E-maillink",
+    authTabPassword: "E-mail & wachtwoord",
+    authFlowLogin: "Inloggen",
+    authFlowRegister: "Registreren",
+    authPasswordPlaceholder: "Wachtwoord (6+ tekens)",
+    authPasswordSignIn: "Inloggen",
+    authPasswordSignInSending: "Bezig met inloggen…",
+    authPasswordSignUp: "Registreren",
+    authPasswordSignUpSending: "Bezig met registreren…",
+    authPasswordSignUpSuccess: "Geregistreerd! Bevestig via je e-mail voordat je inlogt.",
+    authPasswordError: "Onjuiste e-mail of wachtwoord",
+    authSwitchToRegister: "Nog geen account? Registreer",
+    authSwitchToLogin: "Al een account? Inloggen",
     accountLabel: "Account",
     modePricing: "Premium",
     pricingHeroTitle: "Ontgrendel alle AI-functies",
@@ -1361,6 +1413,19 @@ const translations: Record<
       "Los ejemplos generados por IA, las explicaciones de gramática, la lectura larga y la práctica oral requieren membresía premium. La opción de autoservicio llegará pronto.",
     authModalClose: "Cerrar",
     authLinkExpired: "Ese enlace de acceso caducó — solicita uno nuevo",
+    authTabMagicLink: "Enlace por correo",
+    authTabPassword: "Correo y contraseña",
+    authFlowLogin: "Iniciar sesión",
+    authFlowRegister: "Registrarse",
+    authPasswordPlaceholder: "Contraseña (6+ caracteres)",
+    authPasswordSignIn: "Iniciar sesión",
+    authPasswordSignInSending: "Iniciando sesión…",
+    authPasswordSignUp: "Registrarse",
+    authPasswordSignUpSending: "Registrando…",
+    authPasswordSignUpSuccess: "¡Registrado! Confirma tu correo antes de iniciar sesión.",
+    authPasswordError: "Correo o contraseña incorrectos",
+    authSwitchToRegister: "¿Aún no tienes cuenta? Regístrate",
+    authSwitchToLogin: "¿Ya tienes cuenta? Inicia sesión",
     accountLabel: "Cuenta",
     modePricing: "Premium",
     pricingHeroTitle: "Desbloquea todas las funciones de IA",
@@ -1628,6 +1693,19 @@ const translations: Record<
       "KI-generierte Beispiele, Grammatikerklärungen, Langlesetexte und Sprechübungen erfordern eine Premium-Mitgliedschaft. Ein Selbstbedienungs-Upgrade folgt in Kürze.",
     authModalClose: "Schließen",
     authLinkExpired: "Der Anmeldelink ist abgelaufen — bitte fordere einen neuen an",
+    authTabMagicLink: "E-Mail-Link",
+    authTabPassword: "E-Mail & Passwort",
+    authFlowLogin: "Anmelden",
+    authFlowRegister: "Registrieren",
+    authPasswordPlaceholder: "Passwort (mind. 6 Zeichen)",
+    authPasswordSignIn: "Anmelden",
+    authPasswordSignInSending: "Anmeldung läuft…",
+    authPasswordSignUp: "Registrieren",
+    authPasswordSignUpSending: "Registrierung läuft…",
+    authPasswordSignUpSuccess: "Registriert! Bestätige deine E-Mail, bevor du dich anmeldest.",
+    authPasswordError: "E-Mail oder Passwort falsch",
+    authSwitchToRegister: "Noch kein Konto? Registrieren",
+    authSwitchToLogin: "Schon ein Konto? Anmelden",
     accountLabel: "Konto",
     modePricing: "Premium",
     pricingHeroTitle: "Alle KI-Funktionen freischalten",
@@ -4891,7 +4969,15 @@ function AuthModal({
   sending,
   statusMessage,
   onClose,
-  onGoToPricing
+  onGoToPricing,
+  authTab,
+  onAuthTabChange,
+  authFlow,
+  onAuthFlowChange,
+  password,
+  onPasswordChange,
+  onPasswordSignIn,
+  onPasswordSignUp
 }: {
   t: (typeof translations)[UiLanguage];
   reason: "login" | "premium";
@@ -4903,6 +4989,14 @@ function AuthModal({
   statusMessage: string;
   onClose: () => void;
   onGoToPricing: () => void;
+  authTab: "magiclink" | "password";
+  onAuthTabChange: (tab: "magiclink" | "password") => void;
+  authFlow: "login" | "register";
+  onAuthFlowChange: (flow: "login" | "register") => void;
+  password: string;
+  onPasswordChange: (value: string) => void;
+  onPasswordSignIn: () => void;
+  onPasswordSignUp: () => void;
 }) {
   return (
     <div className="auth-modal-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
@@ -4928,24 +5022,87 @@ function AuthModal({
             <div className="auth-modal-divider">
               <span>{t.authSignInEmailLabel}</span>
             </div>
-            <form
-              className="auth-email-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                onSendEmailLink();
-              }}
-            >
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => onEmailChange(event.target.value)}
-                placeholder={t.authEmailPlaceholder}
-                required
-              />
-              <button className="mini-button" type="submit" disabled={sending || !email.trim()}>
-                {sending ? t.authSending : t.authSendLink}
+            <div className="auth-tab-toggle">
+              <button
+                type="button"
+                className={authTab === "magiclink" ? "active" : ""}
+                onClick={() => onAuthTabChange("magiclink")}
+              >
+                {t.authTabMagicLink}
               </button>
-            </form>
+              <button
+                type="button"
+                className={authTab === "password" ? "active" : ""}
+                onClick={() => onAuthTabChange("password")}
+              >
+                {t.authTabPassword}
+              </button>
+            </div>
+            {authTab === "magiclink" ? (
+              <form
+                className="auth-email-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  onSendEmailLink();
+                }}
+              >
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => onEmailChange(event.target.value)}
+                  placeholder={t.authEmailPlaceholder}
+                  required
+                />
+                <button className="mini-button" type="submit" disabled={sending || !email.trim()}>
+                  {sending ? t.authSending : t.authSendLink}
+                </button>
+              </form>
+            ) : (
+              <form
+                className="auth-password-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (authFlow === "register") onPasswordSignUp();
+                  else onPasswordSignIn();
+                }}
+              >
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => onEmailChange(event.target.value)}
+                  placeholder={t.authEmailPlaceholder}
+                  required
+                />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => onPasswordChange(event.target.value)}
+                  placeholder={t.authPasswordPlaceholder}
+                  minLength={6}
+                  required
+                />
+                <button
+                  className="mini-button auth-password-submit"
+                  type="submit"
+                  disabled={sending || !email.trim() || password.length < 6}
+                >
+                  {authFlow === "register"
+                    ? sending
+                      ? t.authPasswordSignUpSending
+                      : t.authPasswordSignUp
+                    : sending
+                      ? t.authPasswordSignInSending
+                      : t.authPasswordSignIn}
+                </button>
+                <button
+                  type="button"
+                  className="auth-flow-switch"
+                  onClick={() => onAuthFlowChange(authFlow === "register" ? "login" : "register")}
+                >
+                  {authFlow === "register" ? t.authSwitchToLogin : t.authSwitchToRegister}
+                </button>
+              </form>
+            )}
           </>
         )}
         {statusMessage ? <p className="ai-status">{statusMessage}</p> : null}
@@ -4961,6 +5118,9 @@ export default function App() {
   const [authEmail, setAuthEmail] = useState("");
   const [authStatusMessage, setAuthStatusMessage] = useState("");
   const [authSending, setAuthSending] = useState(false);
+  const [authTab, setAuthTab] = useState<"magiclink" | "password">("magiclink");
+  const [authFlow, setAuthFlow] = useState<"login" | "register">("login");
+  const [authPassword, setAuthPassword] = useState("");
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [premiumRefreshTick, setPremiumRefreshTick] = useState(0);
   const user = session?.user ?? null;
@@ -5193,6 +5353,41 @@ export default function App() {
       setAuthStatusMessage(error ? t.authEmailError : t.authEmailSent);
     } catch {
       setAuthStatusMessage(t.authEmailError);
+    } finally {
+      setAuthSending(false);
+    }
+  }
+
+  async function handlePasswordSignIn() {
+    if (!supabase || !authEmail.trim() || !authPassword) return;
+    setAuthSending(true);
+    setAuthStatusMessage("");
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: authEmail.trim(),
+        password: authPassword
+      });
+      setAuthStatusMessage(error ? t.authPasswordError : "");
+    } catch {
+      setAuthStatusMessage(t.authPasswordError);
+    } finally {
+      setAuthSending(false);
+    }
+  }
+
+  async function handlePasswordSignUp() {
+    if (!supabase || !authEmail.trim() || !authPassword) return;
+    setAuthSending(true);
+    setAuthStatusMessage("");
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: authEmail.trim(),
+        password: authPassword,
+        options: { emailRedirectTo: window.location.origin }
+      });
+      setAuthStatusMessage(error ? error.message : t.authPasswordSignUpSuccess);
+    } catch {
+      setAuthStatusMessage(t.authPasswordError);
     } finally {
       setAuthSending(false);
     }
@@ -5660,7 +5855,7 @@ export default function App() {
   async function getSpokenGrammarExplanation(sentenceKey: string, sentence: string) {
     const cached = spokenGrammar[sentenceKey];
     if (cached) return cached;
-    if (!apiAvailable || !isPremium) return "";
+    if (!apiAvailable) return "";
 
     try {
       const response = await fetch(apiUrl("/api/explain-example"), {
@@ -5786,7 +5981,7 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (!apiAvailable || translatingKey || !isPremium) return;
+    if (!apiAvailable || translatingKey) return;
 
     const candidates = mode === "study" && studyWord ? [studyWord] : visibleWords;
     const nextWord = candidates.find((word) => {
@@ -5876,7 +6071,6 @@ export default function App() {
       setTranslationMessages((current) => ({ ...current, [sentenceKey]: t.translationFailed }));
       return;
     }
-    if (!ensurePremiumAccess()) return;
 
     const cacheKey = `${sentenceKey}:${targetLanguage}`;
     setTranslatingKey(cacheKey);
@@ -5920,7 +6114,6 @@ export default function App() {
       setTranslationMessages((current) => ({ ...current, [sentenceKey]: t.grammarFailed }));
       return;
     }
-    if (!ensurePremiumAccess()) return;
 
     setExplainingGrammarKey(sentenceKey);
     setTranslationMessages((current) => ({ ...current, [sentenceKey]: "" }));
@@ -6556,6 +6749,14 @@ export default function App() {
           setAuthPrompt(null);
           setMode("pricing");
         }}
+        authTab={authTab}
+        onAuthTabChange={setAuthTab}
+        authFlow={authFlow}
+        onAuthFlowChange={setAuthFlow}
+        password={authPassword}
+        onPasswordChange={setAuthPassword}
+        onPasswordSignIn={handlePasswordSignIn}
+        onPasswordSignUp={handlePasswordSignUp}
       />
     ) : null}
     </>
