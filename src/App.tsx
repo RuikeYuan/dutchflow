@@ -350,6 +350,13 @@ const translations: Record<
     authPasswordError: string;
     authSwitchToRegister: string;
     authSwitchToLogin: string;
+    cardControlsLabel: string;
+    flipAllCardsTitle: string;
+    cardShowMeaning: string;
+    cardShowDutch: string;
+    cardBackLabel: string;
+    grammarMindMapLabel: string;
+    grammarRootLabel: string;
     accountLabel: string;
     modePricing: string;
     pricingHeroTitle: string;
@@ -592,6 +599,13 @@ const translations: Record<
     authPasswordError: "邮箱或密码不正确",
     authSwitchToRegister: "还没有账号？去注册",
     authSwitchToLogin: "已有账号？去登录",
+    cardControlsLabel: "卡片翻转设置",
+    flipAllCardsTitle: "翻转所有可见的单词卡片",
+    cardShowMeaning: "释义 → 荷兰语",
+    cardShowDutch: "荷兰语 → 释义",
+    cardBackLabel: "背面语言",
+    grammarMindMapLabel: "语法脑图",
+    grammarRootLabel: "荷兰语语法",
     accountLabel: "账户",
     modePricing: "会员",
     pricingHeroTitle: "解锁全部 AI 功能",
@@ -866,6 +880,13 @@ const translations: Record<
     authPasswordError: "Incorrect email or password",
     authSwitchToRegister: "No account yet? Register",
     authSwitchToLogin: "Already have an account? Log in",
+    cardControlsLabel: "Card side controls",
+    flipAllCardsTitle: "Flip all visible word cards",
+    cardShowMeaning: "Definition → Dutch",
+    cardShowDutch: "Dutch → Definition",
+    cardBackLabel: "Back",
+    grammarMindMapLabel: "Grammar mind map",
+    grammarRootLabel: "Dutch Grammar",
     accountLabel: "Account",
     modePricing: "Premium",
     pricingHeroTitle: "Unlock every AI feature",
@@ -1146,6 +1167,13 @@ const translations: Record<
     authPasswordError: "Onjuiste e-mail of wachtwoord",
     authSwitchToRegister: "Nog geen account? Registreer",
     authSwitchToLogin: "Al een account? Inloggen",
+    cardControlsLabel: "Kaartzijde-instellingen",
+    flipAllCardsTitle: "Draai alle zichtbare woordkaarten om",
+    cardShowMeaning: "Betekenis → Nederlands",
+    cardShowDutch: "Nederlands → Betekenis",
+    cardBackLabel: "Achterkant",
+    grammarMindMapLabel: "Grammatica-mindmap",
+    grammarRootLabel: "Nederlandse grammatica",
     accountLabel: "Account",
     modePricing: "Premium",
     pricingHeroTitle: "Ontgrendel alle AI-functies",
@@ -1426,6 +1454,13 @@ const translations: Record<
     authPasswordError: "Correo o contraseña incorrectos",
     authSwitchToRegister: "¿Aún no tienes cuenta? Regístrate",
     authSwitchToLogin: "¿Ya tienes cuenta? Inicia sesión",
+    cardControlsLabel: "Ajustes del reverso de la tarjeta",
+    flipAllCardsTitle: "Voltear todas las tarjetas visibles",
+    cardShowMeaning: "Significado → Neerlandés",
+    cardShowDutch: "Neerlandés → Significado",
+    cardBackLabel: "Reverso",
+    grammarMindMapLabel: "Mapa mental de gramática",
+    grammarRootLabel: "Gramática neerlandesa",
     accountLabel: "Cuenta",
     modePricing: "Premium",
     pricingHeroTitle: "Desbloquea todas las funciones de IA",
@@ -1706,6 +1741,13 @@ const translations: Record<
     authPasswordError: "E-Mail oder Passwort falsch",
     authSwitchToRegister: "Noch kein Konto? Registrieren",
     authSwitchToLogin: "Schon ein Konto? Anmelden",
+    cardControlsLabel: "Kartenrückseiten-Einstellungen",
+    flipAllCardsTitle: "Alle sichtbaren Wortkarten umdrehen",
+    cardShowMeaning: "Bedeutung → Niederländisch",
+    cardShowDutch: "Niederländisch → Bedeutung",
+    cardBackLabel: "Rückseite",
+    grammarMindMapLabel: "Grammatik-Mindmap",
+    grammarRootLabel: "Niederländische Grammatik",
     accountLabel: "Konto",
     modePricing: "Premium",
     pricingHeroTitle: "Alle KI-Funktionen freischalten",
@@ -2938,8 +2980,8 @@ function GrammarGuidePage({
 
       {view === "mindmap" ? (
         <div className="grammar-layout">
-          <div className="grammar-map" aria-label="Grammar mind map">
-            <div className="grammar-root">荷兰语语法</div>
+          <div className="grammar-map" aria-label={t.grammarMindMapLabel}>
+            <div className="grammar-root">{t.grammarRootLabel}</div>
             <div className="grammar-part-grid">
               {grammarGuideParts.map((part) => (
                 <article className="grammar-part" key={part.id}>
@@ -4141,6 +4183,9 @@ function DailyReadingPage({
   const autoPlayTokenRef = useRef(0);
   const autoPlayingRef = useRef(false);
 
+  const [localizedByItem, setLocalizedByItem] = useState<Record<string, { translation: string; explanation: string }>>({});
+  const [localizingKey, setLocalizingKey] = useState("");
+
   const [longReadingByItem, setLongReadingByItem] = useState<Record<string, { longText: string; translation: string }>>({});
   const [longReadingLoadingId, setLongReadingLoadingId] = useState("");
   const [longReadingErrors, setLongReadingErrors] = useState<Record<string, string>>({});
@@ -4186,6 +4231,56 @@ function DailyReadingPage({
       active = false;
     };
   }, [genre]);
+
+  // The pre-generated translation/explanation are baked in Chinese; when the UI
+  // language is anything else, translate the Dutch source into that language
+  // on demand (once per item) instead of always showing the Chinese version.
+  useEffect(() => {
+    if (language === "zh") return;
+
+    const target = items.find(
+      (item) =>
+        (translationVisible[item.id] || grammarVisible[item.id]) && !localizedByItem[`${item.id}:${language}`]
+    );
+    if (!target) return;
+
+    const key = `${target.id}:${language}`;
+    if (localizingKey === key) return;
+    setLocalizingKey(key);
+
+    (async () => {
+      try {
+        const [translationResponse, explanationResponse] = await Promise.all([
+          fetch(apiUrl("/api/translate-example"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sentence: target.dutchText, targetLanguage: language })
+          }),
+          fetch(apiUrl("/api/explain-example"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sentence: target.dutchText, targetLanguage: language })
+          })
+        ]);
+        const translationData = (await translationResponse.json()) as { translation?: string };
+        const explanationData = (await explanationResponse.json()) as { explanation?: string };
+        setLocalizedByItem((current) => ({
+          ...current,
+          [key]: {
+            translation: translationData.translation?.trim() || target.translation,
+            explanation: explanationData.explanation?.trim() || target.explanation
+          }
+        }));
+      } catch {
+        setLocalizedByItem((current) => ({
+          ...current,
+          [key]: { translation: target.translation, explanation: target.explanation }
+        }));
+      } finally {
+        setLocalizingKey("");
+      }
+    })();
+  }, [items, language, translationVisible, grammarVisible, localizedByItem, localizingKey]);
 
   useEffect(
     () => () => {
@@ -4470,13 +4565,24 @@ function DailyReadingPage({
                     <span>{longReadingVisible[item.id] ? t.readingLongHide : t.readingLongButton}</span>
                   </button>
                 </div>
-                {translationVisible[item.id] ? <p className="example-translation">{item.translation}</p> : null}
+                {translationVisible[item.id] ? (
+                  <p className="example-translation">
+                    {language === "zh"
+                      ? item.translation
+                      : (localizedByItem[`${item.id}:${language}`]?.translation ?? t.translatingExample)}
+                  </p>
+                ) : null}
                 {grammarVisible[item.id] ? (
                   <div className="grammar-explanation">
                     <strong>{t.grammarExplanation}</strong>
-                    {item.explanation.split("\n").map((line, index) => (
-                      <p key={`${item.id}-line-${index}`}>{line}</p>
-                    ))}
+                    {(language === "zh"
+                      ? item.explanation
+                      : (localizedByItem[`${item.id}:${language}`]?.explanation ?? t.explainingGrammar)
+                    )
+                      .split("\n")
+                      .map((line, index) => (
+                        <p key={`${item.id}-line-${index}`}>{line}</p>
+                      ))}
                   </div>
                 ) : null}
                 {longReadingVisible[item.id] ? (
@@ -4619,6 +4725,10 @@ function PodcastPage({ t, language }: { t: (typeof translations)[UiLanguage]; la
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [transcriptVisible, setTranscriptVisible] = useState<Record<string, boolean>>({});
+  const [localizedEpisodes, setLocalizedEpisodes] = useState<Record<string, { turns: string[]; explanation: string }>>(
+    {}
+  );
+  const [localizingEpisodeKey, setLocalizingEpisodeKey] = useState("");
   const [playingId, setPlayingId] = useState("");
   const [playingTurnIndex, setPlayingTurnIndex] = useState(-1);
   const [autoPlayingGenres, setAutoPlayingGenres] = useState(false);
@@ -4663,6 +4773,59 @@ function PodcastPage({ t, language }: { t: (typeof translations)[UiLanguage]; la
       active = false;
     };
   }, [genre]);
+
+  // The pre-generated turn translations and explanation are baked in Chinese;
+  // for any other UI language, translate the Dutch dialogue on demand instead
+  // of always showing the Chinese version.
+  useEffect(() => {
+    if (language === "zh") return;
+
+    const target = episodes.find(
+      (episode) => transcriptVisible[episode.id] && !localizedEpisodes[`${episode.id}:${language}`]
+    );
+    if (!target) return;
+
+    const key = `${target.id}:${language}`;
+    if (localizingEpisodeKey === key) return;
+    setLocalizingEpisodeKey(key);
+
+    (async () => {
+      try {
+        const joinedTurns = target.turns.map((turn) => turn.text).join("|||");
+        const [translationResponse, explanationResponse] = await Promise.all([
+          fetch(apiUrl("/api/translate-example"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sentence: joinedTurns, targetLanguage: language })
+          }),
+          fetch(apiUrl("/api/explain-example"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sentence: target.turns.map((turn) => turn.text).join(" "), targetLanguage: language })
+          })
+        ]);
+        const translationData = (await translationResponse.json()) as { translation?: string };
+        const explanationData = (await explanationResponse.json()) as { explanation?: string };
+        const splitTurns = (translationData.translation ?? "").split("|||").map((part) => part.trim());
+        const turnsValid = splitTurns.length === target.turns.length && splitTurns.every(Boolean);
+
+        setLocalizedEpisodes((current) => ({
+          ...current,
+          [key]: {
+            turns: turnsValid ? splitTurns : target.turns.map((turn) => turn.translation),
+            explanation: explanationData.explanation?.trim() || target.explanation
+          }
+        }));
+      } catch {
+        setLocalizedEpisodes((current) => ({
+          ...current,
+          [key]: { turns: target.turns.map((turn) => turn.translation), explanation: target.explanation }
+        }));
+      } finally {
+        setLocalizingEpisodeKey("");
+      }
+    })();
+  }, [episodes, language, transcriptVisible, localizedEpisodes, localizingEpisodeKey]);
 
   useEffect(
     () => () => {
@@ -4917,15 +5080,24 @@ function PodcastPage({ t, language }: { t: (typeof translations)[UiLanguage]; la
                       <span className="podcast-speaker">{turn.speaker}</span>
                       <div>
                         <p className="podcast-turn-text">{turn.text}</p>
-                        <p className="podcast-turn-translation">{turn.translation}</p>
+                        <p className="podcast-turn-translation">
+                          {language === "zh"
+                            ? turn.translation
+                            : (localizedEpisodes[`${episode.id}:${language}`]?.turns[index] ?? t.translatingExample)}
+                        </p>
                       </div>
                     </div>
                   ))}
                   <div className="grammar-explanation">
                     <strong>{t.grammarExplanation}</strong>
-                    {episode.explanation.split("\n").map((line, index) => (
-                      <p key={`${episode.id}-explain-${index}`}>{line}</p>
-                    ))}
+                    {(language === "zh"
+                      ? episode.explanation
+                      : (localizedEpisodes[`${episode.id}:${language}`]?.explanation ?? t.explainingGrammar)
+                    )
+                      .split("\n")
+                      .map((line, index) => (
+                        <p key={`${episode.id}-explain-${index}`}>{line}</p>
+                      ))}
                   </div>
                 </div>
               ) : null}
@@ -6387,18 +6559,18 @@ export default function App() {
               </form>
 
               {mode !== "method" && mode !== "speaking" && mode !== "grammar" && mode !== "reading" && mode !== "podcast" ? (
-                <div className="card-controls" aria-label="Card side controls">
+                <div className="card-controls" aria-label={t.cardControlsLabel}>
                   <button
                     className={cardsFlipped ? "active" : ""}
                     type="button"
                     onClick={toggleAllCards}
-                    title="Flip all visible word cards"
+                    title={t.flipAllCardsTitle}
                   >
                     <RotateCcw size={16} />
-                    <span>{cardsFlipped ? "Definition → Dutch" : "Dutch → Definition"}</span>
+                    <span>{cardsFlipped ? t.cardShowMeaning : t.cardShowDutch}</span>
                   </button>
                   <label>
-                    <span>Back</span>
+                    <span>{t.cardBackLabel}</span>
                     <select
                       value={cardMeaningLanguage}
                       onChange={(event) => setCardMeaningLanguage(event.target.value as CardMeaningLanguage)}

@@ -55,8 +55,7 @@ main {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  border-right: 1p‘
-  x solid var(--line);
+  border-right: 1px solid var(--line);
   background: rgba(255, 253, 248, 0.94);
   padding: 16px 12px;
   position: sticky;
