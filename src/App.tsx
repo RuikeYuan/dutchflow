@@ -5417,7 +5417,25 @@ function AuthModal({
           <>
             <h2>{t.authSignInTitle}</h2>
             <button className="auth-google-button" type="button" onClick={onGoogle}>
-              {t.authSignInGoogle}
+              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+                <path
+                  fill="#4285F4"
+                  d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M3.96 10.71a5.4 5.4 0 0 1 0-3.42V4.96H.96a9 9 0 0 0 0 8.08l3-2.33z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z"
+                />
+              </svg>
+              <span>{t.authSignInGoogle}</span>
             </button>
             <div className="auth-modal-divider">
               <span>{t.authSignInEmailLabel}</span>
@@ -5482,7 +5500,7 @@ function AuthModal({
                   required
                 />
                 <button
-                  className="mini-button auth-password-submit"
+                  className="primary auth-password-submit"
                   type="submit"
                   disabled={sending || !email.trim() || password.length < 6}
                 >
@@ -6676,7 +6694,8 @@ export default function App() {
             </button>
             <button className={mode === "profile" ? "active" : ""} onClick={() => setMode("profile")} title={t.modeProfile}>
               <User size={18} />
-              <span>{t.modeProfile}</span>
+              <span>{user ? t.accountLabel : t.authSignInTitle}</span>
+              {user ? <span className={`account-nav-dot ${isPremium ? "premium" : ""}`} aria-hidden="true" /> : null}
             </button>
           </nav>
 
@@ -6691,37 +6710,6 @@ export default function App() {
                 ))}
               </select>
             </label>
-            <details className="sync-panel" open={Boolean(user)}>
-              <summary>
-                <User size={16} />
-                <span>{user ? t.accountLabel : t.authSignInTitle}</span>
-              </summary>
-              <div className="sync-panel-body">
-                {user ? (
-                  <>
-                    <p className="sync-hint">{t.authSignedInAs(user.email ?? "")}</p>
-                    {isPremium ? (
-                      <span className="auth-premium-badge">{t.authPremiumBadge}</span>
-                    ) : (
-                      <button type="button" className="mini-button" onClick={() => setMode("pricing")}>
-                        <Crown size={14} />
-                        <span>{t.modePricing}</span>
-                      </button>
-                    )}
-                    <button type="button" className="mini-button" onClick={handleSignOut}>
-                      {t.authSignOut}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <p className="sync-hint">{t.authRequiredHint}</p>
-                    <button type="button" className="mini-button" onClick={() => setAuthPrompt("login")}>
-                      {t.authSignInTitle}
-                    </button>
-                  </>
-                )}
-              </div>
-            </details>
           </div>
 
           <button
