@@ -23,7 +23,7 @@ import {
   User,
   Volume2
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   grammarGuideChapters,
   grammarGuideParts,
@@ -4917,8 +4917,11 @@ async function createPodcastUtterance(text: string, speaker: "A" | "B") {
   return utterance;
 }
 
-async function fetchPodcastGenreEpisodes(genreKey: ReadingGenre): Promise<PodcastEpisode[]> {
-  const response = await fetch(apiUrl(`/api/podcast?genre=${genreKey}`));
+async function fetchPodcastGenreEpisodes(
+  genreKey: ReadingGenre,
+  authHeaders: () => Record<string, string>
+): Promise<PodcastEpisode[]> {
+  const response = await fetch(apiUrl(`/api/podcast?genre=${genreKey}`), { headers: authHeaders() });
   if (!response.ok) {
     throw new Error("Failed to read podcast episodes");
   }
@@ -4926,7 +4929,15 @@ async function fetchPodcastGenreEpisodes(genreKey: ReadingGenre): Promise<Podcas
   return data.episodes ?? [];
 }
 
-function PodcastPage({ t, language }: { t: (typeof translations)[UiLanguage]; language: UiLanguage }) {
+function PodcastPage({
+  t,
+  language,
+  premiumGate
+}: {
+  t: (typeof translations)[UiLanguage];
+  language: UiLanguage;
+  premiumGate: PremiumGate;
+}) {
   const [genre, setGenre] = useState<ReadingGenre>("algemeen");
   const [episodes, setEpisodes] = useState<PodcastEpisode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -4959,7 +4970,7 @@ function PodcastPage({ t, language }: { t: (typeof translations)[UiLanguage]; la
       setLoading(true);
 
       try {
-        const list = await fetchPodcastGenreEpisodes(genre);
+        const list = await fetchPodcastGenreEpisodes(genre, premiumGate.authHeaders);
         if (active) {
           setEpisodes(list);
           setFailed(false);
@@ -4979,7 +4990,7 @@ function PodcastPage({ t, language }: { t: (typeof translations)[UiLanguage]; la
     return () => {
       active = false;
     };
-  }, [genre]);
+  }, [genre, premiumGate]);
 
   // The pre-generated turn translations and explanation are baked in Chinese;
   // for any other UI language, translate the Dutch dialogue on demand instead
@@ -5170,7 +5181,7 @@ function PodcastPage({ t, language }: { t: (typeof translations)[UiLanguage]; la
     setFailed(false);
 
     try {
-      const list = await fetchPodcastGenreEpisodes(genreKey);
+      const list = await fetchPodcastGenreEpisodes(genreKey, premiumGate.authHeaders);
       if (token !== playTokenRef.current) return;
       setEpisodes(list);
       setLoading(false);
@@ -5746,10 +5757,10 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  function authHeaders(): Record<string, string> {
+  const authHeaders = useCallback((): Record<string, string> => {
     const token = session?.access_token;
     return token ? { Authorization: `Bearer ${token}` } : {};
-  }
+  }, [session]);
 
   function ensureLoggedIn(): boolean {
     if (!user) {
@@ -5837,11 +5848,14 @@ export default function App() {
     await supabase.auth.signOut();
   }
 
-  const premiumGate: PremiumGate = {
-    isPremium,
-    authHeaders,
-    requestPremium: () => setAuthPrompt(user ? "premium" : "login")
-  };
+  const requestPremium = useCallback(() => {
+    setAuthPrompt(user ? "premium" : "login");
+  }, [user]);
+
+  const premiumGate: PremiumGate = useMemo(
+    () => ({ isPremium, authHeaders, requestPremium }),
+    [isPremium, authHeaders, requestPremium]
+  );
 
   useEffect(() => {
     loopNotebookAutoPlayRef.current = loopNotebookAutoPlay;
@@ -6866,7 +6880,7 @@ export default function App() {
       ) : mode === "podcast" && !isPremium ? (
         <PremiumGateSection t={t} onSubscribe={() => premiumGate.requestPremium()} />
       ) : mode === "podcast" ? (
-        <PodcastPage t={t} language={language} />
+        <PodcastPage t={t} language={language} premiumGate={premiumGate} />
       ) : mode === "speaking" ? (
         <SpeakingPage t={t} premiumGate={premiumGate} />
       ) : mode === "study" && studyWord ? (
