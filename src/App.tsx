@@ -4455,39 +4455,55 @@ function DailyReadingPage({
     if (localizingKey === key) return;
     setLocalizingKey(key);
 
+    async function attemptLocalize(item: NewsReadingItem) {
+      const [translationResponse, explanationResponse] = await Promise.all([
+        fetch(apiUrl("/api/translate-example"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sentence: item.dutchText, targetLanguage: language })
+        }),
+        fetch(apiUrl("/api/explain-example"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sentence: item.dutchText, targetLanguage: language })
+        })
+      ]);
+      if (!translationResponse.ok || !explanationResponse.ok) {
+        throw new Error("Localization request failed");
+      }
+      const translationData = (await translationResponse.json()) as { translation?: string };
+      const explanationData = (await explanationResponse.json()) as { explanation?: string };
+      const translation = translationData.translation?.trim();
+      const explanation = explanationData.explanation?.trim();
+      if (!translation || !explanation) {
+        throw new Error("Localization response malformed");
+      }
+      return { translation, explanation };
+    }
+
     (async () => {
+      // Don't silently fall back to the pre-baked Chinese version on a
+      // transient failure (rate limit, etc.) - that's the wrong language, not
+      // a fallback. Retry once, then show a clear failure state instead.
       try {
-        const [translationResponse, explanationResponse] = await Promise.all([
-          fetch(apiUrl("/api/translate-example"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sentence: target.dutchText, targetLanguage: language })
-          }),
-          fetch(apiUrl("/api/explain-example"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sentence: target.dutchText, targetLanguage: language })
-          })
-        ]);
-        const translationData = (await translationResponse.json()) as { translation?: string };
-        const explanationData = (await explanationResponse.json()) as { explanation?: string };
-        setLocalizedByItem((current) => ({
-          ...current,
-          [key]: {
-            translation: translationData.translation?.trim() || target.translation,
-            explanation: explanationData.explanation?.trim() || target.explanation
-          }
-        }));
+        let result;
+        try {
+          result = await attemptLocalize(target);
+        } catch {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          result = await attemptLocalize(target);
+        }
+        setLocalizedByItem((current) => ({ ...current, [key]: result }));
       } catch {
         setLocalizedByItem((current) => ({
           ...current,
-          [key]: { translation: target.translation, explanation: target.explanation }
+          [key]: { translation: t.translationFailed, explanation: t.translationFailed }
         }));
       } finally {
         setLocalizingKey("");
       }
     })();
-  }, [items, language, translationVisible, grammarVisible, localizedByItem, localizingKey]);
+  }, [items, language, translationVisible, grammarVisible, localizedByItem, localizingKey, t.translationFailed]);
 
   useEffect(
     () => () => {
@@ -5007,43 +5023,58 @@ function PodcastPage({
     if (localizingEpisodeKey === key) return;
     setLocalizingEpisodeKey(key);
 
-    (async () => {
-      try {
-        const joinedTurns = target.turns.map((turn) => turn.text).join("|||");
-        const [translationResponse, explanationResponse] = await Promise.all([
-          fetch(apiUrl("/api/translate-example"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sentence: joinedTurns, targetLanguage: language })
-          }),
-          fetch(apiUrl("/api/explain-example"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sentence: target.turns.map((turn) => turn.text).join(" "), targetLanguage: language })
-          })
-        ]);
-        const translationData = (await translationResponse.json()) as { translation?: string };
-        const explanationData = (await explanationResponse.json()) as { explanation?: string };
-        const splitTurns = (translationData.translation ?? "").split("|||").map((part) => part.trim());
-        const turnsValid = splitTurns.length === target.turns.length && splitTurns.every(Boolean);
+    async function attemptLocalize(episode: PodcastEpisode) {
+      const joinedTurns = episode.turns.map((turn) => turn.text).join("|||");
+      const [translationResponse, explanationResponse] = await Promise.all([
+        fetch(apiUrl("/api/translate-example"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sentence: joinedTurns, targetLanguage: language })
+        }),
+        fetch(apiUrl("/api/explain-example"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sentence: episode.turns.map((turn) => turn.text).join(" "), targetLanguage: language })
+        })
+      ]);
+      if (!translationResponse.ok || !explanationResponse.ok) {
+        throw new Error("Localization request failed");
+      }
+      const translationData = (await translationResponse.json()) as { translation?: string };
+      const explanationData = (await explanationResponse.json()) as { explanation?: string };
+      const splitTurns = (translationData.translation ?? "").split("|||").map((part) => part.trim());
+      const turnsValid = splitTurns.length === episode.turns.length && splitTurns.every(Boolean);
+      const explanation = explanationData.explanation?.trim();
+      if (!turnsValid || !explanation) {
+        throw new Error("Localization response malformed");
+      }
+      return { turns: splitTurns, explanation };
+    }
 
-        setLocalizedEpisodes((current) => ({
-          ...current,
-          [key]: {
-            turns: turnsValid ? splitTurns : target.turns.map((turn) => turn.translation),
-            explanation: explanationData.explanation?.trim() || target.explanation
-          }
-        }));
+    (async () => {
+      // The Dutch source and the AI translator are separate calls, so a
+      // transient failure (rate limit, etc.) shouldn't silently fall back to
+      // the pre-baked Chinese version - that's the wrong language, not a
+      // fallback. Retry once, then show a clear failure state instead.
+      try {
+        let result;
+        try {
+          result = await attemptLocalize(target);
+        } catch {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          result = await attemptLocalize(target);
+        }
+        setLocalizedEpisodes((current) => ({ ...current, [key]: result }));
       } catch {
         setLocalizedEpisodes((current) => ({
           ...current,
-          [key]: { turns: target.turns.map((turn) => turn.translation), explanation: target.explanation }
+          [key]: { turns: target.turns.map(() => t.translationFailed), explanation: t.translationFailed }
         }));
       } finally {
         setLocalizingEpisodeKey("");
       }
     })();
-  }, [episodes, language, transcriptVisible, localizedEpisodes, localizingEpisodeKey]);
+  }, [episodes, language, transcriptVisible, localizedEpisodes, localizingEpisodeKey, t.translationFailed]);
 
   useEffect(
     () => () => {
