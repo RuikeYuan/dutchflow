@@ -598,6 +598,13 @@ main {
   font-weight: 800;
 }
 
+.pricing-trial-note {
+  margin: -4px 0 0;
+  color: var(--teal);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .pricing-feature-list {
   list-style: none;
   margin: 4px 0 0;

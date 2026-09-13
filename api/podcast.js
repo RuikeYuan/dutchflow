@@ -1,5 +1,6 @@
 import { get } from "@vercel/blob";
 import { fail, handleOptions, ok, requireMethod } from "./_lib/ai.js";
+import { requirePremium } from "./_lib/auth.js";
 
 const KNOWN_GENRES = ["algemeen", "cultuur", "tech", "sport", "economie"];
 const DEFAULT_GENRE = "algemeen";
@@ -15,6 +16,7 @@ function blobPathnameFor(genreKey) {
 
 export default async function handler(request, response) {
   if (handleOptions(request, response) || !requireMethod(request, response, "GET")) return;
+  if (!(await requirePremium(request, response))) return;
 
   try {
     const url = new URL(request.url, "http://localhost");

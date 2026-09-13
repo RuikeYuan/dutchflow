@@ -977,6 +977,8 @@ export default defineConfig(({ mode }) => {
         });
 
         server.middlewares.use("/api/podcast", async (request, response) => {
+          if (!(await requirePremiumDev(request, response))) return;
+
           try {
             const knownGenres = ["algemeen", "cultuur", "tech", "sport", "economie"];
             const url = new URL(request.url ?? "/api/podcast", "http://localhost");
@@ -1056,7 +1058,8 @@ export default defineConfig(({ mode }) => {
               success_url: `${origin}/?checkout=success`,
               cancel_url: `${origin}/?checkout=cancelled`,
               "metadata[supabase_user_id]": user.id,
-              "subscription_data[metadata][supabase_user_id]": user.id
+              "subscription_data[metadata][supabase_user_id]": user.id,
+              "subscription_data[trial_period_days]": "7"
             });
             response.end(JSON.stringify({ url: session.url }));
           } catch (error) {

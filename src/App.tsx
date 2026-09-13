@@ -378,6 +378,8 @@ const translations: Record<
     pricingCheckoutError: string;
     pricingCheckoutSuccess: string;
     pricingCheckoutCancelled: string;
+    pricingTrialNote: string;
+    premiumGateTitle: string;
     list: Record<string, string>;
     pos: Record<string, string>;
   }
@@ -583,7 +585,7 @@ const translations: Record<
     authRequiredStudyTitle: "登录后才能使用学习模式",
     authRequiredHint: "登录后，单词本和学习进度会自动跨设备同步。",
     authPremiumRequiredTitle: "这是会员专属功能",
-    authPremiumRequiredHint: "AI 生成的例句、语法讲解、长阅读和口语练习等功能需要会员权限，会员开通功能正在准备中。",
+    authPremiumRequiredHint: "AI 生成的例句、语法讲解、长阅读、口语练习和播客都需要会员权限。",
     authModalClose: "关闭",
     authLinkExpired: "登录链接已过期，请重新获取一个",
     authTabMagicLink: "邮件链接",
@@ -633,6 +635,8 @@ const translations: Record<
     pricingCheckoutError: "无法打开支付页面，请稍后重试",
     pricingCheckoutSuccess: "订阅成功，欢迎成为会员！",
     pricingCheckoutCancelled: "已取消订阅流程",
+    pricingTrialNote: "首次订阅可享 7 天免费试用",
+    premiumGateTitle: "这是会员专属内容",
     list: {
       All: "全部",
       Core: "核心",
@@ -864,7 +868,7 @@ const translations: Record<
     authRequiredHint: "Once signed in, your notebook and study progress sync automatically across devices.",
     authPremiumRequiredTitle: "This is a premium feature",
     authPremiumRequiredHint:
-      "AI-generated examples, grammar explanations, long reading, and speaking practice require premium membership. Self-serve upgrades are coming soon.",
+      "AI-generated examples, grammar explanations, long reading, speaking practice, and the podcast all require premium membership.",
     authModalClose: "Close",
     authLinkExpired: "That sign-in link expired — please request a new one",
     authTabMagicLink: "Email link",
@@ -919,6 +923,8 @@ const translations: Record<
     pricingCheckoutError: "Could not open checkout. Please try again",
     pricingCheckoutSuccess: "Subscribed! Welcome to Premium.",
     pricingCheckoutCancelled: "Checkout was cancelled",
+    pricingTrialNote: "First subscription includes a 7-day free trial",
+    premiumGateTitle: "This is premium content",
     list: {
       All: "All",
       Core: "Core",
@@ -1151,7 +1157,7 @@ const translations: Record<
     authRequiredHint: "Na het inloggen synchroniseren je woordenboekje en studievoortgang automatisch tussen apparaten.",
     authPremiumRequiredTitle: "Dit is een premiumfunctie",
     authPremiumRequiredHint:
-      "AI-gegenereerde voorbeeldzinnen, grammatica-uitleg, lange leesteksten en spreekoefeningen vereisen een premium-account. Zelf upgraden komt binnenkort beschikbaar.",
+      "AI-gegenereerde voorbeeldzinnen, grammatica-uitleg, lange leesteksten, spreekoefeningen en de podcast vereisen allemaal een premium-account.",
     authModalClose: "Sluiten",
     authLinkExpired: "Die inloglink is verlopen — vraag een nieuwe aan",
     authTabMagicLink: "E-maillink",
@@ -1206,6 +1212,8 @@ const translations: Record<
     pricingCheckoutError: "Kon niet naar de afrekenpagina. Probeer het opnieuw",
     pricingCheckoutSuccess: "Geabonneerd! Welkom bij Premium.",
     pricingCheckoutCancelled: "Afrekenen geannuleerd",
+    pricingTrialNote: "Eerste abonnement inclusief 7 dagen gratis proefperiode",
+    premiumGateTitle: "Dit is premium-content",
     list: {
       All: "Alles",
       Core: "Kern",
@@ -1438,7 +1446,7 @@ const translations: Record<
     authRequiredHint: "Al iniciar sesión, tu cuaderno y tu progreso se sincronizan automáticamente entre dispositivos.",
     authPremiumRequiredTitle: "Esta es una función premium",
     authPremiumRequiredHint:
-      "Los ejemplos generados por IA, las explicaciones de gramática, la lectura larga y la práctica oral requieren membresía premium. La opción de autoservicio llegará pronto.",
+      "Los ejemplos generados por IA, las explicaciones de gramática, la lectura larga, la práctica oral y el podcast requieren membresía premium.",
     authModalClose: "Cerrar",
     authLinkExpired: "Ese enlace de acceso caducó — solicita uno nuevo",
     authTabMagicLink: "Enlace por correo",
@@ -1493,6 +1501,8 @@ const translations: Record<
     pricingCheckoutError: "No se pudo abrir el pago. Inténtalo de nuevo",
     pricingCheckoutSuccess: "¡Suscrito! Bienvenido a Premium.",
     pricingCheckoutCancelled: "Pago cancelado",
+    pricingTrialNote: "La primera suscripción incluye una prueba gratuita de 7 días",
+    premiumGateTitle: "Esto es contenido premium",
     list: {
       All: "Todo",
       Core: "Básico",
@@ -1725,7 +1735,7 @@ const translations: Record<
     authRequiredHint: "Nach der Anmeldung werden dein Vokabelheft und dein Lernfortschritt automatisch geräteübergreifend synchronisiert.",
     authPremiumRequiredTitle: "Dies ist eine Premium-Funktion",
     authPremiumRequiredHint:
-      "KI-generierte Beispiele, Grammatikerklärungen, Langlesetexte und Sprechübungen erfordern eine Premium-Mitgliedschaft. Ein Selbstbedienungs-Upgrade folgt in Kürze.",
+      "KI-generierte Beispiele, Grammatikerklärungen, Langlesetexte, Sprechübungen und der Podcast erfordern alle eine Premium-Mitgliedschaft.",
     authModalClose: "Schließen",
     authLinkExpired: "Der Anmeldelink ist abgelaufen — bitte fordere einen neuen an",
     authTabMagicLink: "E-Mail-Link",
@@ -1780,6 +1790,8 @@ const translations: Record<
     pricingCheckoutError: "Kasse konnte nicht geöffnet werden. Bitte erneut versuchen",
     pricingCheckoutSuccess: "Abonniert! Willkommen bei Premium.",
     pricingCheckoutCancelled: "Kasse abgebrochen",
+    pricingTrialNote: "Das erste Abo enthält 7 Tage kostenlose Testphase",
+    premiumGateTitle: "Das ist Premium-Inhalt",
     list: {
       All: "Alle",
       Core: "Kern",
@@ -3627,6 +3639,7 @@ function PricingPage({
           </h3>
           <p className="pricing-card-desc">{t.pricingPremiumDesc}</p>
           <div className="pricing-price">{t.pricingPerMonth("€5")}</div>
+          <p className="pricing-trial-note">{t.pricingTrialNote}</p>
           <ul className="pricing-feature-list">
             {t.pricingPremiumFeatures.map((feature) => (
               <li key={feature}>
@@ -5131,6 +5144,21 @@ function AuthGateSection({
   );
 }
 
+function PremiumGateSection({ t, onSubscribe }: { t: (typeof translations)[UiLanguage]; onSubscribe: () => void }) {
+  return (
+    <section className="auth-gate">
+      <div className="auth-gate-card">
+        <h2>{t.premiumGateTitle}</h2>
+        <p>{t.authPremiumRequiredHint}</p>
+        <button className="primary pricing-cta" type="button" onClick={onSubscribe}>
+          <Crown size={16} />
+          <span>{t.pricingSubscribeCta}</span>
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function AuthModal({
   t,
   reason,
@@ -6620,6 +6648,8 @@ export default function App() {
         <GrammarGuidePage t={t} language={language} premiumGate={premiumGate} />
       ) : mode === "reading" ? (
         <DailyReadingPage t={t} language={language} premiumGate={premiumGate} />
+      ) : mode === "podcast" && !isPremium ? (
+        <PremiumGateSection t={t} onSubscribe={() => premiumGate.requestPremium()} />
       ) : mode === "podcast" ? (
         <PodcastPage t={t} language={language} />
       ) : mode === "speaking" ? (

@@ -112,7 +112,8 @@ export default async function handler(request, response) {
       success_url: `${origin}/?checkout=success`,
       cancel_url: `${origin}/?checkout=cancelled`,
       "metadata[supabase_user_id]": user.id,
-      "subscription_data[metadata][supabase_user_id]": user.id
+      "subscription_data[metadata][supabase_user_id]": user.id,
+      "subscription_data[trial_period_days]": "7"
     });
     ok(response, { url: session.url });
   } catch (error) {
