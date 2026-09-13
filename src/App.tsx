@@ -5609,6 +5609,28 @@ export default function App() {
     };
   }, []);
 
+  // A backgrounded tab can sit long enough for the access token to expire
+  // before supabase-js's own auto-refresh timer gets a chance to run (browsers
+  // throttle timers in inactive tabs) - re-check the session whenever the tab
+  // regains focus so a stale token doesn't cause the next request to fail.
+  useEffect(() => {
+    if (!supabase) return;
+    const client = supabase;
+
+    function refreshSessionIfStale() {
+      if (document.visibilityState !== "visible") return;
+      client.auth.getSession().then(({ data }) => setSession(data.session));
+    }
+
+    document.addEventListener("visibilitychange", refreshSessionIfStale);
+    window.addEventListener("focus", refreshSessionIfStale);
+
+    return () => {
+      document.removeEventListener("visibilitychange", refreshSessionIfStale);
+      window.removeEventListener("focus", refreshSessionIfStale);
+    };
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const hash = window.location.hash;
