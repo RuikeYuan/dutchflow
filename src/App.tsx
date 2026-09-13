@@ -59,7 +59,7 @@ type ViewMode =
   | "profile";
 type UiLanguage = "zh" | "en" | "nl" | "es" | "de";
 type ExampleTranslationLanguage = UiLanguage;
-type CardMeaningLanguage = "en" | "zh";
+type CardMeaningLanguage = "en" | "zh" | "es" | "de";
 type SpeechLanguage = "zh-CN" | "en-US" | "nl-NL" | "es-ES" | "de-DE";
 type SpeechItem = { text: string; language: SpeechLanguage };
 type WordAnswerTurn = {
@@ -2873,6 +2873,7 @@ function WordCard({
   generationMessage,
   flipped,
   cardMeaningLanguage,
+  meaning,
   onToggleFlip,
   highlighted,
   t
@@ -2899,15 +2900,15 @@ function WordCard({
   generationMessage?: string;
   flipped: boolean;
   cardMeaningLanguage: CardMeaningLanguage;
+  meaning: string;
   onToggleFlip: (id: string) => void;
   highlighted: boolean;
   t: (typeof translations)[UiLanguage];
 }) {
-  const meaning = cardMeaningFor(item, cardMeaningLanguage) || t.noTranslation;
   const primaryText = flipped ? meaning : item.word;
   const secondaryText = flipped ? item.word : meaning;
-  const primaryLabel = flipped ? (cardMeaningLanguage === "zh" ? "中文" : "English") : "Nederlands";
-  const secondaryLabel = flipped ? "Nederlands" : cardMeaningLanguage === "zh" ? "中文" : "English";
+  const primaryLabel = flipped ? languageNames[cardMeaningLanguage] : "Nederlands";
+  const secondaryLabel = flipped ? "Nederlands" : languageNames[cardMeaningLanguage];
   const sentenceKey = `${item.sourceId}:${sentenceHash(sentence)}`;
   const [question, setQuestion] = useState("");
 
@@ -5692,6 +5693,9 @@ export default function App() {
   const [cardsFlipped, setCardsFlipped] = useState(false);
   const [cardFlipOverrides, setCardFlipOverrides] = useState<Record<string, boolean>>({});
   const [cardMeaningLanguage, setCardMeaningLanguage] = useState<CardMeaningLanguage>("en");
+  const [wordMeaningTranslations, setWordMeaningTranslations] = useState<Record<string, string>>({});
+  const [translatingMeaningKey, setTranslatingMeaningKey] = useState("");
+  const meaningTranslationRequestsRef = useRef<Set<string>>(new Set());
   const [includeNotebookExampleGrammar, setIncludeNotebookExampleGrammar] = useState(false);
   const autoTranslationRequestsRef = useRef<Set<string>>(new Set());
   const autoPlayTokenRef = useRef(0);
@@ -6548,6 +6552,66 @@ export default function App() {
     void handleTranslateExample(sentenceKey, sentence, defaultExampleTranslationLanguage);
   }, [bookExamples, exampleTranslations, generatedExamples, isPremium, mode, studyWord, translatingKey, visibleWords]);
 
+  function resolveCardMeaning(word: DutchWord, targetLanguage: CardMeaningLanguage): string {
+    if (targetLanguage === "en") return word.translation;
+    const key = `${word.sourceId}:${targetLanguage}`;
+    return wordMeaningTranslations[key] ?? (translatingMeaningKey === key ? t.translatingExample : t.noTranslation);
+  }
+
+  async function handleTranslateWordMeaning(word: DutchWord, targetLanguage: CardMeaningLanguage) {
+    if (targetLanguage === "en" || !apiAvailable) return;
+
+    const key = `${word.sourceId}:${targetLanguage}`;
+    setTranslatingMeaningKey(key);
+
+    try {
+      const response = await fetch(apiUrl("/api/translate-example"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders()
+        },
+        body: JSON.stringify({
+          sentence: word.translation,
+          targetLanguage,
+          sourceLanguage: "en"
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to translate word meaning");
+      }
+
+      const data = (await response.json()) as { translation?: string };
+      const translation = data.translation?.trim();
+      if (!translation) {
+        throw new Error("Empty translation");
+      }
+
+      setWordMeaningTranslations((current) => ({ ...current, [key]: translation }));
+    } catch {
+      // Leave it untranslated - the background prefetch loop just moves on to the next word.
+    } finally {
+      setTranslatingMeaningKey("");
+    }
+  }
+
+  useEffect(() => {
+    if (!apiAvailable || cardMeaningLanguage === "en" || translatingMeaningKey) return;
+
+    const candidates = mode === "study" && studyWord ? [studyWord] : visibleWords;
+    const nextWord = candidates.find((word) => {
+      const key = `${word.sourceId}:${cardMeaningLanguage}`;
+      return !wordMeaningTranslations[key] && !meaningTranslationRequestsRef.current.has(key);
+    });
+
+    if (!nextWord) return;
+
+    const key = `${nextWord.sourceId}:${cardMeaningLanguage}`;
+    meaningTranslationRequestsRef.current.add(key);
+    void handleTranslateWordMeaning(nextWord, cardMeaningLanguage);
+  }, [cardMeaningLanguage, mode, studyWord, translatingMeaningKey, visibleWords, wordMeaningTranslations]);
+
   async function handleGenerateExample(word: DutchWord) {
     if (!apiAvailable) {
       setGenerationMessages((current) => ({ ...current, [word.sourceId]: t.generationFailed }));
@@ -6926,6 +6990,8 @@ export default function App() {
                   >
                     <option value="en">English</option>
                     <option value="zh">中文</option>
+                    <option value="es">Español</option>
+                    <option value="de">Deutsch</option>
                   </select>
                 </label>
               </div>
@@ -7016,9 +7082,9 @@ export default function App() {
 
             <div className="prompt">
               <span className="card-side-label">
-                {studyCardFlipped ? (cardMeaningLanguage === "zh" ? "中文" : "English") : "Nederlands"}
+                {studyCardFlipped ? languageNames[cardMeaningLanguage] : "Nederlands"}
               </span>
-              <h2>{studyCardFlipped ? cardMeaningFor(studyWord, cardMeaningLanguage) || t.noTranslation : studyWord.word}</h2>
+              <h2>{studyCardFlipped ? resolveCardMeaning(studyWord, cardMeaningLanguage) : studyWord.word}</h2>
               {!studyCardFlipped ? <span>{t.pos[studyWord.partOfSpeech] ?? studyWord.partOfSpeech}</span> : null}
               <div className="review-state">
                 <strong>
@@ -7030,7 +7096,7 @@ export default function App() {
               </div>
               {!studyCardFlipped ? (
                 <p className={revealed ? "answer visible" : "answer"}>
-                  {cardMeaningFor(studyWord, cardMeaningLanguage) || t.noTranslation}
+                  {resolveCardMeaning(studyWord, cardMeaningLanguage)}
                 </p>
               ) : null}
             </div>
@@ -7231,6 +7297,7 @@ export default function App() {
                       generationMessage={generationMessages[word.sourceId]}
                       flipped={isCardFlipped(word.sourceId)}
                       cardMeaningLanguage={cardMeaningLanguage}
+                      meaning={resolveCardMeaning(word, cardMeaningLanguage)}
                       onToggleFlip={toggleCardFlip}
                       highlighted={highlightedWordId === word.sourceId}
                       t={t}

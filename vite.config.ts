@@ -129,11 +129,20 @@ const DEEPL_TARGET_LANG: Record<string, string> = {
   de: "DE"
 };
 
-async function translateWithDeepL(text: string, targetLanguage: string) {
+const DEEPL_SOURCE_LANG: Record<string, string> = {
+  zh: "ZH",
+  en: "EN",
+  nl: "NL",
+  es: "ES",
+  de: "DE"
+};
+
+async function translateWithDeepL(text: string, targetLanguage: string, sourceLanguage = "nl") {
   const apiKey = process.env.DEEPL_API_KEY;
   if (!apiKey) return null;
 
   const targetLang = DEEPL_TARGET_LANG[targetLanguage] ?? "EN-US";
+  const sourceLang = DEEPL_SOURCE_LANG[sourceLanguage] ?? "NL";
   const apiHost = apiKey.endsWith(":fx") ? "api-free.deepl.com" : "api.deepl.com";
 
   const response = await fetch(`https://${apiHost}/v2/translate`, {
@@ -142,7 +151,7 @@ async function translateWithDeepL(text: string, targetLanguage: string) {
       Authorization: `DeepL-Auth-Key ${apiKey}`,
       "Content-Type": "application/x-www-form-urlencoded"
     },
-    body: new URLSearchParams({ text, target_lang: targetLang, source_lang: "NL" }).toString()
+    body: new URLSearchParams({ text, target_lang: targetLang, source_lang: sourceLang }).toString()
   });
 
   if (!response.ok) {
@@ -253,9 +262,9 @@ async function generateExample(word: string, translation: string, partOfSpeech: 
   return example;
 }
 
-async function translateExample(sentence: string, targetLanguage: string, maxTokens = 80) {
+async function translateExample(sentence: string, targetLanguage: string, maxTokens = 80, sourceLanguage = "nl") {
   try {
-    const deeplTranslation = await translateWithDeepL(sentence, targetLanguage);
+    const deeplTranslation = await translateWithDeepL(sentence, targetLanguage, sourceLanguage);
     if (deeplTranslation) return deeplTranslation;
   } catch (error) {
     console.error("DeepL translation failed, falling back to Gemini:", error);
@@ -271,8 +280,9 @@ async function translateExample(sentence: string, targetLanguage: string, maxTok
           : targetLanguage === "nl"
             ? "Dutch"
             : "English";
-  const systemPrompt = "Translate Dutch example sentences for language learners. Return only the translation, no explanation.";
-  const userPrompt = `Translate this Dutch sentence into ${languageName}:\n${sentence}`;
+  const sourceLanguageName = sourceLanguage === "en" ? "English" : "Dutch";
+  const systemPrompt = `Translate ${sourceLanguageName} example sentences for language learners. Return only the translation, no explanation.`;
+  const userPrompt = `Translate this ${sourceLanguageName} sentence into ${languageName}:\n${sentence}`;
   const translated = process.env.GEMINI_API_KEY
     ? await callGemini(`${systemPrompt}\n\n${userPrompt}`, 0.2, maxTokens)
     : await callOpenAiCompatible(
@@ -884,6 +894,7 @@ export default defineConfig(({ mode }) => {
             const body = await readJsonBody(request);
             const sentence = String(body.sentence ?? "").trim();
             const targetLanguage = String(body.targetLanguage ?? "en").trim();
+            const sourceLanguage = String(body.sourceLanguage ?? "nl").trim();
 
             if (!sentence) {
               response.statusCode = 400;
@@ -892,7 +903,7 @@ export default defineConfig(({ mode }) => {
               return;
             }
 
-            const translation = await translateExample(sentence, targetLanguage);
+            const translation = await translateExample(sentence, targetLanguage, undefined, sourceLanguage);
             response.setHeader("Content-Type", "application/json; charset=utf-8");
             response.end(JSON.stringify({ translation }));
           } catch (error) {

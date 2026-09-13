@@ -106,11 +106,20 @@ const DEEPL_TARGET_LANG = {
   de: "DE"
 };
 
-async function translateWithDeepL(text, targetLanguage) {
+const DEEPL_SOURCE_LANG = {
+  zh: "ZH",
+  en: "EN",
+  nl: "NL",
+  es: "ES",
+  de: "DE"
+};
+
+async function translateWithDeepL(text, targetLanguage, sourceLanguage = "nl") {
   const apiKey = process.env.DEEPL_API_KEY;
   if (!apiKey) return null;
 
   const targetLang = DEEPL_TARGET_LANG[targetLanguage] ?? "EN-US";
+  const sourceLang = DEEPL_SOURCE_LANG[sourceLanguage] ?? "NL";
   const apiHost = apiKey.endsWith(":fx") ? "api-free.deepl.com" : "api.deepl.com";
 
   const response = await fetch(`https://${apiHost}/v2/translate`, {
@@ -119,7 +128,7 @@ async function translateWithDeepL(text, targetLanguage) {
       Authorization: `DeepL-Auth-Key ${apiKey}`,
       "Content-Type": "application/x-www-form-urlencoded"
     },
-    body: new URLSearchParams({ text, target_lang: targetLang, source_lang: "NL" }).toString()
+    body: new URLSearchParams({ text, target_lang: targetLang, source_lang: sourceLang }).toString()
   });
 
   if (!response.ok) {
@@ -374,9 +383,9 @@ export async function generatePodcastDialogue({ headline, summary, sourceName, l
   return turns;
 }
 
-export async function translateExample(sentence, targetLanguage, maxTokens) {
+export async function translateExample(sentence, targetLanguage, maxTokens, sourceLanguage = "nl") {
   try {
-    const deeplTranslation = await translateWithDeepL(sentence, targetLanguage);
+    const deeplTranslation = await translateWithDeepL(sentence, targetLanguage, sourceLanguage);
     if (deeplTranslation) return deeplTranslation;
   } catch (error) {
     console.error("DeepL translation failed, falling back to Gemini:", error);
@@ -392,8 +401,9 @@ export async function translateExample(sentence, targetLanguage, maxTokens) {
           : targetLanguage === "nl"
             ? "Dutch"
             : "English";
-  const systemPrompt = "Translate Dutch example sentences for language learners. Return only the translation, no explanation.";
-  const userPrompt = `Translate this Dutch sentence into ${languageName}:\n${sentence}`;
+  const sourceLanguageName = sourceLanguage === "en" ? "English" : "Dutch";
+  const systemPrompt = `Translate ${sourceLanguageName} example sentences for language learners. Return only the translation, no explanation.`;
+  const userPrompt = `Translate this ${sourceLanguageName} sentence into ${languageName}:\n${sentence}`;
   const translated = await callLlm(systemPrompt, userPrompt, 0.2, maxTokens ?? 80);
 
   if (!translated) {
