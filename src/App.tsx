@@ -115,6 +115,8 @@ const defaultNotebookMigrationKey = "dutch-frequency-app-default-notebook-3000";
 const languageStorageKey = "dutch-frequency-app-ui-language";
 const generatedExamplesStorageKey = "dutch-frequency-app-generated-examples";
 const exampleTranslationsStorageKey = "dutch-frequency-app-example-translations";
+const wordMeaningTranslationsStorageKey = "dutch-frequency-app-word-meaning-translations";
+const cardMeaningLanguageStorageKey = "dutch-frequency-app-card-meaning-language";
 const exampleGrammarStorageKey = "dutch-frequency-app-example-grammar";
 const spokenGrammarStorageKey = "dutch-frequency-app-spoken-grammar-v2";
 const wordAnswersStorageKey = "dutch-frequency-app-word-answers";
@@ -2615,6 +2617,20 @@ function getSavedExampleTranslations() {
   } catch {
     return {};
   }
+}
+
+function getSavedWordMeaningTranslations() {
+  try {
+    const value = JSON.parse(localStorage.getItem(wordMeaningTranslationsStorageKey) ?? "{}");
+    return value && typeof value === "object" ? (value as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function getSavedCardMeaningLanguage(): CardMeaningLanguage {
+  const value = localStorage.getItem(cardMeaningLanguageStorageKey);
+  return value === "en" || value === "zh" || value === "es" || value === "de" ? value : "en";
 }
 
 function getSavedExampleGrammar() {
@@ -5692,8 +5708,9 @@ export default function App() {
   const [revealed, setRevealed] = useState(false);
   const [cardsFlipped, setCardsFlipped] = useState(false);
   const [cardFlipOverrides, setCardFlipOverrides] = useState<Record<string, boolean>>({});
-  const [cardMeaningLanguage, setCardMeaningLanguage] = useState<CardMeaningLanguage>("en");
-  const [wordMeaningTranslations, setWordMeaningTranslations] = useState<Record<string, string>>({});
+  const [cardMeaningLanguage, setCardMeaningLanguage] = useState<CardMeaningLanguage>(getSavedCardMeaningLanguage);
+  const [wordMeaningTranslations, setWordMeaningTranslations] =
+    useState<Record<string, string>>(getSavedWordMeaningTranslations);
   const [translatingMeaningBatch, setTranslatingMeaningBatch] = useState(false);
   const meaningTranslationRequestsRef = useRef<Set<string>>(new Set());
   const [includeNotebookExampleGrammar, setIncludeNotebookExampleGrammar] = useState(false);
@@ -5979,6 +5996,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(exampleTranslationsStorageKey, JSON.stringify(exampleTranslations));
   }, [exampleTranslations]);
+
+  useEffect(() => {
+    localStorage.setItem(wordMeaningTranslationsStorageKey, JSON.stringify(wordMeaningTranslations));
+  }, [wordMeaningTranslations]);
+
+  useEffect(() => {
+    localStorage.setItem(cardMeaningLanguageStorageKey, cardMeaningLanguage);
+  }, [cardMeaningLanguage]);
 
   useEffect(() => {
     localStorage.setItem(exampleGrammarStorageKey, JSON.stringify(exampleGrammar));
@@ -6608,10 +6633,12 @@ export default function App() {
     if (!apiAvailable || cardMeaningLanguage === "en" || translatingMeaningBatch) return;
 
     const candidates = mode === "study" && studyWord ? [studyWord] : visibleWords;
-    const pending = candidates.filter((word) => {
-      const key = `${word.sourceId}:${cardMeaningLanguage}`;
-      return !wordMeaningTranslations[key] && !meaningTranslationRequestsRef.current.has(key);
-    });
+    const pending = candidates
+      .filter((word) => {
+        const key = `${word.sourceId}:${cardMeaningLanguage}`;
+        return !wordMeaningTranslations[key] && !meaningTranslationRequestsRef.current.has(key);
+      })
+      .slice(0, 500);
 
     if (!pending.length) return;
 
