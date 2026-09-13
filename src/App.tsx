@@ -110,6 +110,20 @@ for (const word of words) {
     wordLookup.set(normalize(variant), word);
   }
 }
+const listsByWordText = new Map<string, string[]>();
+for (const word of words) {
+  const existing = listsByWordText.get(word.word);
+  if (existing) {
+    if (!existing.includes(word.list)) existing.push(word.list);
+  } else {
+    listsByWordText.set(word.word, [word.list]);
+  }
+}
+function listsFor(word: DutchWord): string[] {
+  const all = listsByWordText.get(word.word);
+  if (!all || all.length <= 1) return [word.list];
+  return [word.list, ...all.filter((list) => list !== word.list)];
+}
 const notebookStorageKey = "dutch-frequency-app-notebook";
 const defaultNotebookMigrationKey = "dutch-frequency-app-default-notebook-3000";
 const languageStorageKey = "dutch-frequency-app-ui-language";
@@ -2941,9 +2955,11 @@ function WordCard({
         <div className={`word-main ${flipped ? "is-flipped" : ""}`}>
           <div className="meta-row">
             <span className="rank">#{item.rank}</span>
-            <span className={`pill ${listTone[item.list] ?? "tone-general"}`}>
-              {t.list[item.list] ?? item.list}
-            </span>
+            {listsFor(item).map((listName) => (
+              <span key={listName} className={`pill ${listTone[listName] ?? "tone-general"}`}>
+                {t.list[listName] ?? listName}
+              </span>
+            ))}
             <span className="pill neutral">{t.pos[item.partOfSpeech] ?? item.partOfSpeech}</span>
           </div>
           <span className="card-side-label">{primaryLabel}</span>
@@ -7093,6 +7109,13 @@ export default function App() {
               <span className={`pill ${listTone[studyWord.list] ?? "tone-general"}`}>
                 {t.list[studyWord.list]} #{studyWord.rank}
               </span>
+              {listsFor(studyWord)
+                .filter((listName) => listName !== studyWord.list)
+                .map((listName) => (
+                  <span key={listName} className={`pill ${listTone[listName] ?? "tone-general"}`}>
+                    {t.list[listName] ?? listName}
+                  </span>
+                ))}
               <div className="icon-actions">
                 <button
                   className="icon-button"
