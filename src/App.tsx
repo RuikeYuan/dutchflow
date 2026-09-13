@@ -431,7 +431,7 @@ const translations: Record<
   }
 > = {
   zh: {
-    appName: "Dutch Frequency Trainer",
+    appName: "Dutch Flow",
     title: "荷兰语高频词学习",
     subtitle: "基于 Frequency Dictionary 词频数据，按核心词、场景词和通用词逐步学习。",
     language: "界面语言",
@@ -477,7 +477,7 @@ const translations: Record<
       ctaTitle: "今天就从第一个高频词开始。",
       ctaSubtitle: "免费使用，无需下载，浏览器打开就能学。",
       ctaButton: "开始学习荷兰语",
-      footerLeft: "Dutch Frequency Trainer — 基于 Frequency Dictionary 词频数据",
+      footerLeft: "Dutch Flow — 基于 Frequency Dictionary 词频数据",
       footerRight: "荷兰语高频词学习"
     },
     statsWords: "词库",
@@ -729,7 +729,7 @@ const translations: Record<
     }
   },
   en: {
-    appName: "Dutch Frequency Trainer",
+    appName: "Dutch Flow",
     title: "Dutch Frequency Learning",
     subtitle: "Study Dutch with frequency data, moving from core words to genre and general vocabulary.",
     language: "Interface language",
@@ -782,7 +782,7 @@ const translations: Record<
       ctaTitle: "Start with word #1, today.",
       ctaSubtitle: "Free to use, nothing to install — just open your browser and start.",
       ctaButton: "Start learning Dutch",
-      footerLeft: "Dutch Frequency Trainer — built on Frequency Dictionary word-frequency data",
+      footerLeft: "Dutch Flow — built on Frequency Dictionary word-frequency data",
       footerRight: "Dutch high-frequency vocabulary"
     },
     statsWords: "Words",
@@ -1041,7 +1041,7 @@ const translations: Record<
     }
   },
   nl: {
-    appName: "Nederlandse Frequentietrainer",
+    appName: "Dutch Flow",
     title: "Nederlands leren met frequentiewoorden",
     subtitle: "Leer Nederlands met frequentiedata, van kernwoorden naar genres en algemene woordenschat.",
     language: "Interfacetaal",
@@ -1095,7 +1095,7 @@ const translations: Record<
       ctaTitle: "Begin vandaag nog met woord nummer 1.",
       ctaSubtitle: "Gratis te gebruiken, niets te installeren — open gewoon je browser en begin.",
       ctaButton: "Begin met Nederlands leren",
-      footerLeft: "Dutch Frequency Trainer — gebaseerd op frequentiedata van Frequency Dictionary",
+      footerLeft: "Dutch Flow — gebaseerd op frequentiedata van Frequency Dictionary",
       footerRight: "Hoogfrequente Nederlandse woordenschat"
     },
     statsWords: "Woorden",
@@ -1354,7 +1354,7 @@ const translations: Record<
     }
   },
   es: {
-    appName: "Entrenador de Frecuencia Neerlandesa",
+    appName: "Dutch Flow",
     title: "Aprende neerlandés con palabras frecuentes",
     subtitle: "Estudia neerlandés con datos de frecuencia, desde palabras básicas hasta vocabulario general y por género.",
     language: "Idioma de la interfaz",
@@ -1408,7 +1408,7 @@ const translations: Record<
       ctaTitle: "Empieza hoy mismo por la palabra número 1.",
       ctaSubtitle: "Gratis, sin nada que instalar: abre el navegador y empieza.",
       ctaButton: "Empezar a aprender neerlandés",
-      footerLeft: "Dutch Frequency Trainer — basado en datos de frecuencia de Frequency Dictionary",
+      footerLeft: "Dutch Flow — basado en datos de frecuencia de Frequency Dictionary",
       footerRight: "Vocabulario neerlandés de alta frecuencia"
     },
     statsWords: "Palabras",
@@ -1667,7 +1667,7 @@ const translations: Record<
     }
   },
   de: {
-    appName: "Niederländisch-Frequenztrainer",
+    appName: "Dutch Flow",
     title: "Niederländisch mit häufigen Wörtern lernen",
     subtitle: "Lerne Niederländisch mit Frequenzdaten, von Grundwortschatz bis zu Genre- und Allgemeinwortschatz.",
     language: "Oberflächensprache",
@@ -1721,7 +1721,7 @@ const translations: Record<
       ctaTitle: "Starte noch heute mit Wort Nummer eins.",
       ctaSubtitle: "Kostenlos nutzbar, nichts zu installieren — einfach den Browser öffnen und loslegen.",
       ctaButton: "Niederländisch lernen starten",
-      footerLeft: "Dutch Frequency Trainer — basierend auf Frequenzdaten von Frequency Dictionary",
+      footerLeft: "Dutch Flow — basierend auf Frequenzdaten von Frequency Dictionary",
       footerRight: "Hochfrequenter niederländischer Wortschatz"
     },
     statsWords: "Wörter",
@@ -4503,7 +4503,7 @@ function LandingPage({
         <div className="landing-wrap landing-nav-row">
           <div className="landing-brand">
             <BookOpen size={22} />
-            <span>Dutch Frequency Trainer</span>
+            <span>Dutch Flow</span>
           </div>
           <div className="landing-nav-links">
             <a href="#landing-features">{l.navFeatures}</a>
@@ -4744,55 +4744,57 @@ function DailyReadingPage({
     if (localizingKey === key) return;
     setLocalizingKey(key);
 
-    async function attemptLocalize(item: NewsReadingItem) {
-      const [translationResponse, explanationResponse] = await Promise.all([
-        fetch(apiUrl("/api/translate-example"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sentence: item.dutchText, targetLanguage: language })
-        }),
-        fetch(apiUrl("/api/explain-example"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sentence: item.dutchText, targetLanguage: language })
-        })
-      ]);
-      if (!translationResponse.ok || !explanationResponse.ok) {
-        throw new Error("Localization request failed");
+    async function attemptTranslate(item: NewsReadingItem) {
+      const response = await fetch(apiUrl("/api/translate-example"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sentence: item.dutchText, targetLanguage: language })
+      });
+      if (!response.ok) throw new Error("Translation request failed");
+      const data = (await response.json()) as { translation?: string };
+      const translation = data.translation?.trim();
+      if (!translation) throw new Error("Translation response malformed");
+      return translation;
+    }
+
+    async function attemptExplain(item: NewsReadingItem) {
+      const response = await fetch(apiUrl("/api/explain-example"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sentence: item.dutchText, targetLanguage: language })
+      });
+      if (!response.ok) throw new Error("Explanation request failed");
+      const data = (await response.json()) as { explanation?: string };
+      const explanation = data.explanation?.trim();
+      if (!explanation) throw new Error("Explanation response malformed");
+      return explanation;
+    }
+
+    async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+      try {
+        return await fn();
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        return await fn();
       }
-      const translationData = (await translationResponse.json()) as { translation?: string };
-      const explanationData = (await explanationResponse.json()) as { explanation?: string };
-      const translation = translationData.translation?.trim();
-      const explanation = explanationData.explanation?.trim();
-      if (!translation || !explanation) {
-        throw new Error("Localization response malformed");
-      }
-      return { translation, explanation };
     }
 
     (async () => {
-      // Don't silently fall back to the pre-baked Chinese version on a
-      // transient failure (rate limit, etc.) - that's the wrong language, not
-      // a fallback. Retry once, then show a clear failure state instead.
-      try {
-        let result;
-        try {
-          result = await attemptLocalize(target);
-        } catch {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          result = await attemptLocalize(target);
-        }
-        setLocalizedByItem((current) => ({ ...current, [key]: result }));
-      } catch {
-        setLocalizedByItem((current) => ({
-          ...current,
-          [key]: { translation: t.translationFailed, explanation: t.translationFailed }
-        }));
-      } finally {
-        setLocalizingKey("");
-      }
+      // Translation (DeepL-backed) and explanation (Gemini-backed) are
+      // independent calls with independent failure modes - a Gemini hiccup
+      // shouldn't blank out a perfectly good translation, and vice versa.
+      const [translationResult, explanationResult] = await Promise.allSettled([
+        withRetry(() => attemptTranslate(target)),
+        withRetry(() => attemptExplain(target))
+      ]);
+
+      const translation = translationResult.status === "fulfilled" ? translationResult.value : t.translationFailed;
+      const explanation = explanationResult.status === "fulfilled" ? explanationResult.value : t.grammarFailed;
+
+      setLocalizedByItem((current) => ({ ...current, [key]: { translation, explanation } }));
+      setLocalizingKey("");
     })();
-  }, [items, language, translationVisible, grammarVisible, localizedByItem, localizingKey, t.translationFailed]);
+  }, [items, language, translationVisible, grammarVisible, localizedByItem, localizingKey, t.grammarFailed, t.translationFailed]);
 
   useEffect(
     () => () => {
@@ -5312,58 +5314,61 @@ function PodcastPage({
     if (localizingEpisodeKey === key) return;
     setLocalizingEpisodeKey(key);
 
-    async function attemptLocalize(episode: PodcastEpisode) {
+    async function attemptTranslate(episode: PodcastEpisode) {
       const joinedTurns = episode.turns.map((turn) => turn.text).join("|||");
-      const [translationResponse, explanationResponse] = await Promise.all([
-        fetch(apiUrl("/api/translate-example"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sentence: joinedTurns, targetLanguage: language })
-        }),
-        fetch(apiUrl("/api/explain-example"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sentence: episode.turns.map((turn) => turn.text).join(" "), targetLanguage: language })
-        })
-      ]);
-      if (!translationResponse.ok || !explanationResponse.ok) {
-        throw new Error("Localization request failed");
+      const response = await fetch(apiUrl("/api/translate-example"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sentence: joinedTurns, targetLanguage: language })
+      });
+      if (!response.ok) throw new Error("Translation request failed");
+      const data = (await response.json()) as { translation?: string };
+      const splitTurns = (data.translation ?? "").split("|||").map((part) => part.trim());
+      if (splitTurns.length !== episode.turns.length || !splitTurns.every(Boolean)) {
+        throw new Error("Translation response malformed");
       }
-      const translationData = (await translationResponse.json()) as { translation?: string };
-      const explanationData = (await explanationResponse.json()) as { explanation?: string };
-      const splitTurns = (translationData.translation ?? "").split("|||").map((part) => part.trim());
-      const turnsValid = splitTurns.length === episode.turns.length && splitTurns.every(Boolean);
-      const explanation = explanationData.explanation?.trim();
-      if (!turnsValid || !explanation) {
-        throw new Error("Localization response malformed");
+      return splitTurns;
+    }
+
+    async function attemptExplain(episode: PodcastEpisode) {
+      const response = await fetch(apiUrl("/api/explain-example"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sentence: episode.turns.map((turn) => turn.text).join(" "), targetLanguage: language })
+      });
+      if (!response.ok) throw new Error("Explanation request failed");
+      const data = (await response.json()) as { explanation?: string };
+      const explanation = data.explanation?.trim();
+      if (!explanation) throw new Error("Explanation response malformed");
+      return explanation;
+    }
+
+    async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+      try {
+        return await fn();
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        return await fn();
       }
-      return { turns: splitTurns, explanation };
     }
 
     (async () => {
-      // The Dutch source and the AI translator are separate calls, so a
-      // transient failure (rate limit, etc.) shouldn't silently fall back to
-      // the pre-baked Chinese version - that's the wrong language, not a
-      // fallback. Retry once, then show a clear failure state instead.
-      try {
-        let result;
-        try {
-          result = await attemptLocalize(target);
-        } catch {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          result = await attemptLocalize(target);
-        }
-        setLocalizedEpisodes((current) => ({ ...current, [key]: result }));
-      } catch {
-        setLocalizedEpisodes((current) => ({
-          ...current,
-          [key]: { turns: target.turns.map(() => t.translationFailed), explanation: t.translationFailed }
-        }));
-      } finally {
-        setLocalizingEpisodeKey("");
-      }
+      // Translation (DeepL-backed) and explanation (Gemini-backed) are
+      // independent calls with independent failure modes - a Gemini hiccup
+      // shouldn't blank out a perfectly good translation, and vice versa.
+      const [translationResult, explanationResult] = await Promise.allSettled([
+        withRetry(() => attemptTranslate(target)),
+        withRetry(() => attemptExplain(target))
+      ]);
+
+      const turns =
+        translationResult.status === "fulfilled" ? translationResult.value : target.turns.map(() => t.translationFailed);
+      const explanation = explanationResult.status === "fulfilled" ? explanationResult.value : t.grammarFailed;
+
+      setLocalizedEpisodes((current) => ({ ...current, [key]: { turns, explanation } }));
+      setLocalizingEpisodeKey("");
     })();
-  }, [episodes, language, transcriptVisible, localizedEpisodes, localizingEpisodeKey, t.translationFailed]);
+  }, [episodes, language, transcriptVisible, localizedEpisodes, localizingEpisodeKey, t.grammarFailed, t.translationFailed]);
 
   useEffect(
     () => () => {
