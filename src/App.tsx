@@ -4937,6 +4937,20 @@ export default function App() {
     localStorage.setItem(syncUpdatedAtStorageKey, String(updatedAt));
   }
 
+  async function runPull() {
+    try {
+      const localUpdatedAt = getSavedSyncUpdatedAt();
+      const remote = await pullSync();
+      if (remote.payload && (remote.updatedAt ?? 0) > localUpdatedAt) {
+        applySyncPayload(remote.payload);
+        localStorage.setItem(syncUpdatedAtStorageKey, String(remote.updatedAt ?? 0));
+      }
+      setSyncStatus("synced");
+    } catch {
+      setSyncStatus("error");
+    }
+  }
+
   // Whenever the user signs in, pull whatever the account already has (if it is
   // newer than what is on this device) before starting to push local changes up.
   useEffect(() => {
@@ -4950,24 +4964,40 @@ export default function App() {
     setSyncStatus("syncing");
 
     (async () => {
-      try {
-        const localUpdatedAt = getSavedSyncUpdatedAt();
-        const remote = await pullSync();
-        if (!active) return;
-        if (remote.payload && (remote.updatedAt ?? 0) > localUpdatedAt) {
-          applySyncPayload(remote.payload);
-          localStorage.setItem(syncUpdatedAtStorageKey, String(remote.updatedAt ?? 0));
-        }
-        if (active) setSyncStatus("synced");
-      } catch {
-        if (active) setSyncStatus("error");
-      } finally {
-        if (active) syncReadyRef.current = true;
-      }
+      await runPull();
+      if (active) syncReadyRef.current = true;
     })();
 
     return () => {
       active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // A tab left open never learns about changes made on another device or tab on
+  // its own, since it only pulled once at sign-in - so re-pull whenever this tab
+  // regains focus, and periodically while it stays in the background.
+  useEffect(() => {
+    if (!user || !apiAvailable) return;
+
+    function pullIfReady() {
+      if (!syncReadyRef.current) return;
+      setSyncStatus("syncing");
+      void runPull();
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") pullIfReady();
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", pullIfReady);
+    const interval = window.setInterval(pullIfReady, 30000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", pullIfReady);
+      window.clearInterval(interval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
