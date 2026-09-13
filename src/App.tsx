@@ -79,9 +79,13 @@ type SyncPayload = {
 type SyncStatus = "idle" | "syncing" | "synced" | "error";
 type GrammarNodeEntry = {
   node: GrammarNode;
-  path: string[];
+  path: GrammarNode[];
   depth: number;
 };
+
+function loc<T>(record: Record<UiLanguage, T>, language: UiLanguage): T {
+  return record[language] ?? record.zh;
+}
 type PremiumGate = {
   isPremium: boolean;
   authHeaders: () => Record<string, string>;
@@ -320,6 +324,17 @@ const translations: Record<
     grammarWalkReadAloud: string;
     grammarWalkStopReading: string;
     grammarWalkChapterLabel: string;
+    grammarPageEyebrow: string;
+    grammarPageTitle: string;
+    grammarPageLead: (count: number) => string;
+    grammarClickableNodes: (count: number) => string;
+    grammarGoalsTitle: string;
+    grammarPitfallsTitle: string;
+    grammarChapterMapTitle: string;
+    grammarRelatedNodesTitle: string;
+    grammarPracticeTitle: string;
+    grammarPracticeText: string;
+    grammarNodeDetailFallback: string;
     askWord: string;
     askingWord: string;
     wordQuestionPlaceholder: string;
@@ -580,6 +595,18 @@ const translations: Record<
     grammarWalkReadAloud: "朗读",
     grammarWalkStopReading: "停止朗读",
     grammarWalkChapterLabel: "跳转到章节",
+    grammarPageEyebrow: "中文语法教练",
+    grammarPageTitle: "荷兰语语法思维导图",
+    grammarPageLead: (count) =>
+      `整理成四大模块、十六个章节、${count} 个知识点。点击导图节点先抓规则骨架，或切换到逐条精读模式一条一条看 AI 详细讲解并配语音朗读。`,
+    grammarClickableNodes: (count) => `${count} 个可点击知识点`,
+    grammarGoalsTitle: "学习目标",
+    grammarPitfallsTitle: "中文学习者易错点",
+    grammarChapterMapTitle: "章节思维导图",
+    grammarRelatedNodesTitle: "子知识点",
+    grammarPracticeTitle: "练习方向",
+    grammarPracticeText: "找 3 个包含这个规则的单词或例句，分别问：形式是什么、为什么这样写、中文学习者容易错在哪里。",
+    grammarNodeDetailFallback: "这个节点是章节结构中的概念入口，可以从它的子节点继续展开学习。",
     askWord: "问 AI",
     askingWord: "回答中...",
     wordQuestionPlaceholder: "问这个词的语法、用法、搭配、区别...",
@@ -871,6 +898,19 @@ const translations: Record<
     grammarWalkReadAloud: "Read aloud",
     grammarWalkStopReading: "Stop reading",
     grammarWalkChapterLabel: "Jump to chapter",
+    grammarPageEyebrow: "Dutch grammar coach",
+    grammarPageTitle: "Dutch grammar mind map",
+    grammarPageLead: (count) =>
+      `Organized into 4 parts, 16 chapters, and ${count} topics. Click a node on the map to grasp the rule skeleton first, or switch to Read through mode to go through each topic one by one with an AI explanation and read-aloud.`,
+    grammarClickableNodes: (count) => `${count} clickable topics`,
+    grammarGoalsTitle: "Learning goals",
+    grammarPitfallsTitle: "Common mistakes for Chinese-speaking learners",
+    grammarChapterMapTitle: "Chapter mind map",
+    grammarRelatedNodesTitle: "Related topics",
+    grammarPracticeTitle: "Practice direction",
+    grammarPracticeText:
+      "Find 3 words or example sentences that contain this rule, and ask: what is the form, why is it written this way, and where do Chinese-speaking learners tend to make mistakes.",
+    grammarNodeDetailFallback: "This node is an entry point into the chapter's concept structure — explore its child nodes to keep learning.",
     askWord: "Ask AI",
     askingWord: "Answering...",
     wordQuestionPlaceholder: "Ask grammar, usage, collocations, nuance...",
@@ -1169,6 +1209,19 @@ const translations: Record<
     grammarWalkReadAloud: "Voorlezen",
     grammarWalkStopReading: "Stop met voorlezen",
     grammarWalkChapterLabel: "Ga naar hoofdstuk",
+    grammarPageEyebrow: "Nederlandse grammaticacoach",
+    grammarPageTitle: "Mindmap Nederlandse grammatica",
+    grammarPageLead: (count) =>
+      `Ingedeeld in 4 delen, 16 hoofdstukken en ${count} onderwerpen. Klik op een knooppunt in de kaart om eerst de basisregel te begrijpen, of schakel over naar de leesmodus om elk onderwerp een voor een te doorlopen met een AI-uitleg en voorleesfunctie.`,
+    grammarClickableNodes: (count) => `${count} aanklikbare onderwerpen`,
+    grammarGoalsTitle: "Leerdoelen",
+    grammarPitfallsTitle: "Veelvoorkomende fouten voor Chinese leerders",
+    grammarChapterMapTitle: "Mindmap van het hoofdstuk",
+    grammarRelatedNodesTitle: "Gerelateerde onderwerpen",
+    grammarPracticeTitle: "Oefenrichting",
+    grammarPracticeText:
+      "Zoek 3 woorden of voorbeeldzinnen met deze regel en vraag je af: wat is de vorm, waarom wordt het zo geschreven, en waar maken Chinese leerders vaak fouten.",
+    grammarNodeDetailFallback: "Dit knooppunt is een ingang tot het begrippenkader van het hoofdstuk — verken de subonderwerpen om verder te leren.",
     askWord: "Vraag AI",
     askingWord: "Antwoord...",
     wordQuestionPlaceholder: "Vraag naar grammatica, gebruik, combinaties...",
@@ -1467,6 +1520,19 @@ const translations: Record<
     grammarWalkReadAloud: "Leer en voz alta",
     grammarWalkStopReading: "Detener lectura",
     grammarWalkChapterLabel: "Ir al capítulo",
+    grammarPageEyebrow: "Entrenador de gramática neerlandesa",
+    grammarPageTitle: "Mapa mental de gramática neerlandesa",
+    grammarPageLead: (count) =>
+      `Organizado en 4 partes, 16 capítulos y ${count} temas. Haz clic en un nodo del mapa para captar primero la estructura de la regla, o cambia al modo de lectura completa para repasar cada tema uno por uno con una explicación de la IA y lectura en voz alta.`,
+    grammarClickableNodes: (count) => `${count} temas en los que se puede hacer clic`,
+    grammarGoalsTitle: "Objetivos de aprendizaje",
+    grammarPitfallsTitle: "Errores comunes para hablantes de chino",
+    grammarChapterMapTitle: "Mapa mental del capítulo",
+    grammarRelatedNodesTitle: "Temas relacionados",
+    grammarPracticeTitle: "Dirección de práctica",
+    grammarPracticeText:
+      "Busca 3 palabras u oraciones de ejemplo que contengan esta regla y pregúntate: cuál es la forma, por qué se escribe así y dónde suelen equivocarse los hablantes de chino.",
+    grammarNodeDetailFallback: "Este nodo es un punto de entrada a la estructura conceptual del capítulo: explora sus subtemas para seguir aprendiendo.",
     askWord: "Preguntar IA",
     askingWord: "Respondiendo...",
     wordQuestionPlaceholder: "Pregunta gramática, uso, matices...",
@@ -1765,6 +1831,19 @@ const translations: Record<
     grammarWalkReadAloud: "Vorlesen",
     grammarWalkStopReading: "Vorlesen stoppen",
     grammarWalkChapterLabel: "Zu Kapitel springen",
+    grammarPageEyebrow: "Niederländisch-Grammatik-Coach",
+    grammarPageTitle: "Mindmap der niederländischen Grammatik",
+    grammarPageLead: (count) =>
+      `Gegliedert in 4 Teile, 16 Kapitel und ${count} Themen. Klicke auf einen Knoten in der Karte, um zunächst das Grundgerüst der Regel zu erfassen, oder wechsle in den Lesemodus, um jedes Thema einzeln mit einer KI-Erklärung und Vorlesefunktion durchzugehen.`,
+    grammarClickableNodes: (count) => `${count} anklickbare Themen`,
+    grammarGoalsTitle: "Lernziele",
+    grammarPitfallsTitle: "Häufige Fehler chinesischsprachiger Lernender",
+    grammarChapterMapTitle: "Mindmap des Kapitels",
+    grammarRelatedNodesTitle: "Verwandte Themen",
+    grammarPracticeTitle: "Übungsrichtung",
+    grammarPracticeText:
+      "Suche 3 Wörter oder Beispielsätze mit dieser Regel und frage: Wie ist die Form, warum wird es so geschrieben, und wo machen chinesischsprachige Lernende häufig Fehler.",
+    grammarNodeDetailFallback: "Dieser Knoten ist ein Einstiegspunkt in die Begriffsstruktur des Kapitels — erkunde seine Unterthemen, um weiterzulernen.",
     askWord: "KI fragen",
     askingWord: "Antwortet...",
     wordQuestionPlaceholder: "Frage zu Grammatik, Gebrauch, Nuancen...",
@@ -3004,9 +3083,9 @@ function GrammarGuidePage({
           ...premiumGate.authHeaders()
         },
         body: JSON.stringify({
-          nodeTitle: entry.node.title,
-          path: entry.path.join(" / "),
-          hint: entry.node.detail ?? "",
+          nodeTitle: loc(entry.node.title, language),
+          path: entry.path.map((n) => loc(n.title, language)).join(" / "),
+          hint: entry.node.detail ? loc(entry.node.detail, language) : "",
           targetLanguage: language
         })
       });
@@ -3034,12 +3113,9 @@ function GrammarGuidePage({
     <section className="grammar-page">
       <div className="grammar-hero">
         <div>
-          <span className="method-eyebrow">中文语法教练</span>
-          <h2>荷兰语语法思维导图</h2>
-          <p>
-            整理成四大模块、十六个章节、{grammarWalkPages.length} 个知识点。点击导图节点先抓规则骨架，或切换到逐条精读模式一条一条看 AI
-            详细讲解并配语音朗读。
-          </p>
+          <span className="method-eyebrow">{t.grammarPageEyebrow}</span>
+          <h2>{t.grammarPageTitle}</h2>
+          <p>{t.grammarPageLead(grammarWalkPages.length)}</p>
         </div>
         <div className="grammar-view-toggle" role="tablist" aria-label={t.viewLabel}>
           <button type="button" className={view === "mindmap" ? "active" : ""} onClick={() => setView("mindmap")}>
@@ -3059,10 +3135,10 @@ function GrammarGuidePage({
               {grammarGuideParts.map((part) => (
                 <article className="grammar-part" key={part.id}>
                   <div className="grammar-part-head">
-                    <h3>{part.title}</h3>
+                    <h3>{loc(part.title, language)}</h3>
                     <span>{part.pageRange}</span>
                   </div>
-                  <p>{part.theme}</p>
+                  <p>{loc(part.theme, language)}</p>
                   <div className="grammar-chapter-list">
                     {part.chapters.map((chapter) => (
                       <button
@@ -3071,7 +3147,7 @@ function GrammarGuidePage({
                         type="button"
                         onClick={() => setSelectedChapterId(chapter.id)}
                       >
-                        <span>{chapter.title}</span>
+                        <span>{loc(chapter.title, language)}</span>
                         <small>{chapter.pageRange}</small>
                       </button>
                     ))}
@@ -3264,10 +3340,10 @@ function GrammarWalkReader({
             }}
           >
             {grammarGuideParts.map((part) => (
-              <optgroup label={part.title} key={part.id}>
+              <optgroup label={loc(part.title, language)} key={part.id}>
                 {part.chapters.map((chapter) => (
                   <option value={chapter.id} key={chapter.id}>
-                    {chapter.title}
+                    {loc(chapter.title, language)}
                   </option>
                 ))}
               </optgroup>
@@ -3286,18 +3362,18 @@ function GrammarWalkReader({
 
       <article className="grammar-walk-card" key={page.entry.node.id}>
         <div className="grammar-walk-breadcrumb">
-          <span>{page.part.title}</span>
+          <span>{loc(page.part.title, language)}</span>
           <span aria-hidden="true">/</span>
-          <span>{page.chapter.title}</span>
+          <span>{loc(page.chapter.title, language)}</span>
           {crumbPath.length ? (
             <>
               <span aria-hidden="true">/</span>
-              <span>{crumbPath.join(" / ")}</span>
+              <span>{crumbPath.map((n) => loc(n.title, language)).join(" / ")}</span>
             </>
           ) : null}
         </div>
-        <h2>{page.entry.node.title}</h2>
-        {page.entry.node.detail ? <p className="grammar-walk-hint">{page.entry.node.detail}</p> : null}
+        <h2>{loc(page.entry.node.title, language)}</h2>
+        {page.entry.node.detail ? <p className="grammar-walk-hint">{loc(page.entry.node.detail, language)}</p> : null}
 
         <div className="grammar-walk-explanation">
           <div className="grammar-walk-explanation-head">
@@ -3323,13 +3399,13 @@ function GrammarWalkReader({
 
         {childNodes.length ? (
           <div className="grammar-node-related">
-            <strong>子知识点</strong>
+            <strong>{t.grammarRelatedNodesTitle}</strong>
             <div className="grammar-node-related-list">
               {childNodes.map((child) => {
                 const childIndex = grammarWalkPages.findIndex((walkPage) => walkPage.entry.node.id === child.id);
                 return (
                   <button type="button" key={child.id} onClick={() => (childIndex >= 0 ? goTo(childIndex) : undefined)}>
-                    {child.title}
+                    {loc(child.title, language)}
                   </button>
                 );
               })}
@@ -3384,34 +3460,35 @@ function GrammarChapterPanel({
     <article className="grammar-chapter-panel">
       <div className="grammar-chapter-title">
         <span>{chapter.pageRange}</span>
-        <h2>{chapter.title}</h2>
-        <p>{chapter.summary}</p>
-        <small>{nodeEntries.length} 个可点击知识点</small>
+        <h2>{loc(chapter.title, language)}</h2>
+        <p>{loc(chapter.summary, language)}</p>
+        <small>{t.grammarClickableNodes(nodeEntries.length)}</small>
       </div>
 
       <div className="grammar-summary-grid">
         <div>
-          <h3>学习目标</h3>
-          {chapter.goals.map((goal) => (
+          <h3>{t.grammarGoalsTitle}</h3>
+          {loc(chapter.goals, language).map((goal) => (
             <p key={goal}>{goal}</p>
           ))}
         </div>
         <div>
-          <h3>中文学习者易错点</h3>
-          {chapter.pitfalls.map((pitfall) => (
+          <h3>{t.grammarPitfallsTitle}</h3>
+          {loc(chapter.pitfalls, language).map((pitfall) => (
             <p key={pitfall}>{pitfall}</p>
           ))}
         </div>
       </div>
 
       <div className="grammar-node-panel">
-        <h3>章节思维导图</h3>
+        <h3>{t.grammarChapterMapTitle}</h3>
         <div className="grammar-node-explorer">
           <div className="grammar-node-tree">
             {chapter.nodes.map((node) => (
               <GrammarNodeView
                 node={node}
                 key={node.id}
+                language={language}
                 selectedId={selectedNode?.node.id ?? ""}
                 onSelect={setSelectedNodeId}
               />
@@ -3438,10 +3515,12 @@ function GrammarChapterPanel({
 
 function GrammarNodeView({
   node,
+  language,
   selectedId,
   onSelect
 }: {
   node: GrammarNode;
+  language: UiLanguage;
   selectedId: string;
   onSelect: (id: string) => void;
 }) {
@@ -3452,13 +3531,13 @@ function GrammarNodeView({
         type="button"
         onClick={() => onSelect(node.id)}
       >
-        <strong>{node.title}</strong>
-        {node.detail ? <span>{node.detail}</span> : null}
+        <strong>{loc(node.title, language)}</strong>
+        {node.detail ? <span>{loc(node.detail, language)}</span> : null}
       </button>
       {node.children?.length ? (
         <div className="grammar-node-children">
           {node.children.map((child) => (
-            <GrammarNodeView node={child} selectedId={selectedId} onSelect={onSelect} key={child.id} />
+            <GrammarNodeView node={child} language={language} selectedId={selectedId} onSelect={onSelect} key={child.id} />
           ))}
         </div>
       ) : null}
@@ -3470,6 +3549,7 @@ function GrammarNodeDetail({
   entry,
   chapter,
   t,
+  language,
   explanation,
   explaining,
   explainError,
@@ -3490,10 +3570,10 @@ function GrammarNodeDetail({
 
   return (
     <aside className="grammar-node-detail">
-      <span>{chapter.title}</span>
-      <h3>{entry.node.title}</h3>
-      <p className="grammar-node-path">{entry.path.join(" / ")}</p>
-      <p>{entry.node.detail ?? "这个节点是章节结构中的概念入口，可以从它的子节点继续展开学习。"}</p>
+      <span>{loc(chapter.title, language)}</span>
+      <h3>{loc(entry.node.title, language)}</h3>
+      <p className="grammar-node-path">{entry.path.map((n) => loc(n.title, language)).join(" / ")}</p>
+      <p>{entry.node.detail ? loc(entry.node.detail, language) : t.grammarNodeDetailFallback}</p>
 
       <div className="grammar-node-study">
         <strong>{t.grammarNodeDetailedTitle}</strong>
@@ -3512,28 +3592,28 @@ function GrammarNodeDetail({
 
       {childNodes.length ? (
         <div className="grammar-node-related">
-          <strong>子知识点</strong>
+          <strong>{t.grammarRelatedNodesTitle}</strong>
           <div className="grammar-node-related-list">
             {childNodes.map((child) => (
               <button type="button" key={child.id} onClick={() => onSelectNode(child.id)}>
-                {child.title}
+                {loc(child.title, language)}
               </button>
             ))}
           </div>
         </div>
       ) : (
         <div className="grammar-node-related">
-          <strong>练习方向</strong>
-          <p>找 3 个包含这个规则的单词或例句，分别问：形式是什么、为什么这样写、中文学习者容易错在哪里。</p>
+          <strong>{t.grammarPracticeTitle}</strong>
+          <p>{t.grammarPracticeText}</p>
         </div>
       )}
     </aside>
   );
 }
 
-function collectGrammarNodes(nodes: GrammarNode[], path: string[] = [], depth = 0): GrammarNodeEntry[] {
+function collectGrammarNodes(nodes: GrammarNode[], path: GrammarNode[] = [], depth = 0): GrammarNodeEntry[] {
   return nodes.flatMap((node) => {
-    const currentPath = [...path, node.title];
+    const currentPath = [...path, node];
     return [
       { node, path: currentPath, depth },
       ...collectGrammarNodes(node.children ?? [], currentPath, depth + 1)
