@@ -121,6 +121,38 @@ function getEpubPath() {
   return process.env.DUTCH_FREQ_EPUB_PATH ?? defaultEpubPath;
 }
 
+const DEEPL_TARGET_LANG: Record<string, string> = {
+  zh: "ZH",
+  en: "EN-US",
+  nl: "NL",
+  es: "ES",
+  de: "DE"
+};
+
+async function translateWithDeepL(text: string, targetLanguage: string) {
+  const apiKey = process.env.DEEPL_API_KEY;
+  if (!apiKey) return null;
+
+  const targetLang = DEEPL_TARGET_LANG[targetLanguage] ?? "EN-US";
+  const apiHost = apiKey.endsWith(":fx") ? "api-free.deepl.com" : "api.deepl.com";
+
+  const response = await fetch(`https://${apiHost}/v2/translate`, {
+    method: "POST",
+    headers: {
+      Authorization: `DeepL-Auth-Key ${apiKey}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams({ text, target_lang: targetLang, source_lang: "NL" }).toString()
+  });
+
+  if (!response.ok) {
+    throw new Error(`DeepL request failed: ${response.status}`);
+  }
+
+  const data = (await response.json()) as { translations?: { text?: string }[] };
+  return data?.translations?.[0]?.text?.trim() || null;
+}
+
 async function callGemini(prompt: string, temperature: number, maxOutputTokens: number) {
   const apiKey = process.env.GEMINI_API_KEY;
   const model = process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite";
@@ -222,12 +254,23 @@ async function generateExample(word: string, translation: string, partOfSpeech: 
 }
 
 async function translateExample(sentence: string, targetLanguage: string, maxTokens = 80) {
+  try {
+    const deeplTranslation = await translateWithDeepL(sentence, targetLanguage);
+    if (deeplTranslation) return deeplTranslation;
+  } catch (error) {
+    console.error("DeepL translation failed, falling back to Gemini:", error);
+  }
+
   const languageName =
     targetLanguage === "zh"
       ? "Simplified Chinese"
       : targetLanguage === "de"
         ? "German"
-        : "English";
+        : targetLanguage === "es"
+          ? "Spanish"
+          : targetLanguage === "nl"
+            ? "Dutch"
+            : "English";
   const systemPrompt = "Translate Dutch example sentences for language learners. Return only the translation, no explanation.";
   const userPrompt = `Translate this Dutch sentence into ${languageName}:\n${sentence}`;
   const translated = process.env.GEMINI_API_KEY
@@ -304,6 +347,13 @@ async function generateLongNewsReading({
 }
 
 async function translateLongNewsReading(longText: string, targetLanguage: string, maxTokens = 900) {
+  try {
+    const deeplTranslation = await translateWithDeepL(longText, targetLanguage);
+    if (deeplTranslation) return deeplTranslation;
+  } catch (error) {
+    console.error("DeepL translation failed, falling back to Gemini:", error);
+  }
+
   const languageName =
     targetLanguage === "zh"
       ? "Simplified Chinese"
