@@ -124,6 +124,7 @@ function listsFor(word: DutchWord): string[] {
   if (!all || all.length <= 1) return [word.list];
   return [word.list, ...all.filter((list) => list !== word.list)];
 }
+const totalUniqueWords = listsByWordText.size;
 const notebookStorageKey = "dutch-frequency-app-notebook";
 const defaultNotebookMigrationKey = "dutch-frequency-app-default-notebook-3000";
 const languageStorageKey = "dutch-frequency-app-ui-language";
@@ -207,8 +208,10 @@ const translations: Record<
     language: string;
     landing: LandingCopy;
     statsWords: string;
+    statsUniqueWords: string;
     statsNotebook: string;
     statsCurrent: string;
+    hideDuplicatesLabel: string;
     searchPlaceholder: string;
     jumpToRankPlaceholder: string;
     jumpToRankButton: string;
@@ -478,6 +481,7 @@ const translations: Record<
       footerRight: "荷兰语高频词学习"
     },
     statsWords: "词库",
+    statsUniqueWords: "去重后",
     statsNotebook: "单词本",
     statsCurrent: "当前",
     searchPlaceholder: "搜索荷兰语、英文释义或词性，输入编号可跳转",
@@ -531,6 +535,7 @@ const translations: Record<
     podcastShowTranscript: "显示文字稿",
     podcastHideTranscript: "隐藏文字稿",
     filtersLabel: "词频分类",
+    hideDuplicatesLabel: "隐藏重复词",
     playPronunciation: "播放读音",
     autoPlayNotebook: "自动播放中英荷",
     stopAutoPlayNotebook: "停止播放",
@@ -781,6 +786,7 @@ const translations: Record<
       footerRight: "Dutch high-frequency vocabulary"
     },
     statsWords: "Words",
+    statsUniqueWords: "Unique",
     statsNotebook: "Notebook",
     statsCurrent: "Current",
     searchPlaceholder: "Search Dutch, English meaning, or part of speech — type a number to jump to that rank",
@@ -834,6 +840,7 @@ const translations: Record<
     podcastShowTranscript: "Show transcript",
     podcastHideTranscript: "Hide transcript",
     filtersLabel: "Frequency lists",
+    hideDuplicatesLabel: "Hide duplicate words",
     playPronunciation: "Play pronunciation",
     autoPlayNotebook: "Auto-play Chinese, English, Dutch",
     stopAutoPlayNotebook: "Stop playback",
@@ -1092,6 +1099,7 @@ const translations: Record<
       footerRight: "Hoogfrequente Nederlandse woordenschat"
     },
     statsWords: "Woorden",
+    statsUniqueWords: "Uniek",
     statsNotebook: "Woordenlijst",
     statsCurrent: "Huidig",
     searchPlaceholder: "Zoek Nederlands, Engelse betekenis of woordsoort — typ een nummer om te springen",
@@ -1145,6 +1153,7 @@ const translations: Record<
     podcastShowTranscript: "Transcript tonen",
     podcastHideTranscript: "Transcript verbergen",
     filtersLabel: "Frequentielijsten",
+    hideDuplicatesLabel: "Dubbele woorden verbergen",
     playPronunciation: "Uitspraak afspelen",
     autoPlayNotebook: "Chinees, Engels, Nederlands automatisch afspelen",
     stopAutoPlayNotebook: "Afspelen stoppen",
@@ -1403,6 +1412,7 @@ const translations: Record<
       footerRight: "Vocabulario neerlandés de alta frecuencia"
     },
     statsWords: "Palabras",
+    statsUniqueWords: "Únicas",
     statsNotebook: "Cuaderno",
     statsCurrent: "Actual",
     searchPlaceholder: "Buscar neerlandés, significado en inglés o categoría; escribe un número para saltar",
@@ -1456,6 +1466,7 @@ const translations: Record<
     podcastShowTranscript: "Mostrar transcripción",
     podcastHideTranscript: "Ocultar transcripción",
     filtersLabel: "Listas de frecuencia",
+    hideDuplicatesLabel: "Ocultar palabras duplicadas",
     playPronunciation: "Reproducir pronunciación",
     autoPlayNotebook: "Reproducir chino, inglés y neerlandés",
     stopAutoPlayNotebook: "Detener reproducción",
@@ -1714,6 +1725,7 @@ const translations: Record<
       footerRight: "Hochfrequenter niederländischer Wortschatz"
     },
     statsWords: "Wörter",
+    statsUniqueWords: "Eindeutig",
     statsNotebook: "Wortliste",
     statsCurrent: "Aktuell",
     searchPlaceholder: "Niederländisch, englische Bedeutung oder Wortart suchen – Zahl eingeben zum Springen",
@@ -1767,6 +1779,7 @@ const translations: Record<
     podcastShowTranscript: "Transkript anzeigen",
     podcastHideTranscript: "Transkript verbergen",
     filtersLabel: "Frequenzlisten",
+    hideDuplicatesLabel: "Doppelte Wörter ausblenden",
     playPronunciation: "Aussprache abspielen",
     autoPlayNotebook: "Chinesisch, Englisch, Niederländisch abspielen",
     stopAutoPlayNotebook: "Wiedergabe stoppen",
@@ -1991,6 +2004,16 @@ const methodContent: Record<
     sourceTitle: string;
     sourceBody: string;
     sourceLink: string;
+    frequencyEyebrow: string;
+    frequencyTitle: string;
+    frequencyLead: string;
+    frequencyLists: Array<{ name: string; body: string }>;
+    frequencyRuleTitle: string;
+    frequencyRuleBody: string;
+    entryTitle: string;
+    entryLead: string;
+    entryNotes: string[];
+    frequencySourceBody: string;
   }
 > = {
   zh: {
@@ -2026,7 +2049,32 @@ const methodContent: Record<
     sourceTitle: "依据来源",
     sourceBody:
       "参考 Ebbinghaus 1885 年的记忆研究，以及 Murre 和 Dros 2015 年在 PLOS ONE 发表的复现实验。原始研究不是给所有学习者规定唯一时间表，所以这里采用的是基于曲线思想的可调度间隔复习。",
-    sourceLink: "PLOS ONE 复现实验"
+    sourceLink: "PLOS ONE 复现实验",
+    frequencyEyebrow: "词表是怎么来的",
+    frequencyTitle: "六个频率列表：核心、小说、新闻、口语、网络、通用",
+    frequencyLead:
+      "这个 app 的 5000 个高频词并非随意挑选，而是来自一部基于 2.9 亿词荷兰语语料库编制的频率词典。语料库涵盖小说、新闻、口语、网络四种体裁，每个词的“频率”按它出现在多少比例的 2000 词样本片段中计算，而不是简单计数——避免个别文本反复出现某个词造成的偏差。",
+    frequencyLists: [
+      { name: "核心", body: "在小说、新闻、口语、网络四种体裁中都高频出现的词，共 943 个；核心词一旦入选就不再出现在其它列表里。" },
+      { name: "小说", body: "以小说体裁内部频率排序的高频词，来自约 900 本荷兰语/佛兰芒语小说（1970-2009 年出版）。" },
+      { name: "新闻", body: "来自 SoNaR 语料库中 1993-2005 年荷兰、比利时报纸文本的高频词，是四个体裁语料中占比最大的一部分。" },
+      { name: "口语", body: "来自 CGN 荷兰语口语语料库，约 900 小时、900 万词的真实对话、访谈、讲座等口语材料。" },
+      { name: "网络", body: "同样来自 SoNaR 语料库，涵盖博客、论坛、电子杂志、新闻通讯和维基百科条目。" },
+      { name: "通用", body: "不属于核心，也不只属于某一个或两个体裁列表，但在至少三种体裁中都高频出现的词，共 2004 个。" }
+    ],
+    frequencyRuleTitle: "一个词同时在多个列表里怎么办",
+    frequencyRuleBody:
+      "如果某个词在某一体裁中的频率至少是次高体裁的两倍，只归入那一个体裁列表；如果最高的两个体裁频率都明显高于另外两个（同样是两倍关系），就同时归入这两个列表；除此之外，归入通用列表。列表内部按频率排序：体裁列表按该体裁内部频率排序，核心和通用列表按四个体裁的总体频率排序。",
+    entryTitle: "词条是怎么写的",
+    entryLead:
+      "每个词条包含：排名、荷兰语词形、词性、英文释义、一个例句，以及该词的总体频率（每 100 篇文档中的占比）。例句先由语料库工具自动挑出候选句，再人工选出最自然、最适合学习者的一句，必要时做简化。",
+    entryNotes: [
+      "动词只收录原形（不定式），各种变位、过去式、过去分词都归并到同一词条下。",
+      "名词会标出词性：de（通性）或 het（中性）；能进一步区分阳性/阴性时标为 de(m)/de(f)。",
+      "形容词按原形收录（比如 mooie、mooier、mooist 都归入 mooi），一些形容词也能直接当副词用。",
+      "如果一个词形有两个都很常见的意思，会配两个例句分别说明——频率统计的是词形本身，不是具体某个意思。"
+    ],
+    frequencySourceBody: "参考来源：《A Frequency Dictionary of Dutch》。"
   },
   en: {
     eyebrow: "Why spacing works",
@@ -2061,7 +2109,32 @@ const methodContent: Record<
     sourceTitle: "Evidence",
     sourceBody:
       "Based on Ebbinghaus's 1885 memory work and the 2015 PLOS ONE replication by Murre and Dros. The original work does not prescribe one universal schedule; this app uses the curve as a practical spacing model.",
-    sourceLink: "PLOS ONE replication"
+    sourceLink: "PLOS ONE replication",
+    frequencyEyebrow: "Where the word lists come from",
+    frequencyTitle: "Six frequency lists: Core, Fiction, Newspapers, Spoken, Web, General",
+    frequencyLead:
+      "The app's 5,000 high-frequency words aren't picked at random - they come from a published frequency dictionary built on a 290-million-word Dutch corpus spanning four genres: fiction, newspapers, spoken language, and the web. Each word's 'frequency' is measured as the percentage of 2,000-word samples it appears in, not a raw count - this avoids one word getting an inflated score just because it happens to occur a lot in one particular text.",
+    frequencyLists: [
+      { name: "Core", body: "Words that occur with high frequency across all four genres - 943 words in total. Once a word qualifies as Core, it isn't listed anywhere else." },
+      { name: "Fiction", body: "High-frequency words ranked within the fiction genre, drawn from roughly 900 Dutch and Flemish novels published between 1970 and 2009." },
+      { name: "Newspapers", body: "High-frequency words from the SoNaR corpus's Dutch and Belgian newspaper text (1993-2005) - the largest single source in the underlying corpus." },
+      { name: "Spoken", body: "From the Spoken Dutch Corpus (CGN): about 900 hours and 9 million words of real conversations, interviews, and lectures." },
+      { name: "Web", body: "Also from SoNaR: blogs, discussion forums, e-magazines, newsletters, and Wikipedia entries." },
+      { name: "General", body: "Words that aren't Core and don't clearly belong to just one or two genres, but still occur with high frequency in at least three of the four genres - 2,004 words." }
+    ],
+    frequencyRuleTitle: "How overlapping words are assigned",
+    frequencyRuleBody:
+      "If a word's frequency in one genre is at least double its next-highest genre, it goes in that genre list alone. If its top two genre frequencies are both more than double the other two, it goes in both of those genre lists. Otherwise it falls into General. Within each list, genre lists are ordered by frequency inside that genre, while Core and General are ordered by overall frequency across all four genres.",
+    entryTitle: "How each entry was written",
+    entryLead:
+      "Each entry gives the rank, the Dutch headword, its part of speech, an English meaning, one example sentence, and its overall frequency (occurrences per 100 documents). Example sentences were first shortlisted automatically from the corpus, then picked and simplified by hand for learners.",
+    entryNotes: [
+      "Verbs are listed only in their infinitive form - all conjugated, past-tense, and participle forms are merged into that one entry.",
+      "Nouns are marked de (common gender) or het (neuter); where the historical masculine/feminine distinction still holds, it's shown as de(m) or de(f).",
+      "Adjectives are listed in their base form (mooie, mooier, and mooist all fall under mooi), and some adjectives can also function as adverbs.",
+      "If one word form has two genuinely common meanings, it gets two example sentences - frequency is counted by word form, not by meaning."
+    ],
+    frequencySourceBody: "Source: A Frequency Dictionary of Dutch."
   },
   nl: {
     eyebrow: "Waarom gespreid herhalen werkt",
@@ -2096,7 +2169,32 @@ const methodContent: Record<
     sourceTitle: "Bron",
     sourceBody:
       "Gebaseerd op Ebbinghaus uit 1885 en de PLOS ONE-replicatie van Murre en Dros uit 2015. Het is een praktisch schema op basis van de curve, geen universele vaste wet.",
-    sourceLink: "PLOS ONE-replicatie"
+    sourceLink: "PLOS ONE-replicatie",
+    frequencyEyebrow: "Waar de woordenlijsten vandaan komen",
+    frequencyTitle: "Zes frequentielijsten: Kern, Fictie, Kranten, Gesproken, Web, Algemeen",
+    frequencyLead:
+      "De 5000 hoogfrequente woorden in deze app zijn niet willekeurig gekozen - ze komen uit een gepubliceerd frequentiewoordenboek, gebaseerd op een corpus van 290 miljoen woorden Nederlands, verdeeld over vier genres: fictie, kranten, gesproken taal en het web. De 'frequentie' van elk woord wordt gemeten als het percentage tekstfragmenten van 2000 woorden waarin het voorkomt, niet als een simpel aantal - zo wordt voorkomen dat één woord een te hoge score krijgt omdat het toevallig vaak in één tekst voorkomt.",
+    frequencyLists: [
+      { name: "Kern", body: "Woorden die in alle vier de genres met hoge frequentie voorkomen - in totaal 943 woorden. Eenmaal ingedeeld bij Kern, komt een woord nergens anders meer voor." },
+      { name: "Fictie", body: "Hoogfrequente woorden gerangschikt binnen het genre fictie, afkomstig uit ongeveer 900 Nederlandse en Vlaamse romans, gepubliceerd tussen 1970 en 2009." },
+      { name: "Kranten", body: "Hoogfrequente woorden uit Nederlandse en Belgische krantenteksten (1993-2005) uit het SoNaR-corpus - de grootste bron binnen het onderliggende corpus." },
+      { name: "Gesproken", body: "Uit het Corpus Gesproken Nederlands (CGN): ongeveer 900 uur en 9 miljoen woorden aan echte gesprekken, interviews en lezingen." },
+      { name: "Web", body: "Ook uit SoNaR: blogs, discussieforums, e-magazines, nieuwsbrieven en Wikipedia-artikelen." },
+      { name: "Algemeen", body: "Woorden die niet bij Kern horen en niet duidelijk bij één of twee genres, maar wel in minstens drie van de vier genres met hoge frequentie voorkomen - 2004 woorden." }
+    ],
+    frequencyRuleTitle: "Wat er gebeurt als een woord in meerdere lijsten past",
+    frequencyRuleBody:
+      "Als de frequentie van een woord in één genre minstens twee keer zo hoog is als in het op één na hoogste genre, komt het alleen in die genrelijst. Zijn de twee hoogste genrefrequenties beide meer dan twee keer zo hoog als de andere twee, dan komt het woord in beide genrelijsten. In alle andere gevallen komt het in Algemeen terecht. Binnen elke lijst worden genrelijsten gerangschikt op frequentie binnen dat genre, terwijl Kern en Algemeen gerangschikt worden op de totale frequentie over alle vier de genres.",
+    entryTitle: "Hoe elk lemma is opgebouwd",
+    entryLead:
+      "Elk lemma bevat: de rangorde, het Nederlandse woord, de woordsoort, een Engelse betekenis, een voorbeeldzin en de totale frequentie (voorkomens per 100 documenten). Voorbeeldzinnen werden eerst automatisch uit het corpus voorgeselecteerd en daarna met de hand gekozen en zo nodig vereenvoudigd voor taalleerders.",
+    entryNotes: [
+      "Werkwoorden staan alleen in de infinitief; alle vervoegde vormen, verleden tijden en deelwoorden vallen onder dat ene lemma.",
+      "Zelfstandige naamwoorden krijgen de (gewoon geslacht) of het (onzijdig); waar het historische onderscheid mannelijk/vrouwelijk nog bestaat, staat dit als de(m) of de(f).",
+      "Bijvoeglijke naamwoorden staan in hun grondvorm (mooie, mooier en mooist vallen allemaal onder mooi); sommige kunnen ook als bijwoord gebruikt worden.",
+      "Heeft een woordvorm twee even gangbare betekenissen, dan krijgt het twee voorbeeldzinnen - de frequentie wordt geteld per woordvorm, niet per betekenis."
+    ],
+    frequencySourceBody: "Bron: A Frequency Dictionary of Dutch."
   },
   es: {
     eyebrow: "Por qué funciona el repaso espaciado",
@@ -2131,7 +2229,32 @@ const methodContent: Record<
     sourceTitle: "Evidencia",
     sourceBody:
       "Basado en Ebbinghaus 1885 y la réplica de Murre y Dros en PLOS ONE, 2015. Es un modelo práctico, no un horario universal obligatorio.",
-    sourceLink: "Réplica en PLOS ONE"
+    sourceLink: "Réplica en PLOS ONE",
+    frequencyEyebrow: "De dónde vienen las listas de palabras",
+    frequencyTitle: "Seis listas de frecuencia: Básico, Ficción, Periódicos, Hablado, Web, General",
+    frequencyLead:
+      "Las 5000 palabras de alta frecuencia de esta app no se eligieron al azar: provienen de un diccionario de frecuencia publicado, basado en un corpus de 290 millones de palabras en neerlandés repartido en cuatro géneros: ficción, periódicos, lengua hablada y web. La 'frecuencia' de cada palabra se mide como el porcentaje de fragmentos de 2000 palabras en los que aparece, no como un simple recuento, para evitar que una palabra reciba una puntuación inflada solo por aparecer mucho en un único texto.",
+    frequencyLists: [
+      { name: "Básico", body: "Palabras que aparecen con alta frecuencia en los cuatro géneros a la vez: 943 palabras en total. Una vez clasificada como Básica, una palabra no aparece en ninguna otra lista." },
+      { name: "Ficción", body: "Palabras de alta frecuencia ordenadas dentro del género ficción, procedentes de unas 900 novelas neerlandesas y flamencas publicadas entre 1970 y 2009." },
+      { name: "Periódicos", body: "Palabras de alta frecuencia de textos periodísticos neerlandeses y belgas (1993-2005) del corpus SoNaR, la fuente más grande del corpus general." },
+      { name: "Hablado", body: "Del Corpus de Neerlandés Hablado (CGN): unas 900 horas y 9 millones de palabras de conversaciones reales, entrevistas y conferencias." },
+      { name: "Web", body: "También del corpus SoNaR: blogs, foros de discusión, revistas electrónicas, boletines y artículos de Wikipedia." },
+      { name: "General", body: "Palabras que no son Básicas ni pertenecen claramente a uno o dos géneros, pero que aún así aparecen con alta frecuencia en al menos tres de los cuatro géneros: 2004 palabras." }
+    ],
+    frequencyRuleTitle: "Qué pasa cuando una palabra encaja en varias listas",
+    frequencyRuleBody:
+      "Si la frecuencia de una palabra en un género es al menos el doble que en el siguiente género más frecuente, se incluye solo en la lista de ese género. Si las dos frecuencias de género más altas son ambas más del doble que las otras dos, la palabra se incluye en ambas listas de género. En cualquier otro caso, va a la lista General. Dentro de cada lista, las listas de género se ordenan por frecuencia dentro de ese género, mientras que Básico y General se ordenan por la frecuencia global en los cuatro géneros.",
+    entryTitle: "Cómo se redactó cada entrada",
+    entryLead:
+      "Cada entrada incluye: el puesto en el ranking, la palabra en neerlandés, su categoría gramatical, un significado en inglés, una oración de ejemplo y su frecuencia global (apariciones por cada 100 documentos). Las oraciones de ejemplo se preseleccionaron automáticamente del corpus y luego se eligieron y simplificaron a mano para los estudiantes.",
+    entryNotes: [
+      "Los verbos solo aparecen en infinitivo; todas las formas conjugadas, los pasados y los participios se agrupan bajo esa misma entrada.",
+      "Los sustantivos se marcan con de (género común) o het (neutro); cuando aún se distingue el género histórico masculino/femenino, se indica como de(m) o de(f).",
+      "Los adjetivos aparecen en su forma base (mooie, mooier y mooist se agrupan bajo mooi), y algunos también pueden usarse como adverbios.",
+      "Si una misma forma de palabra tiene dos significados igual de comunes, se incluyen dos oraciones de ejemplo: la frecuencia se cuenta por forma, no por significado."
+    ],
+    frequencySourceBody: "Fuente: A Frequency Dictionary of Dutch."
   },
   de: {
     eyebrow: "Warum verteiltes Wiederholen wirkt",
@@ -2166,7 +2289,32 @@ const methodContent: Record<
     sourceTitle: "Grundlage",
     sourceBody:
       "Basierend auf Ebbinghaus 1885 und der PLOS ONE-Replikation von Murre und Dros 2015. Das ist ein praktisches Modell, kein universeller Pflichtplan.",
-    sourceLink: "PLOS ONE-Replikation"
+    sourceLink: "PLOS ONE-Replikation",
+    frequencyEyebrow: "Woher die Wortlisten kommen",
+    frequencyTitle: "Sechs Häufigkeitslisten: Kern, Fiktion, Zeitungen, Gesprochen, Web, Allgemein",
+    frequencyLead:
+      "Die 5000 hochfrequenten Wörter dieser App wurden nicht willkürlich ausgewählt - sie stammen aus einem veröffentlichten Häufigkeitswörterbuch, das auf einem Korpus von 290 Millionen niederländischen Wörtern aus vier Genres basiert: Fiktion, Zeitungen, gesprochene Sprache und Web. Die 'Häufigkeit' jedes Wortes wird als Prozentsatz der 2000-Wörter-Textproben gemessen, in denen es vorkommt, nicht als reine Zählung - so wird verhindert, dass ein Wort nur deshalb einen zu hohen Wert bekommt, weil es zufällig in einem einzigen Text sehr oft vorkommt.",
+    frequencyLists: [
+      { name: "Kern", body: "Wörter, die in allen vier Genres mit hoher Häufigkeit vorkommen - insgesamt 943 Wörter. Sobald ein Wort als Kern eingestuft ist, taucht es in keiner anderen Liste mehr auf." },
+      { name: "Fiktion", body: "Hochfrequente Wörter, sortiert nach ihrer Häufigkeit innerhalb des Genres Fiktion, aus rund 900 niederländischen und flämischen Romanen, veröffentlicht zwischen 1970 und 2009." },
+      { name: "Zeitungen", body: "Hochfrequente Wörter aus niederländischen und belgischen Zeitungstexten (1993-2005) im SoNaR-Korpus - die größte einzelne Quelle im Gesamtkorpus." },
+      { name: "Gesprochen", body: "Aus dem Corpus Gesproken Nederlands (CGN): etwa 900 Stunden und 9 Millionen Wörter echter Gespräche, Interviews und Vorträge." },
+      { name: "Web", body: "Ebenfalls aus SoNaR: Blogs, Diskussionsforen, E-Magazine, Newsletter und Wikipedia-Einträge." },
+      { name: "Allgemein", body: "Wörter, die nicht zum Kern gehören und nicht eindeutig einem oder zwei Genres zuzuordnen sind, aber dennoch in mindestens drei der vier Genres mit hoher Häufigkeit vorkommen - 2004 Wörter." }
+    ],
+    frequencyRuleTitle: "Was passiert, wenn ein Wort in mehrere Listen passt",
+    frequencyRuleBody:
+      "Ist die Häufigkeit eines Wortes in einem Genre mindestens doppelt so hoch wie im nächsthäufigsten Genre, wird es nur in diese eine Genreliste aufgenommen. Sind die beiden höchsten Genre-Häufigkeiten jeweils mehr als doppelt so hoch wie die anderen beiden, kommt das Wort in beide Genrelisten. Andernfalls landet es in Allgemein. Innerhalb jeder Liste werden Genrelisten nach der Häufigkeit innerhalb dieses Genres sortiert, während Kern und Allgemein nach der Gesamthäufigkeit über alle vier Genres sortiert werden.",
+    entryTitle: "Wie jeder Eintrag aufgebaut ist",
+    entryLead:
+      "Jeder Eintrag enthält: den Rangplatz, das niederländische Wort, die Wortart, eine englische Bedeutung, einen Beispielsatz und die Gesamthäufigkeit (Vorkommen pro 100 Dokumente). Beispielsätze wurden zunächst automatisch aus dem Korpus vorausgewählt und dann von Hand ausgesucht und bei Bedarf für Lernende vereinfacht.",
+    entryNotes: [
+      "Verben werden nur im Infinitiv aufgeführt; alle konjugierten Formen, Präteritum- und Partizipformen werden unter diesem einen Eintrag zusammengefasst.",
+      "Nomen werden mit de (Genus commune) oder het (sächlich) markiert; wo die historische Unterscheidung männlich/weiblich noch besteht, steht de(m) oder de(f).",
+      "Adjektive stehen in ihrer Grundform (mooie, mooier und mooist fallen alle unter mooi), manche können auch als Adverb verwendet werden.",
+      "Hat eine Wortform zwei ähnlich gebräuchliche Bedeutungen, gibt es zwei Beispielsätze - die Häufigkeit wird nach Wortform gezählt, nicht nach Bedeutung."
+    ],
+    frequencySourceBody: "Quelle: A Frequency Dictionary of Dutch."
   }
 };
 
@@ -3718,6 +3866,46 @@ function MethodPage({ language }: { language: UiLanguage }) {
         >
           {content.sourceLink}
         </a>
+      </aside>
+
+      <div className="method-hero">
+        <div>
+          <span className="method-eyebrow">{content.frequencyEyebrow}</span>
+          <h2>{content.frequencyTitle}</h2>
+          <p>{content.frequencyLead}</p>
+        </div>
+      </div>
+
+      <div className="method-card-grid">
+        {content.frequencyLists.map((list) => (
+          <article className="method-card" key={list.name}>
+            <h3>{list.name}</h3>
+            <p>{list.body}</p>
+          </article>
+        ))}
+      </div>
+
+      <div className="method-card-grid">
+        <article className="method-card">
+          <h3>{content.frequencyRuleTitle}</h3>
+          <p>{content.frequencyRuleBody}</p>
+        </article>
+      </div>
+
+      <div className="method-action-grid">
+        <h3>{content.entryTitle}</h3>
+        <article>
+          <p>{content.entryLead}</p>
+        </article>
+        {content.entryNotes.map((note, index) => (
+          <article key={index}>
+            <p>{note}</p>
+          </article>
+        ))}
+      </div>
+
+      <aside className="source-note">
+        <p>{content.frequencySourceBody}</p>
       </aside>
     </section>
   );
@@ -5688,6 +5876,7 @@ export default function App() {
   const [highlightedWordId, setHighlightedWordId] = useState<string | null>(null);
   const skipVisibleResetRef = useRef(false);
   const [selectedList, setSelectedList] = useState("All");
+  const [hideDuplicateWords, setHideDuplicateWords] = useState(false);
   const [savedIds, setSavedIds] = useState<Set<string>>(getSavedIds);
   const [bookExamples, setBookExamples] = useState<Record<string, string>>({});
   const [generatedExamples, setGeneratedExamples] = useState<Record<string, string>>(getSavedGeneratedExamples);
@@ -6329,7 +6518,7 @@ export default function App() {
     const needle = normalize(query);
     const trimmedQuery = query.trim();
     const rankQuery = /^\d+$/.test(trimmedQuery) ? Number(trimmedQuery) : null;
-    return source
+    const filtered = source
       .filter((word) => selectedList === "All" || word.list === selectedList)
       .filter((word) => {
         if (!needle) return true;
@@ -6340,7 +6529,16 @@ export default function App() {
           normalize(word.partOfSpeech).includes(needle)
         );
       });
-  }, [mode, query, savedWords, selectedList]);
+
+    if (!hideDuplicateWords) return filtered;
+
+    const seenWords = new Set<string>();
+    return filtered.filter((word) => {
+      if (seenWords.has(word.word)) return false;
+      seenWords.add(word.word);
+      return true;
+    });
+  }, [hideDuplicateWords, mode, query, savedWords, selectedList]);
 
   const visibleWords = useMemo(
     () => matchingWords.slice(0, visibleLimit),
@@ -6973,6 +7171,10 @@ export default function App() {
                   <strong>{words.length}</strong>
                 </div>
                 <div>
+                  <span>{t.statsUniqueWords}</span>
+                  <strong>{totalUniqueWords}</strong>
+                </div>
+                <div>
                   <span>{t.statsNotebook}</span>
                   <strong>{savedIds.size}</strong>
                 </div>
@@ -7060,6 +7262,14 @@ export default function App() {
                   {t.list[name] ?? name}
                 </button>
               ))}
+              <label className="hide-duplicates-toggle">
+                <input
+                  type="checkbox"
+                  checked={hideDuplicateWords}
+                  onChange={(event) => setHideDuplicateWords(event.target.checked)}
+                />
+                <span>{t.hideDuplicatesLabel}</span>
+              </label>
             </div>
           </header>
           ) : null}

@@ -910,7 +910,8 @@ main {
   color: white;
 }
 
-.card-controls label {
+.card-controls label,
+.hide-duplicates-toggle {
   min-height: 38px;
   display: inline-flex;
   gap: 8px;
@@ -922,6 +923,7 @@ main {
   padding: 0 10px;
   font-size: 0.82rem;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .card-controls select {
