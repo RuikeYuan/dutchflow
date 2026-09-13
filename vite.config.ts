@@ -686,6 +686,63 @@ async function isPremiumUser(userId: string): Promise<boolean> {
   }
 }
 
+const DEV_ALLOWED_BILLING_ORIGINS = new Set([
+  "https://dutchflow.banbar.online",
+  "https://dutch-frequency-app.vercel.app",
+  "http://localhost:5173"
+]);
+
+function resolveBillingOrigin(request: IncomingMessage): string {
+  const origin = request.headers.origin;
+  if (origin && DEV_ALLOWED_BILLING_ORIGINS.has(origin)) return origin;
+  return "https://dutchflow.banbar.online";
+}
+
+async function getProfileForBilling(userId: string): Promise<{ stripe_customer_id?: string } | null> {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const response = await fetch(
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=stripe_customer_id,is_premium`,
+    { headers: { apikey: serviceRoleKey ?? "", Authorization: `Bearer ${serviceRoleKey}` } }
+  );
+  if (!response.ok) throw new Error("Failed to read profile");
+  const rows = (await response.json()) as Array<{ stripe_customer_id?: string }>;
+  return rows?.[0] ?? null;
+}
+
+async function saveStripeCustomerIdDev(userId: string, customerId: string) {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const response = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`, {
+    method: "PATCH",
+    headers: {
+      apikey: serviceRoleKey ?? "",
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal"
+    },
+    body: JSON.stringify({ stripe_customer_id: customerId })
+  });
+  if (!response.ok) throw new Error("Failed to save Stripe customer id");
+}
+
+async function stripeRequestDev(path: string, body: Record<string, string>) {
+  const params = new URLSearchParams(body);
+  const response = await fetch(`https://api.stripe.com/v1/${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: params
+  });
+  const data = (await response.json()) as { error?: { message?: string }; id?: string; url?: string };
+  if (!response.ok) {
+    throw new Error(data.error?.message ?? "Stripe request failed");
+  }
+  return data;
+}
+
 function sendAuthError(response: ServerResponse, status: number, message: string) {
   response.statusCode = status;
   response.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -942,6 +999,72 @@ export default defineConfig(({ mode }) => {
             response.statusCode = 500;
             response.setHeader("Content-Type", "application/json; charset=utf-8");
             response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Failed to read podcast episodes" }));
+          }
+        });
+
+        server.middlewares.use("/api/billing", async (request, response) => {
+          if (request.method !== "POST") {
+            response.statusCode = 405;
+            response.end("Method not allowed");
+            return;
+          }
+
+          const user = await requireUserDev(request, response);
+          if (!user) return;
+
+          if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_PRICE_ID) {
+            response.statusCode = 500;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify({ error: "Stripe is not configured" }));
+            return;
+          }
+
+          try {
+            const body = await readJsonBody(request);
+            const action = String(body.action ?? "checkout");
+            const origin = resolveBillingOrigin(request);
+            const profile = await getProfileForBilling(user.id);
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+
+            if (action === "portal") {
+              if (!profile?.stripe_customer_id) {
+                response.statusCode = 400;
+                response.end(JSON.stringify({ error: "No subscription to manage" }));
+                return;
+              }
+              const session = await stripeRequestDev("billing_portal/sessions", {
+                customer: profile.stripe_customer_id,
+                return_url: origin
+              });
+              response.end(JSON.stringify({ url: session.url }));
+              return;
+            }
+
+            let customerId = profile?.stripe_customer_id;
+            if (!customerId) {
+              const customer = await stripeRequestDev("customers", {
+                email: user.email ?? "",
+                "metadata[supabase_user_id]": user.id
+              });
+              customerId = customer.id;
+              await saveStripeCustomerIdDev(user.id, customerId ?? "");
+            }
+
+            const session = await stripeRequestDev("checkout/sessions", {
+              customer: customerId ?? "",
+              mode: "subscription",
+              "line_items[0][price]": process.env.STRIPE_PRICE_ID ?? "",
+              "line_items[0][quantity]": "1",
+              success_url: `${origin}/?checkout=success`,
+              cancel_url: `${origin}/?checkout=cancelled`,
+              "metadata[supabase_user_id]": user.id,
+              "subscription_data[metadata][supabase_user_id]": user.id
+            });
+            response.end(JSON.stringify({ url: session.url }));
+          } catch (error) {
+            response.statusCode = 500;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Failed to create billing session" }));
           }
         });
 

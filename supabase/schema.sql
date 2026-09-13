@@ -31,5 +31,9 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- To grant someone premium manually for now (no payment flow yet):
+-- To grant someone premium manually (e.g. for testing, outside the Stripe flow):
 --   update public.profiles set is_premium = true where id = '<user-uuid-from-auth-users-table>';
+
+-- Lets the client subscribe to its own profile row so a premium flip from the
+-- Stripe webhook (or a manual update above) reaches an open tab instantly.
+alter publication supabase_realtime add table public.profiles;

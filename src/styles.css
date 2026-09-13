@@ -470,6 +470,129 @@ main {
   font: inherit;
 }
 
+.pricing-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 22px clamp(16px, 4vw, 48px) 56px;
+}
+
+.pricing-hero {
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.pricing-hero h2 {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+}
+
+.pricing-hero p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.pricing-checkout-message {
+  margin: 0 0 18px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--teal);
+  background: rgba(46, 139, 128, 0.08);
+  color: var(--ink);
+  text-align: center;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.pricing-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.pricing-card-premium {
+  border-color: var(--teal);
+  box-shadow: 0 10px 30px rgba(45, 38, 28, 0.08);
+}
+
+.pricing-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.pricing-card-desc {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.pricing-price {
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.pricing-feature-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  flex: 1;
+}
+
+.pricing-feature-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.pricing-feature-list li svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--teal);
+}
+
+.pricing-current-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f0eee6;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.pricing-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  margin-top: 4px;
+}
+
+@media (max-width: 640px) {
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .example-import {
   display: grid;
   gap: 6px;

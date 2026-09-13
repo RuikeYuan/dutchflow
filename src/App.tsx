@@ -6,6 +6,7 @@ import {
   CheckSquare,
   ChevronLeft,
   ChevronRight,
+  Crown,
   Filter,
   Languages,
   Layers3,
@@ -19,6 +20,7 @@ import {
   Shuffle,
   Sparkles,
   Square,
+  User,
   Volume2
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -43,7 +45,17 @@ type DutchWord = {
   frequency?: number;
 };
 
-type ViewMode = "landing" | "browse" | "notebook" | "study" | "speaking" | "grammar" | "reading" | "podcast" | "method";
+type ViewMode =
+  | "landing"
+  | "browse"
+  | "notebook"
+  | "study"
+  | "speaking"
+  | "grammar"
+  | "reading"
+  | "podcast"
+  | "method"
+  | "pricing";
 type UiLanguage = "zh" | "en" | "nl" | "es" | "de";
 type ExampleTranslationLanguage = "zh" | "en" | "de";
 type CardMeaningLanguage = "en" | "zh";
@@ -325,6 +337,27 @@ const translations: Record<
     authPremiumRequiredHint: string;
     authModalClose: string;
     authLinkExpired: string;
+    accountLabel: string;
+    modePricing: string;
+    pricingHeroTitle: string;
+    pricingHeroSubtitle: string;
+    pricingFreeName: string;
+    pricingFreeDesc: string;
+    pricingFreeFeatures: string[];
+    pricingPremiumName: string;
+    pricingPremiumDesc: string;
+    pricingPremiumFeatures: string[];
+    pricingPriceFree: string;
+    pricingPerMonth: (price: string) => string;
+    pricingSubscribeCta: string;
+    pricingSubscribing: string;
+    pricingCurrentBadge: string;
+    pricingManageCta: string;
+    pricingManaging: string;
+    pricingSignInCta: string;
+    pricingCheckoutError: string;
+    pricingCheckoutSuccess: string;
+    pricingCheckoutCancelled: string;
     list: Record<string, string>;
     pos: Record<string, string>;
   }
@@ -533,6 +566,33 @@ const translations: Record<
     authPremiumRequiredHint: "AI 生成的例句、语法讲解、长阅读和口语练习等功能需要会员权限，会员开通功能正在准备中。",
     authModalClose: "关闭",
     authLinkExpired: "登录链接已过期，请重新获取一个",
+    accountLabel: "账户",
+    modePricing: "会员",
+    pricingHeroTitle: "解锁全部 AI 功能",
+    pricingHeroSubtitle: "免费版已经包含完整词频表和单词本；会员版额外解锁所有 AI 生成内容。",
+    pricingFreeName: "免费版",
+    pricingFreeDesc: "适合日常查词和背单词",
+    pricingFreeFeatures: ["完整词频表浏览与搜索", "单词本收藏，跨设备自动同步", "学习模式（间隔重复）", "语法脑图（精简讲解）"],
+    pricingPremiumName: "会员版",
+    pricingPremiumDesc: "解锁所有 AI 生成内容",
+    pricingPremiumFeatures: [
+      "免费版全部功能",
+      "AI 生成例句与翻译",
+      "AI 语法节点深入讲解",
+      "新闻长阅读展开",
+      "AI 口语陪练"
+    ],
+    pricingPriceFree: "免费",
+    pricingPerMonth: (price: string) => `${price} / 月`,
+    pricingSubscribeCta: "订阅会员",
+    pricingSubscribing: "跳转到支付页面…",
+    pricingCurrentBadge: "当前方案",
+    pricingManageCta: "管理订阅",
+    pricingManaging: "跳转中…",
+    pricingSignInCta: "登录后订阅",
+    pricingCheckoutError: "无法打开支付页面，请稍后重试",
+    pricingCheckoutSuccess: "订阅成功，欢迎成为会员！",
+    pricingCheckoutCancelled: "已取消订阅流程",
     list: {
       All: "全部",
       Core: "核心",
@@ -767,6 +827,38 @@ const translations: Record<
       "AI-generated examples, grammar explanations, long reading, and speaking practice require premium membership. Self-serve upgrades are coming soon.",
     authModalClose: "Close",
     authLinkExpired: "That sign-in link expired — please request a new one",
+    accountLabel: "Account",
+    modePricing: "Premium",
+    pricingHeroTitle: "Unlock every AI feature",
+    pricingHeroSubtitle: "The free plan already includes the full frequency list and notebook; Premium unlocks all AI-generated content.",
+    pricingFreeName: "Free",
+    pricingFreeDesc: "Great for everyday lookup and review",
+    pricingFreeFeatures: [
+      "Browse and search the full frequency list",
+      "Notebook, synced automatically across devices",
+      "Study mode (spaced repetition)",
+      "Grammar mind map (short explanations)"
+    ],
+    pricingPremiumName: "Premium",
+    pricingPremiumDesc: "Unlocks all AI-generated content",
+    pricingPremiumFeatures: [
+      "Everything in Free",
+      "AI-generated examples and translations",
+      "In-depth AI grammar explanations",
+      "Expanded long-form news reading",
+      "AI speaking practice"
+    ],
+    pricingPriceFree: "Free",
+    pricingPerMonth: (price: string) => `${price} / month`,
+    pricingSubscribeCta: "Subscribe",
+    pricingSubscribing: "Redirecting to checkout…",
+    pricingCurrentBadge: "Current plan",
+    pricingManageCta: "Manage subscription",
+    pricingManaging: "Redirecting…",
+    pricingSignInCta: "Sign in to subscribe",
+    pricingCheckoutError: "Could not open checkout. Please try again",
+    pricingCheckoutSuccess: "Subscribed! Welcome to Premium.",
+    pricingCheckoutCancelled: "Checkout was cancelled",
     list: {
       All: "All",
       Core: "Core",
@@ -1002,6 +1094,38 @@ const translations: Record<
       "AI-gegenereerde voorbeeldzinnen, grammatica-uitleg, lange leesteksten en spreekoefeningen vereisen een premium-account. Zelf upgraden komt binnenkort beschikbaar.",
     authModalClose: "Sluiten",
     authLinkExpired: "Die inloglink is verlopen — vraag een nieuwe aan",
+    accountLabel: "Account",
+    modePricing: "Premium",
+    pricingHeroTitle: "Ontgrendel alle AI-functies",
+    pricingHeroSubtitle: "Het gratis plan bevat al de volledige frequentielijst en het woordenboekje; Premium ontgrendelt alle AI-gegenereerde content.",
+    pricingFreeName: "Gratis",
+    pricingFreeDesc: "Prima voor dagelijks opzoeken en herhalen",
+    pricingFreeFeatures: [
+      "Blader en zoek in de volledige frequentielijst",
+      "Woordenboekje, automatisch gesynchroniseerd tussen apparaten",
+      "Studiemodus (spaced repetition)",
+      "Grammatica-mindmap (korte uitleg)"
+    ],
+    pricingPremiumName: "Premium",
+    pricingPremiumDesc: "Ontgrendelt alle AI-gegenereerde content",
+    pricingPremiumFeatures: [
+      "Alles uit Gratis",
+      "AI-gegenereerde voorbeeldzinnen en vertalingen",
+      "Diepgaande AI-grammatica-uitleg",
+      "Uitgebreide lange leesteksten",
+      "AI-spreekoefening"
+    ],
+    pricingPriceFree: "Gratis",
+    pricingPerMonth: (price: string) => `${price} / maand`,
+    pricingSubscribeCta: "Abonneren",
+    pricingSubscribing: "Doorsturen naar afrekenen…",
+    pricingCurrentBadge: "Huidig plan",
+    pricingManageCta: "Abonnement beheren",
+    pricingManaging: "Doorsturen…",
+    pricingSignInCta: "Log in om te abonneren",
+    pricingCheckoutError: "Kon niet naar de afrekenpagina. Probeer het opnieuw",
+    pricingCheckoutSuccess: "Geabonneerd! Welkom bij Premium.",
+    pricingCheckoutCancelled: "Afrekenen geannuleerd",
     list: {
       All: "Alles",
       Core: "Kern",
@@ -1237,6 +1361,38 @@ const translations: Record<
       "Los ejemplos generados por IA, las explicaciones de gramática, la lectura larga y la práctica oral requieren membresía premium. La opción de autoservicio llegará pronto.",
     authModalClose: "Cerrar",
     authLinkExpired: "Ese enlace de acceso caducó — solicita uno nuevo",
+    accountLabel: "Cuenta",
+    modePricing: "Premium",
+    pricingHeroTitle: "Desbloquea todas las funciones de IA",
+    pricingHeroSubtitle: "El plan gratuito ya incluye la lista de frecuencia completa y el cuaderno; Premium desbloquea todo el contenido generado por IA.",
+    pricingFreeName: "Gratis",
+    pricingFreeDesc: "Ideal para consultar y repasar a diario",
+    pricingFreeFeatures: [
+      "Explora y busca en la lista de frecuencia completa",
+      "Cuaderno, sincronizado automáticamente entre dispositivos",
+      "Modo de estudio (repetición espaciada)",
+      "Mapa mental de gramática (explicaciones breves)"
+    ],
+    pricingPremiumName: "Premium",
+    pricingPremiumDesc: "Desbloquea todo el contenido generado por IA",
+    pricingPremiumFeatures: [
+      "Todo lo de Gratis",
+      "Ejemplos y traducciones generados por IA",
+      "Explicaciones gramaticales de IA en profundidad",
+      "Lectura larga de noticias ampliada",
+      "Práctica oral con IA"
+    ],
+    pricingPriceFree: "Gratis",
+    pricingPerMonth: (price: string) => `${price} / mes`,
+    pricingSubscribeCta: "Suscribirse",
+    pricingSubscribing: "Redirigiendo al pago…",
+    pricingCurrentBadge: "Plan actual",
+    pricingManageCta: "Gestionar suscripción",
+    pricingManaging: "Redirigiendo…",
+    pricingSignInCta: "Inicia sesión para suscribirte",
+    pricingCheckoutError: "No se pudo abrir el pago. Inténtalo de nuevo",
+    pricingCheckoutSuccess: "¡Suscrito! Bienvenido a Premium.",
+    pricingCheckoutCancelled: "Pago cancelado",
     list: {
       All: "Todo",
       Core: "Básico",
@@ -1472,6 +1628,38 @@ const translations: Record<
       "KI-generierte Beispiele, Grammatikerklärungen, Langlesetexte und Sprechübungen erfordern eine Premium-Mitgliedschaft. Ein Selbstbedienungs-Upgrade folgt in Kürze.",
     authModalClose: "Schließen",
     authLinkExpired: "Der Anmeldelink ist abgelaufen — bitte fordere einen neuen an",
+    accountLabel: "Konto",
+    modePricing: "Premium",
+    pricingHeroTitle: "Alle KI-Funktionen freischalten",
+    pricingHeroSubtitle: "Der kostenlose Plan enthält bereits die vollständige Frequenzliste und das Vokabelheft; Premium schaltet alle KI-generierten Inhalte frei.",
+    pricingFreeName: "Kostenlos",
+    pricingFreeDesc: "Ideal zum täglichen Nachschlagen und Wiederholen",
+    pricingFreeFeatures: [
+      "Vollständige Frequenzliste durchsuchen",
+      "Vokabelheft, automatisch geräteübergreifend synchronisiert",
+      "Lernmodus (Spaced Repetition)",
+      "Grammatik-Mindmap (kurze Erklärungen)"
+    ],
+    pricingPremiumName: "Premium",
+    pricingPremiumDesc: "Schaltet alle KI-generierten Inhalte frei",
+    pricingPremiumFeatures: [
+      "Alles aus Kostenlos",
+      "KI-generierte Beispielsätze und Übersetzungen",
+      "Ausführliche KI-Grammatikerklärungen",
+      "Erweiterte Langlesetexte",
+      "KI-Sprechübung"
+    ],
+    pricingPriceFree: "Kostenlos",
+    pricingPerMonth: (price: string) => `${price} / Monat`,
+    pricingSubscribeCta: "Abonnieren",
+    pricingSubscribing: "Weiterleitung zur Kasse…",
+    pricingCurrentBadge: "Aktueller Plan",
+    pricingManageCta: "Abo verwalten",
+    pricingManaging: "Weiterleitung…",
+    pricingSignInCta: "Zum Abonnieren anmelden",
+    pricingCheckoutError: "Kasse konnte nicht geöffnet werden. Bitte erneut versuchen",
+    pricingCheckoutSuccess: "Abonniert! Willkommen bei Premium.",
+    pricingCheckoutCancelled: "Kasse abgebrochen",
     list: {
       All: "Alle",
       Core: "Kern",
@@ -3241,6 +3429,123 @@ function MethodPage({ language }: { language: UiLanguage }) {
   );
 }
 
+function PricingPage({
+  t,
+  user,
+  isPremium,
+  authHeaders,
+  onRequireLogin,
+  checkoutMessage
+}: {
+  t: (typeof translations)[UiLanguage];
+  user: { id: string; email?: string } | null;
+  isPremium: boolean;
+  authHeaders: () => Record<string, string>;
+  onRequireLogin: () => void;
+  checkoutMessage: string;
+}) {
+  const [subscribing, setSubscribing] = useState(false);
+  const [managing, setManaging] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  async function startBilling(action: "checkout" | "portal") {
+    if (!user) {
+      onRequireLogin();
+      return;
+    }
+
+    setErrorMessage("");
+    if (action === "checkout") setSubscribing(true);
+    else setManaging(true);
+
+    try {
+      const response = await fetch(apiUrl("/api/billing"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ action })
+      });
+      if (!response.ok) throw new Error("Billing request failed");
+      const data = (await response.json()) as { url?: string };
+      if (!data.url) throw new Error("No checkout URL");
+      window.location.href = data.url;
+    } catch {
+      setErrorMessage(t.pricingCheckoutError);
+      setSubscribing(false);
+      setManaging(false);
+    }
+  }
+
+  return (
+    <section className="pricing-page">
+      <div className="pricing-hero">
+        <h2>{t.pricingHeroTitle}</h2>
+        <p>{t.pricingHeroSubtitle}</p>
+      </div>
+
+      {checkoutMessage ? <p className="pricing-checkout-message">{checkoutMessage}</p> : null}
+
+      <div className="pricing-grid">
+        <article className="pricing-card">
+          <h3>{t.pricingFreeName}</h3>
+          <p className="pricing-card-desc">{t.pricingFreeDesc}</p>
+          <div className="pricing-price">{t.pricingPriceFree}</div>
+          <ul className="pricing-feature-list">
+            {t.pricingFreeFeatures.map((feature) => (
+              <li key={feature}>
+                <Check size={15} />
+                <span>{feature}</span>
+              </li>
+            ))}
+          </ul>
+          {!isPremium ? <span className="pricing-current-badge">{t.pricingCurrentBadge}</span> : null}
+        </article>
+
+        <article className="pricing-card pricing-card-premium">
+          <h3>
+            <Crown size={18} />
+            <span>{t.pricingPremiumName}</span>
+          </h3>
+          <p className="pricing-card-desc">{t.pricingPremiumDesc}</p>
+          <div className="pricing-price">{t.pricingPerMonth("€5")}</div>
+          <ul className="pricing-feature-list">
+            {t.pricingPremiumFeatures.map((feature) => (
+              <li key={feature}>
+                <Check size={15} />
+                <span>{feature}</span>
+              </li>
+            ))}
+          </ul>
+          {isPremium ? (
+            <>
+              <span className="pricing-current-badge">{t.pricingCurrentBadge}</span>
+              <button
+                className="primary pricing-cta"
+                type="button"
+                onClick={() => startBilling("portal")}
+                disabled={managing}
+              >
+                {managing ? t.pricingManaging : t.pricingManageCta}
+              </button>
+            </>
+          ) : (
+            <button
+              className="primary pricing-cta"
+              type="button"
+              onClick={() => startBilling("checkout")}
+              disabled={subscribing}
+            >
+              <Crown size={16} />
+              <span>{subscribing ? t.pricingSubscribing : user ? t.pricingSubscribeCta : t.pricingSignInCta}</span>
+            </button>
+          )}
+        </article>
+      </div>
+
+      {errorMessage ? <p className="ai-status">{errorMessage}</p> : null}
+    </section>
+  );
+}
+
 function SpeakingPage({ t, premiumGate }: { t: (typeof translations)[UiLanguage]; premiumGate: PremiumGate }) {
   const [scenarioId, setScenarioId] = useState(speakingScenarios[0].id);
   const [turns, setTurns] = useState<SpeakingTurn[]>([
@@ -4585,7 +4890,8 @@ function AuthModal({
   onSendEmailLink,
   sending,
   statusMessage,
-  onClose
+  onClose,
+  onGoToPricing
 }: {
   t: (typeof translations)[UiLanguage];
   reason: "login" | "premium";
@@ -4596,6 +4902,7 @@ function AuthModal({
   sending: boolean;
   statusMessage: string;
   onClose: () => void;
+  onGoToPricing: () => void;
 }) {
   return (
     <div className="auth-modal-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
@@ -4603,32 +4910,44 @@ function AuthModal({
         <button className="icon-button auth-modal-close" type="button" onClick={onClose} aria-label={t.authModalClose}>
           ×
         </button>
-        <h2>{reason === "premium" ? t.authPremiumRequiredTitle : t.authSignInTitle}</h2>
-        {reason === "premium" ? <p className="auth-modal-hint">{t.authPremiumRequiredHint}</p> : null}
-        <button className="auth-google-button" type="button" onClick={onGoogle}>
-          {t.authSignInGoogle}
-        </button>
-        <div className="auth-modal-divider">
-          <span>{t.authSignInEmailLabel}</span>
-        </div>
-        <form
-          className="auth-email-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onSendEmailLink();
-          }}
-        >
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => onEmailChange(event.target.value)}
-            placeholder={t.authEmailPlaceholder}
-            required
-          />
-          <button className="mini-button" type="submit" disabled={sending || !email.trim()}>
-            {sending ? t.authSending : t.authSendLink}
-          </button>
-        </form>
+        {reason === "premium" ? (
+          <>
+            <h2>{t.authPremiumRequiredTitle}</h2>
+            <p className="auth-modal-hint">{t.authPremiumRequiredHint}</p>
+            <button className="primary pricing-cta" type="button" onClick={onGoToPricing}>
+              <Crown size={16} />
+              <span>{t.pricingSubscribeCta}</span>
+            </button>
+          </>
+        ) : (
+          <>
+            <h2>{t.authSignInTitle}</h2>
+            <button className="auth-google-button" type="button" onClick={onGoogle}>
+              {t.authSignInGoogle}
+            </button>
+            <div className="auth-modal-divider">
+              <span>{t.authSignInEmailLabel}</span>
+            </div>
+            <form
+              className="auth-email-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                onSendEmailLink();
+              }}
+            >
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => onEmailChange(event.target.value)}
+                placeholder={t.authEmailPlaceholder}
+                required
+              />
+              <button className="mini-button" type="submit" disabled={sending || !email.trim()}>
+                {sending ? t.authSending : t.authSendLink}
+              </button>
+            </form>
+          </>
+        )}
         {statusMessage ? <p className="ai-status">{statusMessage}</p> : null}
       </div>
     </div>
@@ -4642,6 +4961,8 @@ export default function App() {
   const [authEmail, setAuthEmail] = useState("");
   const [authStatusMessage, setAuthStatusMessage] = useState("");
   const [authSending, setAuthSending] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState("");
+  const [premiumRefreshTick, setPremiumRefreshTick] = useState(0);
   const user = session?.user ?? null;
   const [mode, setMode] = useState<ViewMode>("landing");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -4756,7 +5077,48 @@ export default function App() {
     return () => {
       active = false;
     };
+  }, [user?.id, premiumRefreshTick]);
+
+  // A Stripe webhook can flip is_premium moments after checkout completes, or an
+  // admin can flip it manually - subscribe so an open tab picks that up instantly.
+  useEffect(() => {
+    if (!supabase || !user) return;
+    const client = supabase;
+
+    const channel = client
+      .channel(`profile-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
+        (payload: { new: { is_premium?: boolean } }) => {
+          setIsPremium(Boolean(payload.new?.is_premium));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      client.removeChannel(channel);
+    };
   }, [user?.id]);
+
+  // Handle the redirect back from Stripe Checkout: surface a message on the
+  // pricing page and re-check premium status (the webhook may take a moment).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get("checkout");
+    if (!checkout) return;
+
+    if (checkout === "success") {
+      setCheckoutMessage(t.pricingCheckoutSuccess);
+      setPremiumRefreshTick((tick) => tick + 1);
+    } else if (checkout === "cancelled") {
+      setCheckoutMessage(t.pricingCheckoutCancelled);
+    }
+    setMode("pricing");
+    window.history.replaceState(null, "", window.location.pathname);
+    // Runs once on mount to detect a Stripe Checkout return.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (user) setAuthPrompt(null);
@@ -5710,6 +6072,10 @@ export default function App() {
               <BookOpen size={18} />
               <span>{t.modeMethod}</span>
             </button>
+            <button className={mode === "pricing" ? "active" : ""} onClick={() => setMode("pricing")} title={t.modePricing}>
+              <Crown size={18} />
+              <span>{t.modePricing}</span>
+            </button>
           </nav>
 
           <div className="sidebar-utilities">
@@ -5725,22 +6091,21 @@ export default function App() {
             </label>
             <details className="sync-panel" open={Boolean(user)}>
               <summary>
-                <RefreshCw size={16} />
-                <span>{user ? t.syncLabel : t.authSignInTitle}</span>
-                {user ? <span className={`sync-dot ${syncStatus}`} aria-hidden="true" /> : null}
+                <User size={16} />
+                <span>{user ? t.accountLabel : t.authSignInTitle}</span>
               </summary>
               <div className="sync-panel-body">
                 {user ? (
                   <>
                     <p className="sync-hint">{t.authSignedInAs(user.email ?? "")}</p>
-                    {isPremium ? <span className="auth-premium-badge">{t.authPremiumBadge}</span> : null}
-                    <p className="recognized muted">
-                      {syncStatus === "error"
-                        ? t.syncStatusError
-                        : syncStatus === "synced"
-                          ? t.syncStatusSynced
-                          : t.syncStatusSyncing}
-                    </p>
+                    {isPremium ? (
+                      <span className="auth-premium-badge">{t.authPremiumBadge}</span>
+                    ) : (
+                      <button type="button" className="mini-button" onClick={() => setMode("pricing")}>
+                        <Crown size={14} />
+                        <span>{t.modePricing}</span>
+                      </button>
+                    )}
                     <button type="button" className="mini-button" onClick={handleSignOut}>
                       {t.authSignOut}
                     </button>
@@ -5877,6 +6242,15 @@ export default function App() {
         />
       ) : mode === "method" ? (
         <MethodPage language={language} />
+      ) : mode === "pricing" ? (
+        <PricingPage
+          t={t}
+          user={user}
+          isPremium={isPremium}
+          authHeaders={authHeaders}
+          onRequireLogin={() => setAuthPrompt("login")}
+          checkoutMessage={checkoutMessage}
+        />
       ) : mode === "grammar" ? (
         <GrammarGuidePage t={t} language={language} premiumGate={premiumGate} />
       ) : mode === "reading" ? (
@@ -6178,6 +6552,10 @@ export default function App() {
         sending={authSending}
         statusMessage={authStatusMessage}
         onClose={() => setAuthPrompt(null)}
+        onGoToPricing={() => {
+          setAuthPrompt(null);
+          setMode("pricing");
+        }}
       />
     ) : null}
     </>
