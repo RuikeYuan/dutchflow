@@ -2776,7 +2776,13 @@ function RepeatPractice({
       <div className="translation-tools">
         <select
           value={targetLanguage}
-          onChange={(event) => setTargetLanguage(event.target.value as ExampleTranslationLanguage)}
+          onChange={(event) => {
+            const nextLanguage = event.target.value as ExampleTranslationLanguage;
+            setTargetLanguage(nextLanguage);
+            if (!savedTranslations[nextLanguage]) {
+              onTranslate(sentenceKey, sentence, nextLanguage);
+            }
+          }}
         >
           {(Object.keys(exampleTranslationLanguages) as ExampleTranslationLanguage[]).map((key) => (
             <option key={key} value={key}>
@@ -2784,15 +2790,6 @@ function RepeatPractice({
             </option>
           ))}
         </select>
-        <button
-          className="mini-button"
-          type="button"
-          onClick={() => onTranslate(sentenceKey, sentence, targetLanguage)}
-          disabled={translating === targetLanguage}
-        >
-          <Languages size={15} />
-          <span>{translating === targetLanguage ? t.translatingExample : t.translateExample}</span>
-        </button>
         <button
           className="mini-button"
           type="button"
