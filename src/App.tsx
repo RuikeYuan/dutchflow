@@ -324,6 +324,7 @@ const translations: Record<
     authPremiumRequiredTitle: string;
     authPremiumRequiredHint: string;
     authModalClose: string;
+    authLinkExpired: string;
     list: Record<string, string>;
     pos: Record<string, string>;
   }
@@ -531,6 +532,7 @@ const translations: Record<
     authPremiumRequiredTitle: "这是会员专属功能",
     authPremiumRequiredHint: "AI 生成的例句、语法讲解、长阅读和口语练习等功能需要会员权限，会员开通功能正在准备中。",
     authModalClose: "关闭",
+    authLinkExpired: "登录链接已过期，请重新获取一个",
     list: {
       All: "全部",
       Core: "核心",
@@ -764,6 +766,7 @@ const translations: Record<
     authPremiumRequiredHint:
       "AI-generated examples, grammar explanations, long reading, and speaking practice require premium membership. Self-serve upgrades are coming soon.",
     authModalClose: "Close",
+    authLinkExpired: "That sign-in link expired — please request a new one",
     list: {
       All: "All",
       Core: "Core",
@@ -998,6 +1001,7 @@ const translations: Record<
     authPremiumRequiredHint:
       "AI-gegenereerde voorbeeldzinnen, grammatica-uitleg, lange leesteksten en spreekoefeningen vereisen een premium-account. Zelf upgraden komt binnenkort beschikbaar.",
     authModalClose: "Sluiten",
+    authLinkExpired: "Die inloglink is verlopen — vraag een nieuwe aan",
     list: {
       All: "Alles",
       Core: "Kern",
@@ -1232,6 +1236,7 @@ const translations: Record<
     authPremiumRequiredHint:
       "Los ejemplos generados por IA, las explicaciones de gramática, la lectura larga y la práctica oral requieren membresía premium. La opción de autoservicio llegará pronto.",
     authModalClose: "Cerrar",
+    authLinkExpired: "Ese enlace de acceso caducó — solicita uno nuevo",
     list: {
       All: "Todo",
       Core: "Básico",
@@ -1466,6 +1471,7 @@ const translations: Record<
     authPremiumRequiredHint:
       "KI-generierte Beispiele, Grammatikerklärungen, Langlesetexte und Sprechübungen erfordern eine Premium-Mitgliedschaft. Ein Selbstbedienungs-Upgrade folgt in Kürze.",
     authModalClose: "Schließen",
+    authLinkExpired: "Der Anmeldelink ist abgelaufen — bitte fordere einen neuen an",
     list: {
       All: "Alle",
       Core: "Kern",
@@ -4707,6 +4713,28 @@ export default function App() {
       active = false;
       subscription.subscription.unsubscribe();
     };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash;
+    if (!hash || !hash.includes("error=")) return;
+
+    const params = new URLSearchParams(hash.slice(1));
+    const errorCode = params.get("error_code");
+    const errorDescription = params.get("error_description");
+    const message =
+      errorCode === "otp_expired"
+        ? t.authLinkExpired
+        : errorDescription
+          ? decodeURIComponent(errorDescription.replace(/\+/g, " "))
+          : t.authEmailError;
+
+    setAuthStatusMessage(message);
+    setAuthPrompt("login");
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    // Runs once on mount to surface any auth error Supabase redirected back with.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
