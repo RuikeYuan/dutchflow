@@ -139,6 +139,38 @@ async function translateWithDeepL(text, targetLanguage, sourceLanguage = "nl") {
   return data?.translations?.[0]?.text?.trim() || null;
 }
 
+async function translateWithDeepLBatch(texts, targetLanguage, sourceLanguage = "nl") {
+  const apiKey = process.env.DEEPL_API_KEY;
+  if (!apiKey) return null;
+
+  const targetLang = DEEPL_TARGET_LANG[targetLanguage] ?? "EN-US";
+  const sourceLang = DEEPL_SOURCE_LANG[sourceLanguage] ?? "NL";
+  const apiHost = apiKey.endsWith(":fx") ? "api-free.deepl.com" : "api.deepl.com";
+
+  const params = new URLSearchParams();
+  for (const text of texts) params.append("text", text);
+  params.append("target_lang", targetLang);
+  params.append("source_lang", sourceLang);
+
+  const response = await fetch(`https://${apiHost}/v2/translate`, {
+    method: "POST",
+    headers: {
+      Authorization: `DeepL-Auth-Key ${apiKey}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: params.toString()
+  });
+
+  if (!response.ok) {
+    throw new Error(`DeepL request failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const translations = data?.translations;
+  if (!Array.isArray(translations)) return null;
+  return translations.map((entry) => entry?.text?.trim() ?? "");
+}
+
 async function callGemini(prompt, temperature, maxOutputTokens) {
   const apiKey = process.env.GEMINI_API_KEY;
   const model = process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite";
@@ -411,6 +443,25 @@ export async function translateExample(sentence, targetLanguage, maxTokens, sour
   }
 
   return translated;
+}
+
+export async function translateBatch(texts, targetLanguage, sourceLanguage = "nl") {
+  try {
+    const deeplTranslations = await translateWithDeepLBatch(texts, targetLanguage, sourceLanguage);
+    if (deeplTranslations) return deeplTranslations;
+  } catch (error) {
+    console.error("DeepL batch translation failed, falling back to Gemini one at a time:", error);
+  }
+
+  const results = [];
+  for (const text of texts) {
+    try {
+      results.push(await translateExample(text, targetLanguage, undefined, sourceLanguage));
+    } catch {
+      results.push("");
+    }
+  }
+  return results;
 }
 
 const GRAMMAR_EXPLANATION_PROMPTS = {

@@ -162,6 +162,38 @@ async function translateWithDeepL(text: string, targetLanguage: string, sourceLa
   return data?.translations?.[0]?.text?.trim() || null;
 }
 
+async function translateWithDeepLBatch(texts: string[], targetLanguage: string, sourceLanguage = "nl") {
+  const apiKey = process.env.DEEPL_API_KEY;
+  if (!apiKey) return null;
+
+  const targetLang = DEEPL_TARGET_LANG[targetLanguage] ?? "EN-US";
+  const sourceLang = DEEPL_SOURCE_LANG[sourceLanguage] ?? "NL";
+  const apiHost = apiKey.endsWith(":fx") ? "api-free.deepl.com" : "api.deepl.com";
+
+  const params = new URLSearchParams();
+  for (const text of texts) params.append("text", text);
+  params.append("target_lang", targetLang);
+  params.append("source_lang", sourceLang);
+
+  const response = await fetch(`https://${apiHost}/v2/translate`, {
+    method: "POST",
+    headers: {
+      Authorization: `DeepL-Auth-Key ${apiKey}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: params.toString()
+  });
+
+  if (!response.ok) {
+    throw new Error(`DeepL request failed: ${response.status}`);
+  }
+
+  const data = (await response.json()) as { translations?: { text?: string }[] };
+  const translations = data?.translations;
+  if (!Array.isArray(translations)) return null;
+  return translations.map((entry) => entry?.text?.trim() ?? "");
+}
+
 async function callGemini(prompt: string, temperature: number, maxOutputTokens: number) {
   const apiKey = process.env.GEMINI_API_KEY;
   const model = process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite";
@@ -304,6 +336,25 @@ async function translateExample(sentence: string, targetLanguage: string, maxTok
     throw new Error("LLM returned an empty translation");
   }
   return translated;
+}
+
+async function translateBatch(texts: string[], targetLanguage: string, sourceLanguage = "nl") {
+  try {
+    const deeplTranslations = await translateWithDeepLBatch(texts, targetLanguage, sourceLanguage);
+    if (deeplTranslations) return deeplTranslations;
+  } catch (error) {
+    console.error("DeepL batch translation failed, falling back to Gemini one at a time:", error);
+  }
+
+  const results: string[] = [];
+  for (const text of texts) {
+    try {
+      results.push(await translateExample(text, targetLanguage, 80, sourceLanguage));
+    } catch {
+      results.push("");
+    }
+  }
+  return results;
 }
 
 async function generateLongNewsReading({
@@ -892,10 +943,25 @@ export default defineConfig(({ mode }) => {
 
           try {
             const body = await readJsonBody(request);
-            const sentence = String(body.sentence ?? "").trim();
             const targetLanguage = String(body.targetLanguage ?? "en").trim();
             const sourceLanguage = String(body.sourceLanguage ?? "nl").trim();
 
+            if (Array.isArray(body.sentences)) {
+              const sentences = (body.sentences as unknown[]).map((value) => String(value ?? "").trim());
+              if (!sentences.length || sentences.some((value) => !value)) {
+                response.statusCode = 400;
+                response.setHeader("Content-Type", "application/json; charset=utf-8");
+                response.end(JSON.stringify({ error: "Missing sentences" }));
+                return;
+              }
+
+              const translations = await translateBatch(sentences, targetLanguage, sourceLanguage);
+              response.setHeader("Content-Type", "application/json; charset=utf-8");
+              response.end(JSON.stringify({ translations }));
+              return;
+            }
+
+            const sentence = String(body.sentence ?? "").trim();
             if (!sentence) {
               response.statusCode = 400;
               response.setHeader("Content-Type", "application/json; charset=utf-8");

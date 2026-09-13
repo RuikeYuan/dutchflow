@@ -5694,7 +5694,7 @@ export default function App() {
   const [cardFlipOverrides, setCardFlipOverrides] = useState<Record<string, boolean>>({});
   const [cardMeaningLanguage, setCardMeaningLanguage] = useState<CardMeaningLanguage>("en");
   const [wordMeaningTranslations, setWordMeaningTranslations] = useState<Record<string, string>>({});
-  const [translatingMeaningKey, setTranslatingMeaningKey] = useState("");
+  const [translatingMeaningBatch, setTranslatingMeaningBatch] = useState(false);
   const meaningTranslationRequestsRef = useRef<Set<string>>(new Set());
   const [includeNotebookExampleGrammar, setIncludeNotebookExampleGrammar] = useState(false);
   const autoTranslationRequestsRef = useRef<Set<string>>(new Set());
@@ -6555,14 +6555,13 @@ export default function App() {
   function resolveCardMeaning(word: DutchWord, targetLanguage: CardMeaningLanguage): string {
     if (targetLanguage === "en") return word.translation;
     const key = `${word.sourceId}:${targetLanguage}`;
-    return wordMeaningTranslations[key] ?? (translatingMeaningKey === key ? t.translatingExample : t.noTranslation);
+    return wordMeaningTranslations[key] ?? (translatingMeaningBatch ? t.translatingExample : t.noTranslation);
   }
 
-  async function handleTranslateWordMeaning(word: DutchWord, targetLanguage: CardMeaningLanguage) {
-    if (targetLanguage === "en" || !apiAvailable) return;
+  async function handleTranslateWordMeaningBatch(batchWords: DutchWord[], targetLanguage: CardMeaningLanguage) {
+    if (targetLanguage === "en" || !apiAvailable || !batchWords.length) return;
 
-    const key = `${word.sourceId}:${targetLanguage}`;
-    setTranslatingMeaningKey(key);
+    setTranslatingMeaningBatch(true);
 
     try {
       const response = await fetch(apiUrl("/api/translate-example"), {
@@ -6572,45 +6571,55 @@ export default function App() {
           ...authHeaders()
         },
         body: JSON.stringify({
-          sentence: word.translation,
+          sentences: batchWords.map((word) => word.translation),
           targetLanguage,
           sourceLanguage: "en"
         })
       });
 
       if (!response.ok) {
-        throw new Error("Failed to translate word meaning");
+        throw new Error("Failed to translate word meanings");
       }
 
-      const data = (await response.json()) as { translation?: string };
-      const translation = data.translation?.trim();
-      if (!translation) {
-        throw new Error("Empty translation");
+      const data = (await response.json()) as { translations?: string[] };
+      const translations = data.translations;
+      if (!Array.isArray(translations)) {
+        throw new Error("Malformed batch translation response");
       }
 
-      setWordMeaningTranslations((current) => ({ ...current, [key]: translation }));
+      setWordMeaningTranslations((current) => {
+        const next = { ...current };
+        batchWords.forEach((word, index) => {
+          const translation = translations[index]?.trim();
+          if (translation) {
+            next[`${word.sourceId}:${targetLanguage}`] = translation;
+          }
+        });
+        return next;
+      });
     } catch {
-      // Leave it untranslated - the background prefetch loop just moves on to the next word.
+      // Leave this batch untranslated; already-marked keys won't be retried this session.
     } finally {
-      setTranslatingMeaningKey("");
+      setTranslatingMeaningBatch(false);
     }
   }
 
   useEffect(() => {
-    if (!apiAvailable || cardMeaningLanguage === "en" || translatingMeaningKey) return;
+    if (!apiAvailable || cardMeaningLanguage === "en" || translatingMeaningBatch) return;
 
     const candidates = mode === "study" && studyWord ? [studyWord] : visibleWords;
-    const nextWord = candidates.find((word) => {
+    const pending = candidates.filter((word) => {
       const key = `${word.sourceId}:${cardMeaningLanguage}`;
       return !wordMeaningTranslations[key] && !meaningTranslationRequestsRef.current.has(key);
     });
 
-    if (!nextWord) return;
+    if (!pending.length) return;
 
-    const key = `${nextWord.sourceId}:${cardMeaningLanguage}`;
-    meaningTranslationRequestsRef.current.add(key);
-    void handleTranslateWordMeaning(nextWord, cardMeaningLanguage);
-  }, [cardMeaningLanguage, mode, studyWord, translatingMeaningKey, visibleWords, wordMeaningTranslations]);
+    for (const word of pending) {
+      meaningTranslationRequestsRef.current.add(`${word.sourceId}:${cardMeaningLanguage}`);
+    }
+    void handleTranslateWordMeaningBatch(pending, cardMeaningLanguage);
+  }, [cardMeaningLanguage, mode, studyWord, translatingMeaningBatch, visibleWords, wordMeaningTranslations]);
 
   async function handleGenerateExample(word: DutchWord) {
     if (!apiAvailable) {
