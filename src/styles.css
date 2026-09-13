@@ -657,6 +657,47 @@ main {
   }
 }
 
+.profile-card {
+  display: grid;
+  gap: 14px;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.profile-detail {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.profile-actions .pricing-cta {
+  flex: 1 1 auto;
+  margin-top: 0;
+}
+
 .example-import {
   display: grid;
   gap: 6px;

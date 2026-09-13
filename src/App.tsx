@@ -55,7 +55,8 @@ type ViewMode =
   | "reading"
   | "podcast"
   | "method"
-  | "pricing";
+  | "pricing"
+  | "profile";
 type UiLanguage = "zh" | "en" | "nl" | "es" | "de";
 type ExampleTranslationLanguage = "zh" | "en" | "de";
 type CardMeaningLanguage = "en" | "zh";
@@ -85,6 +86,12 @@ type PremiumGate = {
   isPremium: boolean;
   authHeaders: () => Record<string, string>;
   requestPremium: () => void;
+};
+type ProfileRow = {
+  is_premium?: boolean;
+  subscription_status?: string | null;
+  current_period_end?: string | null;
+  trial_end?: string | null;
 };
 
 const words = frequencyWords as DutchWord[];
@@ -380,6 +387,16 @@ const translations: Record<
     pricingCheckoutCancelled: string;
     pricingTrialNote: string;
     premiumGateTitle: string;
+    modeProfile: string;
+    profileEmailLabel: string;
+    profileMembershipLabel: string;
+    profileStatusFree: string;
+    profileStatusActive: string;
+    profileStatusTrialing: string;
+    profileStatusPastDue: string;
+    profileStatusCanceled: string;
+    profileTrialEnds: (date: string) => string;
+    profileRenews: (date: string) => string;
     list: Record<string, string>;
     pos: Record<string, string>;
   }
@@ -637,6 +654,16 @@ const translations: Record<
     pricingCheckoutCancelled: "已取消订阅流程",
     pricingTrialNote: "首次订阅可享 7 天免费试用",
     premiumGateTitle: "这是会员专属内容",
+    modeProfile: "个人资料",
+    profileEmailLabel: "邮箱",
+    profileMembershipLabel: "会员状态",
+    profileStatusFree: "免费版",
+    profileStatusActive: "会员（有效）",
+    profileStatusTrialing: "会员（试用中）",
+    profileStatusPastDue: "会员（付款失败）",
+    profileStatusCanceled: "已取消",
+    profileTrialEnds: (date: string) => `试用期至 ${date}`,
+    profileRenews: (date: string) => `下次续订日期 ${date}`,
     list: {
       All: "全部",
       Core: "核心",
@@ -925,6 +952,16 @@ const translations: Record<
     pricingCheckoutCancelled: "Checkout was cancelled",
     pricingTrialNote: "First subscription includes a 7-day free trial",
     premiumGateTitle: "This is premium content",
+    modeProfile: "Profile",
+    profileEmailLabel: "Email",
+    profileMembershipLabel: "Membership",
+    profileStatusFree: "Free",
+    profileStatusActive: "Premium (active)",
+    profileStatusTrialing: "Premium (trial)",
+    profileStatusPastDue: "Premium (payment failed)",
+    profileStatusCanceled: "Cancelled",
+    profileTrialEnds: (date: string) => `Trial ends ${date}`,
+    profileRenews: (date: string) => `Renews on ${date}`,
     list: {
       All: "All",
       Core: "Core",
@@ -1214,6 +1251,16 @@ const translations: Record<
     pricingCheckoutCancelled: "Afrekenen geannuleerd",
     pricingTrialNote: "Eerste abonnement inclusief 7 dagen gratis proefperiode",
     premiumGateTitle: "Dit is premium-content",
+    modeProfile: "Profiel",
+    profileEmailLabel: "E-mail",
+    profileMembershipLabel: "Lidmaatschap",
+    profileStatusFree: "Gratis",
+    profileStatusActive: "Premium (actief)",
+    profileStatusTrialing: "Premium (proefperiode)",
+    profileStatusPastDue: "Premium (betaling mislukt)",
+    profileStatusCanceled: "Opgezegd",
+    profileTrialEnds: (date: string) => `Proefperiode eindigt op ${date}`,
+    profileRenews: (date: string) => `Verlengt op ${date}`,
     list: {
       All: "Alles",
       Core: "Kern",
@@ -1503,6 +1550,16 @@ const translations: Record<
     pricingCheckoutCancelled: "Pago cancelado",
     pricingTrialNote: "La primera suscripción incluye una prueba gratuita de 7 días",
     premiumGateTitle: "Esto es contenido premium",
+    modeProfile: "Perfil",
+    profileEmailLabel: "Correo",
+    profileMembershipLabel: "Membresía",
+    profileStatusFree: "Gratis",
+    profileStatusActive: "Premium (activa)",
+    profileStatusTrialing: "Premium (en prueba)",
+    profileStatusPastDue: "Premium (pago fallido)",
+    profileStatusCanceled: "Cancelada",
+    profileTrialEnds: (date: string) => `La prueba termina el ${date}`,
+    profileRenews: (date: string) => `Se renueva el ${date}`,
     list: {
       All: "Todo",
       Core: "Básico",
@@ -1792,6 +1849,16 @@ const translations: Record<
     pricingCheckoutCancelled: "Kasse abgebrochen",
     pricingTrialNote: "Das erste Abo enthält 7 Tage kostenlose Testphase",
     premiumGateTitle: "Das ist Premium-Inhalt",
+    modeProfile: "Profil",
+    profileEmailLabel: "E-Mail",
+    profileMembershipLabel: "Mitgliedschaft",
+    profileStatusFree: "Kostenlos",
+    profileStatusActive: "Premium (aktiv)",
+    profileStatusTrialing: "Premium (Testphase)",
+    profileStatusPastDue: "Premium (Zahlung fehlgeschlagen)",
+    profileStatusCanceled: "Gekündigt",
+    profileTrialEnds: (date: string) => `Testphase endet am ${date}`,
+    profileRenews: (date: string) => `Verlängert sich am ${date}`,
     list: {
       All: "Alle",
       Core: "Kern",
@@ -3561,6 +3628,139 @@ function MethodPage({ language }: { language: UiLanguage }) {
   );
 }
 
+function formatProfileDate(iso: string | null | undefined, locale: string) {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
+  } catch {
+    return iso;
+  }
+}
+
+const profileDateLocales: Record<UiLanguage, string> = {
+  zh: "zh-CN",
+  en: "en-US",
+  nl: "nl-NL",
+  es: "es-ES",
+  de: "de-DE"
+};
+
+function ProfilePage({
+  t,
+  language,
+  user,
+  isPremium,
+  subscriptionInfo,
+  authHeaders,
+  onRequireLogin,
+  onSignOut
+}: {
+  t: (typeof translations)[UiLanguage];
+  language: UiLanguage;
+  user: { id: string; email?: string } | null;
+  isPremium: boolean;
+  subscriptionInfo: ProfileRow | null;
+  authHeaders: () => Record<string, string>;
+  onRequireLogin: () => void;
+  onSignOut: () => void;
+}) {
+  const [subscribing, setSubscribing] = useState(false);
+  const [managing, setManaging] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  async function startBilling(action: "checkout" | "portal") {
+    if (!user) {
+      onRequireLogin();
+      return;
+    }
+
+    setErrorMessage("");
+    if (action === "checkout") setSubscribing(true);
+    else setManaging(true);
+
+    try {
+      const response = await fetch(apiUrl("/api/billing"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ action })
+      });
+      if (!response.ok) throw new Error("Billing request failed");
+      const data = (await response.json()) as { url?: string };
+      if (!data.url) throw new Error("No checkout URL");
+      window.location.href = data.url;
+    } catch {
+      setErrorMessage(t.pricingCheckoutError);
+      setSubscribing(false);
+      setManaging(false);
+    }
+  }
+
+  if (!user) {
+    return <AuthGateSection t={t} title={t.authSignInTitle} onSignIn={onRequireLogin} />;
+  }
+
+  const status = subscriptionInfo?.subscription_status ?? "";
+  const statusLabel =
+    status === "trialing"
+      ? t.profileStatusTrialing
+      : status === "past_due"
+        ? t.profileStatusPastDue
+        : status === "canceled" || status === "unpaid"
+          ? t.profileStatusCanceled
+          : isPremium
+            ? t.profileStatusActive
+            : t.profileStatusFree;
+  const locale = profileDateLocales[language];
+
+  return (
+    <section className="pricing-page">
+      <div className="pricing-hero">
+        <h2>{t.modeProfile}</h2>
+      </div>
+
+      <div className="profile-card">
+        <div className="profile-row">
+          <span className="profile-label">{t.profileEmailLabel}</span>
+          <span>{user.email}</span>
+        </div>
+        <div className="profile-row">
+          <span className="profile-label">{t.profileMembershipLabel}</span>
+          <span className={isPremium ? "auth-premium-badge" : "pricing-current-badge"}>{statusLabel}</span>
+        </div>
+        {status === "trialing" && subscriptionInfo?.trial_end ? (
+          <p className="profile-detail">{t.profileTrialEnds(formatProfileDate(subscriptionInfo.trial_end, locale))}</p>
+        ) : isPremium && subscriptionInfo?.current_period_end ? (
+          <p className="profile-detail">
+            {t.profileRenews(formatProfileDate(subscriptionInfo.current_period_end, locale))}
+          </p>
+        ) : null}
+
+        <div className="profile-actions">
+          {isPremium ? (
+            <button className="mini-button" type="button" onClick={() => startBilling("portal")} disabled={managing}>
+              {managing ? t.pricingManaging : t.pricingManageCta}
+            </button>
+          ) : (
+            <button
+              className="primary pricing-cta"
+              type="button"
+              onClick={() => startBilling("checkout")}
+              disabled={subscribing}
+            >
+              <Crown size={16} />
+              <span>{subscribing ? t.pricingSubscribing : t.pricingSubscribeCta}</span>
+            </button>
+          )}
+          <button className="mini-button" type="button" onClick={onSignOut}>
+            {t.authSignOut}
+          </button>
+        </div>
+        {errorMessage ? <p className="ai-status">{errorMessage}</p> : null}
+      </div>
+    </section>
+  );
+}
+
 function PricingPage({
   t,
   user,
@@ -5314,6 +5514,7 @@ function AuthModal({
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [isPremium, setIsPremium] = useState(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<ProfileRow | null>(null);
   const [authPrompt, setAuthPrompt] = useState<"login" | "premium" | null>(null);
   const [authEmail, setAuthEmail] = useState("");
   const [authStatusMessage, setAuthStatusMessage] = useState("");
@@ -5421,17 +5622,20 @@ export default function App() {
   useEffect(() => {
     if (!supabase || !user) {
       setIsPremium(false);
+      setSubscriptionInfo(null);
       return;
     }
 
     let active = true;
     supabase
       .from("profiles")
-      .select("is_premium")
+      .select("is_premium, subscription_status, current_period_end, trial_end")
       .eq("id", user.id)
       .single()
-      .then(({ data }: { data: { is_premium?: boolean } | null }) => {
-        if (active) setIsPremium(Boolean(data?.is_premium));
+      .then(({ data }: { data: ProfileRow | null }) => {
+        if (!active) return;
+        setIsPremium(Boolean(data?.is_premium));
+        setSubscriptionInfo(data ?? null);
       });
 
     return () => {
@@ -5450,8 +5654,9 @@ export default function App() {
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
-        (payload: { new: { is_premium?: boolean } }) => {
+        (payload: { new: ProfileRow }) => {
           setIsPremium(Boolean(payload.new?.is_premium));
+          setSubscriptionInfo(payload.new ?? null);
         }
       )
       .subscribe();
@@ -6469,6 +6674,10 @@ export default function App() {
               <Crown size={18} />
               <span>{t.modePricing}</span>
             </button>
+            <button className={mode === "profile" ? "active" : ""} onClick={() => setMode("profile")} title={t.modeProfile}>
+              <User size={18} />
+              <span>{t.modeProfile}</span>
+            </button>
           </nav>
 
           <div className="sidebar-utilities">
@@ -6643,6 +6852,17 @@ export default function App() {
           authHeaders={authHeaders}
           onRequireLogin={() => setAuthPrompt("login")}
           checkoutMessage={checkoutMessage}
+        />
+      ) : mode === "profile" ? (
+        <ProfilePage
+          t={t}
+          language={language}
+          user={user}
+          isPremium={isPremium}
+          subscriptionInfo={subscriptionInfo}
+          authHeaders={authHeaders}
+          onRequireLogin={() => setAuthPrompt("login")}
+          onSignOut={handleSignOut}
         />
       ) : mode === "grammar" ? (
         <GrammarGuidePage t={t} language={language} premiumGate={premiumGate} />
