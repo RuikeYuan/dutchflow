@@ -58,7 +58,7 @@ type ViewMode =
   | "pricing"
   | "profile";
 type UiLanguage = "zh" | "en" | "nl" | "es" | "de";
-type ExampleTranslationLanguage = "zh" | "en" | "de";
+type ExampleTranslationLanguage = UiLanguage;
 type CardMeaningLanguage = "en" | "zh";
 type SpeechLanguage = "zh-CN" | "en-US" | "nl-NL" | "es-ES" | "de-DE";
 type SpeechItem = { text: string; language: SpeechLanguage };
@@ -126,11 +126,6 @@ const listNames = ["All", "Core", "Fiction", "Newspapers", "Spoken", "Web", "Gen
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
 const apiAvailable = import.meta.env.DEV || import.meta.env.PROD || Boolean(apiBaseUrl);
 
-const exampleTranslationLanguages: Record<ExampleTranslationLanguage, string> = {
-  zh: "中文",
-  en: "English",
-  de: "Deutsch"
-};
 const defaultExampleTranslationLanguage: ExampleTranslationLanguage = "en";
 
 const languageNames: Record<UiLanguage, string> = {
@@ -140,6 +135,7 @@ const languageNames: Record<UiLanguage, string> = {
   es: "Español",
   de: "Deutsch"
 };
+const exampleTranslationLanguages: Record<ExampleTranslationLanguage, string> = languageNames;
 
 type LandingCopy = {
   navFeatures: string;
@@ -2807,15 +2803,10 @@ function RepeatPractice({
           <span>{explainingGrammar ? t.explainingGrammar : t.explainGrammar}</span>
         </button>
       </div>
-      {savedTranslations.en || translating === defaultExampleTranslationLanguage ? (
+      {savedTranslations[targetLanguage] || translating === targetLanguage ? (
         <p className="example-translation english-translation">
-          <strong>English:</strong>{" "}
-          {savedTranslations.en ?? (translating === defaultExampleTranslationLanguage ? t.translatingExample : "")}
-        </p>
-      ) : null}
-      {targetLanguage !== defaultExampleTranslationLanguage && savedTranslations[targetLanguage] ? (
-        <p className="example-translation">
-          <strong>{t.exampleTranslation}:</strong> {savedTranslations[targetLanguage]}
+          <strong>{t.exampleTranslation}:</strong>{" "}
+          {savedTranslations[targetLanguage] ?? (translating === targetLanguage ? t.translatingExample : "")}
         </p>
       ) : null}
       {grammarExplanation ? (
@@ -6525,6 +6516,8 @@ export default function App() {
     return {
       zh: exampleTranslations[`${sentenceKey}:zh`],
       en: exampleTranslations[`${sentenceKey}:en`],
+      nl: exampleTranslations[`${sentenceKey}:nl`],
+      es: exampleTranslations[`${sentenceKey}:es`],
       de: exampleTranslations[`${sentenceKey}:de`]
     };
   }
@@ -6532,8 +6525,8 @@ export default function App() {
   function translatingLanguageFor(sentenceKey: string): ExampleTranslationLanguage | "" {
     const languageCode = translatingKey.slice(sentenceKey.length + 1);
     return translatingKey.startsWith(`${sentenceKey}:`) &&
-      (languageCode === "zh" || languageCode === "en" || languageCode === "de")
-      ? languageCode
+      Object.prototype.hasOwnProperty.call(languageNames, languageCode)
+      ? (languageCode as ExampleTranslationLanguage)
       : "";
   }
 
