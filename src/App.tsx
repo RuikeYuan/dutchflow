@@ -252,7 +252,6 @@ const translations: Record<
     includeInAutoPlay: string;
     excludeFromAutoPlay: string;
     resetAutoPlaySelection: string;
-    selectFictionTop20AutoPlay: string;
     addToNotebook: string;
     removeFromNotebook: string;
     noTranslation: string;
@@ -513,7 +512,6 @@ const translations: Record<
     includeInAutoPlay: "已加入自动播放，点击可跳过此词",
     excludeFromAutoPlay: "已跳过此词，点击可加入自动播放",
     resetAutoPlaySelection: "全部朗读",
-    selectFictionTop20AutoPlay: "只选 Fiction 前20",
     addToNotebook: "加入单词本",
     removeFromNotebook: "从单词本移除",
     noTranslation: "暂无释义",
@@ -805,7 +803,6 @@ const translations: Record<
     includeInAutoPlay: "Included in auto-play. Click to skip this word",
     excludeFromAutoPlay: "Skipped in auto-play. Click to include this word",
     resetAutoPlaySelection: "Read all",
-    selectFictionTop20AutoPlay: "Only Fiction top 20",
     addToNotebook: "Add to notebook",
     removeFromNotebook: "Remove from notebook",
     noTranslation: "No translation",
@@ -1104,7 +1101,6 @@ const translations: Record<
     includeInAutoPlay: "Wordt automatisch afgespeeld. Klik om dit woord over te slaan",
     excludeFromAutoPlay: "Wordt overgeslagen. Klik om dit woord toe te voegen",
     resetAutoPlaySelection: "Alles voorlezen",
-    selectFictionTop20AutoPlay: "Alleen Fiction top 20",
     addToNotebook: "Toevoegen aan woordenlijst",
     removeFromNotebook: "Verwijderen uit woordenlijst",
     noTranslation: "Geen vertaling",
@@ -1403,7 +1399,6 @@ const translations: Record<
     includeInAutoPlay: "Incluido en la reproducción automática. Haz clic para omitir esta palabra",
     excludeFromAutoPlay: "Omitida en la reproducción automática. Haz clic para incluir esta palabra",
     resetAutoPlaySelection: "Leer todo",
-    selectFictionTop20AutoPlay: "Solo Fiction top 20",
     addToNotebook: "Añadir al cuaderno",
     removeFromNotebook: "Quitar del cuaderno",
     noTranslation: "Sin traducción",
@@ -1702,7 +1697,6 @@ const translations: Record<
     includeInAutoPlay: "Wird automatisch abgespielt. Klicken, um dieses Wort zu überspringen",
     excludeFromAutoPlay: "Wird übersprungen. Klicken, um dieses Wort einzuschließen",
     resetAutoPlaySelection: "Alles vorlesen",
-    selectFictionTop20AutoPlay: "Nur Fiction Top 20",
     addToNotebook: "Zur Wortliste hinzufügen",
     removeFromNotebook: "Aus Wortliste entfernen",
     noTranslation: "Keine Übersetzung",
@@ -6222,13 +6216,6 @@ export default function App() {
     });
   }
 
-  function selectOnlyFictionTop20ForAutoPlay() {
-    const keepIds = new Set(
-      words.filter((word) => word.list === "Fiction" && word.rank <= 20).map((word) => word.sourceId)
-    );
-    setAutoPlayMutedIds(new Set(words.filter((word) => !keepIds.has(word.sourceId)).map((word) => word.sourceId)));
-  }
-
   function toggleAllCards() {
     setCardsFlipped((value) => !value);
     setCardFlipOverrides({});
@@ -7056,15 +7043,6 @@ export default function App() {
                     <span>{t.resetAutoPlaySelection}</span>
                   </button>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={selectOnlyFictionTop20ForAutoPlay}
-                  disabled={autoPlayingNotebook}
-                  title={t.selectFictionTop20AutoPlay}
-                >
-                  <CheckSquare size={16} />
-                  <span>{t.selectFictionTop20AutoPlay}</span>
-                </button>
               </div>
             ) : null}
             {mode === "notebook" && savedIds.size > 0 ? (
