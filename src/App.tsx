@@ -6711,6 +6711,7 @@ export default function App() {
         </aside>
 
         <div className="content-area">
+          {mode === "browse" || mode === "notebook" ? (
           <header className="content-topbar">
             <div className="content-topbar-row">
               <div className="stats">
@@ -6770,46 +6771,43 @@ export default function App() {
                 </button>
               </form>
 
-              {mode !== "method" && mode !== "speaking" && mode !== "grammar" && mode !== "reading" && mode !== "podcast" ? (
-                <div className="card-controls" aria-label={t.cardControlsLabel}>
-                  <button
-                    className={cardsFlipped ? "active" : ""}
-                    type="button"
-                    onClick={toggleAllCards}
-                    title={t.flipAllCardsTitle}
+              <div className="card-controls" aria-label={t.cardControlsLabel}>
+                <button
+                  className={cardsFlipped ? "active" : ""}
+                  type="button"
+                  onClick={toggleAllCards}
+                  title={t.flipAllCardsTitle}
+                >
+                  <RotateCcw size={16} />
+                  <span>{cardsFlipped ? t.cardShowMeaning : t.cardShowDutch}</span>
+                </button>
+                <label>
+                  <span>{t.cardBackLabel}</span>
+                  <select
+                    value={cardMeaningLanguage}
+                    onChange={(event) => setCardMeaningLanguage(event.target.value as CardMeaningLanguage)}
                   >
-                    <RotateCcw size={16} />
-                    <span>{cardsFlipped ? t.cardShowMeaning : t.cardShowDutch}</span>
-                  </button>
-                  <label>
-                    <span>{t.cardBackLabel}</span>
-                    <select
-                      value={cardMeaningLanguage}
-                      onChange={(event) => setCardMeaningLanguage(event.target.value as CardMeaningLanguage)}
-                    >
-                      <option value="en">English</option>
-                      <option value="zh">中文</option>
-                    </select>
-                  </label>
-                </div>
-              ) : null}
+                    <option value="en">English</option>
+                    <option value="zh">中文</option>
+                  </select>
+                </label>
+              </div>
             </div>
 
-            {mode !== "method" && mode !== "speaking" && mode !== "grammar" && mode !== "reading" && mode !== "podcast" ? (
-              <div className="filters" aria-label={t.filtersLabel}>
-                <Filter size={17} />
-                {listNames.map((name) => (
-                  <button
-                    key={name}
-                    className={selectedList === name ? "active" : ""}
-                    onClick={() => setSelectedList(name)}
-                  >
-                    {t.list[name] ?? name}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+            <div className="filters" aria-label={t.filtersLabel}>
+              <Filter size={17} />
+              {listNames.map((name) => (
+                <button
+                  key={name}
+                  className={selectedList === name ? "active" : ""}
+                  onClick={() => setSelectedList(name)}
+                >
+                  {t.list[name] ?? name}
+                </button>
+              ))}
+            </div>
           </header>
+          ) : null}
 
       {(mode === "notebook" || mode === "study") && !user ? (
         <AuthGateSection
