@@ -2561,7 +2561,14 @@ async function speakText(text: string) {
   }
   utterance.rate = 0.9;
   utterance.pitch = 1;
-  window.speechSynthesis.cancel();
+  // Chrome/Edge (Windows SAPI voices especially) can silently cut an
+  // utterance short if speak() fires in the same tick as cancel() - the
+  // previous utterance's teardown hasn't finished. A short delay lets it
+  // settle before the new one starts.
+  if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+    window.speechSynthesis.cancel();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
   window.speechSynthesis.speak(utterance);
 }
 
