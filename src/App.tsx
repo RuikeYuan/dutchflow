@@ -3161,13 +3161,6 @@ function WordCard({
       </div>
       {!flipped ? (
         <>
-          <div className="ai-example-row">
-            <button className="mini-button" type="button" onClick={() => onGenerateExample(item)} disabled={generating}>
-              <Sparkles size={15} />
-              <span>{generating ? t.generatingExample : t.generateExample}</span>
-            </button>
-            {generationMessage ? <span className="ai-status">{generationMessage}</span> : null}
-          </div>
           <RepeatPractice
             sentenceKey={sentenceKey}
             sentence={sentence}
@@ -7396,21 +7389,6 @@ export default function App() {
                   onExplainGrammar={handleExplainGrammar}
                   t={t}
                 />
-
-                <div className="ai-example-row study-ai-row">
-                  <button
-                    className="mini-button"
-                    type="button"
-                    onClick={() => handleGenerateExample(studyWord)}
-                    disabled={generatingId === studyWord.sourceId}
-                  >
-                    <Sparkles size={15} />
-                    <span>{generatingId === studyWord.sourceId ? t.generatingExample : t.generateExample}</span>
-                  </button>
-                  {generationMessages[studyWord.sourceId] ? (
-                    <span className="ai-status">{generationMessages[studyWord.sourceId]}</span>
-                  ) : null}
-                </div>
               </>
             ) : null}
 
