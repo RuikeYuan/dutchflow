@@ -402,6 +402,37 @@ export async function generatePodcastDialogue({ headline, summary, sourceName, l
   return turns;
 }
 
+export async function generatePodcastQuiz(turns, level = "A2-B1") {
+  const dialogueText = turns.map((turn) => `${turn.speaker}: ${turn.text}`).join("\n");
+  const systemPrompt =
+    "You write short reading-comprehension quizzes in Simplified Chinese for Dutch-language learners, based on a Dutch dialogue they just read.";
+  const userPrompt = [
+    `Dutch podcast dialogue (level ${level}):`,
+    dialogueText,
+    "",
+    "Write 2 multiple-choice comprehension questions in Simplified Chinese about this dialogue, each with exactly 4 options in Simplified Chinese.",
+    "Exactly one option per question is correct.",
+    'Return strict JSON only, an array like: [{"question":"...","options":["...","...","...","..."],"correctIndex":0}, ...]',
+    "No markdown, no extra text outside the JSON array."
+  ].join("\n");
+
+  const raw = await callLlm(systemPrompt, userPrompt, 0.4, 500);
+  const rawQuestions = parseJsonArray(raw);
+  const quiz = rawQuestions
+    .map((item) => {
+      const options = Array.isArray(item?.options) ? item.options.map((option) => sanitizeExample(String(option ?? ""))) : [];
+      const correctIndex = Number(item?.correctIndex);
+      return {
+        question: sanitizeExample(String(item?.question ?? "")),
+        options,
+        correctIndex: Number.isInteger(correctIndex) && correctIndex >= 0 && correctIndex < options.length ? correctIndex : 0
+      };
+    })
+    .filter((item) => item.question && item.options.length === 4);
+
+  return quiz;
+}
+
 export async function translateExample(sentence, targetLanguage, maxTokens, sourceLanguage = "nl") {
   try {
     const deeplTranslation = await translateWithDeepL(sentence, targetLanguage, sourceLanguage);

@@ -257,6 +257,9 @@ const translations: Record<
     modePodcast: string;
     podcastTitle: string;
     podcastSubtitle: string;
+    podcastSpeed: string;
+    podcastQuizTitle: string;
+    podcastQuizUnavailable: string;
     podcastLoading: string;
     podcastFailed: string;
     podcastEmpty: string;
@@ -526,6 +529,9 @@ const translations: Record<
     modePodcast: "播客",
     podcastTitle: "荷兰语播客",
     podcastSubtitle: "AI 根据当天新闻话题生成的原创荷兰语对话，两位虚拟主播用简单荷兰语聊天，配中文文字稿和语法讲解。",
+    podcastSpeed: "语速",
+    podcastQuizTitle: "听力理解小测",
+    podcastQuizUnavailable: "理解小测暂时只支持中文",
     podcastLoading: "正在加载播客…",
     podcastFailed: "加载播客失败，请稍后重试。",
     podcastEmpty: "暂时没有播客内容，请稍后再来看看。",
@@ -828,6 +834,9 @@ const translations: Record<
     modePodcast: "Podcast",
     podcastTitle: "Dutch Podcast",
     podcastSubtitle: "Original Dutch dialogues generated from today's news, performed by two virtual hosts in simple Dutch, with a Chinese transcript and grammar notes.",
+    podcastSpeed: "Speed",
+    podcastQuizTitle: "Comprehension quiz",
+    podcastQuizUnavailable: "The comprehension quiz is only available in Chinese for now",
     podcastLoading: "Loading podcast...",
     podcastFailed: "Failed to load podcast episodes. Please try again later.",
     podcastEmpty: "No podcast episodes yet. Check back later.",
@@ -1138,6 +1147,9 @@ const translations: Record<
     modePodcast: "Podcast",
     podcastTitle: "Nederlandse Podcast",
     podcastSubtitle: "Originele Nederlandse dialogen geïnspireerd op het nieuws van vandaag, gesproken door twee virtuele presentatoren in eenvoudig Nederlands, met Chinees transcript en grammatica-uitleg.",
+    podcastSpeed: "Snelheid",
+    podcastQuizTitle: "Luistertoets",
+    podcastQuizUnavailable: "De luistertoets is voorlopig alleen in het Chinees beschikbaar",
     podcastLoading: "Podcast laden...",
     podcastFailed: "Laden van podcast mislukt. Probeer het later opnieuw.",
     podcastEmpty: "Nog geen podcastafleveringen. Kom later terug.",
@@ -1448,6 +1460,9 @@ const translations: Record<
     modePodcast: "Podcast",
     podcastTitle: "Podcast en Neerlandés",
     podcastSubtitle: "Diálogos originales en neerlandés inspirados en las noticias de hoy, interpretados por dos presentadores virtuales en neerlandés sencillo, con transcripción en chino y notas de gramática.",
+    podcastSpeed: "Velocidad",
+    podcastQuizTitle: "Cuestionario de comprensión",
+    podcastQuizUnavailable: "El cuestionario solo está disponible en chino por ahora",
     podcastLoading: "Cargando podcast...",
     podcastFailed: "No se pudieron cargar los episodios. Inténtalo de nuevo más tarde.",
     podcastEmpty: "Todavía no hay episodios. Vuelve más tarde.",
@@ -1758,6 +1773,9 @@ const translations: Record<
     modePodcast: "Podcast",
     podcastTitle: "Niederländischer Podcast",
     podcastSubtitle: "Originelle niederländische Dialoge, inspiriert von aktuellen Nachrichten, gesprochen von zwei virtuellen Moderatoren in einfachem Niederländisch, mit chinesischem Transkript und Grammatikerklärung.",
+    podcastSpeed: "Geschwindigkeit",
+    podcastQuizTitle: "Verständnisquiz",
+    podcastQuizUnavailable: "Das Quiz ist vorerst nur auf Chinesisch verfügbar",
     podcastLoading: "Podcast wird geladen...",
     podcastFailed: "Laden der Podcast-Folgen fehlgeschlagen. Bitte später erneut versuchen.",
     podcastEmpty: "Noch keine Podcast-Folgen. Schau später wieder vorbei.",
@@ -2963,9 +2981,17 @@ function RepeatPractice({
   );
 }
 
-function InteractiveSentence({ sentence, t }: { sentence: string; t: (typeof translations)[UiLanguage] }) {
+function InteractiveSentence({
+  sentence,
+  t,
+  className
+}: {
+  sentence: string;
+  t: (typeof translations)[UiLanguage];
+  className?: string;
+}) {
   return (
-    <p className="example-sentence interactive-sentence">
+    <p className={`example-sentence interactive-sentence ${className ?? ""}`.trim()}>
       {tokenizeSentence(sentence).map((token, index) => {
         const word = findWordInfo(token);
         if (!word || !/\p{L}/u.test(token)) {
@@ -5139,6 +5165,7 @@ function ReadingLongText({
 }
 
 type PodcastTurn = { speaker: "A" | "B"; text: string; translation: string };
+type PodcastQuizQuestion = { question: string; options: string[]; correctIndex: number };
 type PodcastEpisode = {
   id: string;
   sourceName: string;
@@ -5147,6 +5174,7 @@ type PodcastEpisode = {
   level: string;
   turns: PodcastTurn[];
   explanation: string;
+  quiz?: PodcastQuizQuestion[];
 };
 
 function getDutchVoicePair(voices: SpeechSynthesisVoice[]) {
@@ -5156,7 +5184,9 @@ function getDutchVoicePair(voices: SpeechSynthesisVoice[]) {
   return [dutchVoices[0], dutchVoices[1] ?? dutchVoices[0]] as const;
 }
 
-async function createPodcastUtterance(text: string, speaker: "A" | "B") {
+const podcastPlaybackRates = [0.75, 0.9, 1, 1.25] as const;
+
+async function createPodcastUtterance(text: string, speaker: "A" | "B", rate: number) {
   const voices = await ensureVoicesLoaded();
   const [voiceA, voiceB] = getDutchVoicePair(voices);
   const voice = speaker === "B" ? voiceB : voiceA;
@@ -5169,7 +5199,7 @@ async function createPodcastUtterance(text: string, speaker: "A" | "B") {
     utterance.lang = "nl-NL";
   }
 
-  utterance.rate = 0.92;
+  utterance.rate = rate;
   utterance.pitch = speaker === "B" && voiceA === voiceB ? 1.25 : 1;
   return utterance;
 }
@@ -5208,6 +5238,10 @@ function PodcastPage({
   const [playingTurnIndex, setPlayingTurnIndex] = useState(-1);
   const [autoPlayingGenres, setAutoPlayingGenres] = useState(false);
   const [autoPlayingGenreKey, setAutoPlayingGenreKey] = useState<ReadingGenre | null>(null);
+  const [rate, setRate] = useState<(typeof podcastPlaybackRates)[number]>(0.9);
+  const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
+  const rateRef = useRef(rate);
+  rateRef.current = rate;
   const playTokenRef = useRef(0);
   const autoPlayingRef = useRef(false);
 
@@ -5355,7 +5389,7 @@ function PodcastPage({
     }
 
     setPlayingTurnIndex(index);
-    const utterance = await createPodcastUtterance(turn.text, turn.speaker);
+    const utterance = await createPodcastUtterance(turn.text, turn.speaker, rateRef.current);
     if (token !== playTokenRef.current) return;
 
     utterance.onend = () => {
@@ -5406,7 +5440,7 @@ function PodcastPage({
     }
 
     setPlayingTurnIndex(index);
-    const utterance = await createPodcastUtterance(turn.text, turn.speaker);
+    const utterance = await createPodcastUtterance(turn.text, turn.speaker, rateRef.current);
     if (token !== playTokenRef.current) return;
 
     utterance.onend = () => {
@@ -5526,6 +5560,19 @@ function PodcastPage({
             {t.autoPlayingGenre(readingGenres.find((item) => item.key === autoPlayingGenreKey)?.labels[language] ?? "")}
           </span>
         ) : null}
+        <label className="podcast-rate-control">
+          <span>{t.podcastSpeed}</span>
+          <select
+            value={rate}
+            onChange={(event) => setRate(Number(event.target.value) as (typeof podcastPlaybackRates)[number])}
+          >
+            {podcastPlaybackRates.map((rateOption) => (
+              <option key={rateOption} value={rateOption}>
+                {rateOption}x
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {loading ? (
@@ -5572,7 +5619,7 @@ function PodcastPage({
                     >
                       <span className="podcast-speaker">{turn.speaker}</span>
                       <div>
-                        <p className="podcast-turn-text">{turn.text}</p>
+                        <InteractiveSentence sentence={turn.text} t={t} className="podcast-turn-text" />
                         <p className="podcast-turn-translation">
                           {language === "zh"
                             ? turn.translation
@@ -5592,6 +5639,51 @@ function PodcastPage({
                         <p key={`${episode.id}-explain-${index}`}>{line}</p>
                       ))}
                   </div>
+                  {episode.quiz && episode.quiz.length > 0 ? (
+                    language === "zh" ? (
+                      <div className="podcast-quiz">
+                        <strong>{t.podcastQuizTitle}</strong>
+                        {episode.quiz.map((question, qIndex) => {
+                          const answerKey = `${episode.id}:${qIndex}`;
+                          const selected = quizAnswers[answerKey];
+                          return (
+                            <div className="podcast-quiz-question" key={answerKey}>
+                              <p>{question.question}</p>
+                              <div className="podcast-quiz-options">
+                                {question.options.map((option, optionIndex) => {
+                                  const isSelected = selected === optionIndex;
+                                  const isCorrect = optionIndex === question.correctIndex;
+                                  const state =
+                                    selected === undefined
+                                      ? ""
+                                      : isCorrect
+                                        ? "correct"
+                                        : isSelected
+                                          ? "incorrect"
+                                          : "";
+                                  return (
+                                    <button
+                                      key={optionIndex}
+                                      type="button"
+                                      className={`podcast-quiz-option ${state}`}
+                                      disabled={selected !== undefined}
+                                      onClick={() =>
+                                        setQuizAnswers((current) => ({ ...current, [answerKey]: optionIndex }))
+                                      }
+                                    >
+                                      {option}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="recognized muted">{t.podcastQuizUnavailable}</p>
+                    )
+                  ) : null}
                 </div>
               ) : null}
             </article>

@@ -2,9 +2,9 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { put } from "@vercel/blob";
+import { get, put } from "@vercel/blob";
 
-import { generatePodcastDialogue, explainExample } from "../api/_lib/ai.js";
+import { generatePodcastDialogue, generatePodcastQuiz, explainExample } from "../api/_lib/ai.js";
 import { GENRES, fetchGenreTopics, loadEnvLocal } from "./_lib/news-feeds.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -18,9 +18,29 @@ function blobPathnameFor(genreKey) {
     : `podcast/${genreKey}.json`;
 }
 
-const EPISODES_TARGET_PER_FEED = Number(process.env.PODCAST_ITEMS_PER_FEED ?? 1);
+const EPISODES_TARGET_PER_FEED = Number(process.env.PODCAST_ITEMS_PER_FEED ?? 3);
 const RAW_ITEMS_PER_FEED = Number(process.env.PODCAST_RAW_ITEMS_PER_FEED ?? 15);
 const LEVEL = process.env.PODCAST_LEVEL ?? "A2-B1";
+const EPISODE_POOL_CAP = Number(process.env.PODCAST_POOL_CAP ?? 30);
+const dateStamp = new Date().toISOString().slice(0, 10);
+
+async function fetchExistingEpisodes(genreKey) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) return [];
+
+  const result = await get(blobPathnameFor(genreKey), { access: "private" }).catch(() => null);
+  if (!result || result.statusCode !== 200) return [];
+
+  const data = await new Response(result.stream).json();
+  return Array.isArray(data.episodes) ? data.episodes : [];
+}
+
+function mergeEpisodes(existing, fresh, cap) {
+  const byId = new Map(existing.map((episode) => [episode.id, episode]));
+  for (const episode of fresh) {
+    byId.set(episode.id, episode);
+  }
+  return Array.from(byId.values()).slice(-cap);
+}
 
 async function generateGenre(genre) {
   const topics = await fetchGenreTopics(genre, {
@@ -47,15 +67,21 @@ async function generateGenre(genre) {
       });
       const fullDutchText = turns.map((turn) => turn.text).join(" ");
       const explanation = await explainExample(fullDutchText, "zh", 420);
+      const quiz = await generatePodcastQuiz(turns, LEVEL).catch((error) => {
+        console.error(`  quiz generation failed (episode kept without quiz): ${error.message}`);
+        return [];
+      });
 
       results.push({
-        id: `${genre.key}-${topic.sourceName.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${results.length}`,
+        id: `${genre.key}-${topic.sourceName.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${dateStamp}-${results.length}`,
         sourceName: topic.sourceName,
         sourceHeadline: topic.headline,
         sourceLink: topic.link,
         level: LEVEL,
         turns,
-        explanation
+        explanation,
+        quiz,
+        generatedAt: dateStamp
       });
     } catch (error) {
       console.error(`  failed: ${error.message}`);
@@ -75,15 +101,18 @@ async function main() {
 
   const outDir = join(rootDir, "data", "podcast");
   mkdirSync(outDir, { recursive: true });
-  const dateStamp = new Date().toISOString().slice(0, 10);
 
   for (const genre of genresToRun) {
-    const results = await generateGenre(genre);
-    const payload = JSON.stringify({ genre: genre.key, level: LEVEL, episodes: results }, null, 2);
+    const freshEpisodes = await generateGenre(genre);
+    const existingEpisodes = await fetchExistingEpisodes(genre.key);
+    const episodes = mergeEpisodes(existingEpisodes, freshEpisodes, EPISODE_POOL_CAP);
+    const payload = JSON.stringify({ genre: genre.key, level: LEVEL, episodes }, null, 2);
 
     const outPath = join(outDir, `output-${genre.key}-${dateStamp}.json`);
     writeFileSync(outPath, payload, "utf8");
-    console.log(`Wrote ${results.length} episodes for [${genre.key}] to ${outPath}`);
+    console.log(
+      `Wrote ${freshEpisodes.length} new + ${existingEpisodes.length} existing -> ${episodes.length} episodes for [${genre.key}] to ${outPath}`
+    );
 
     if (process.env.BLOB_READ_WRITE_TOKEN) {
       const pathname = blobPathnameFor(genre.key);
