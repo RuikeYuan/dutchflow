@@ -2856,6 +2856,54 @@ a.reading-source-link:hover {
   border-color: var(--teal);
 }
 
+.mini-button.recording {
+  border-color: #dc2626;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.pronunciation-score {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+.pronunciation-subscores {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.pronunciation-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.pronunciation-word {
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.pronunciation-word.good {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.pronunciation-word.fair {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.pronunciation-word.poor {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
 .ai-example-row {
   display: flex;
   align-items: center;

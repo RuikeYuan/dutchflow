@@ -318,6 +318,14 @@ const translations: Record<
     exampleSentence: string;
     playSentence: string;
     speechUnsupported: string;
+    pronunciationRecord: string;
+    pronunciationStop: string;
+    pronunciationAssessing: string;
+    pronunciationOverallScore: string;
+    pronunciationAccuracy: string;
+    pronunciationFluency: string;
+    pronunciationCompleteness: string;
+    pronunciationAssessFailed: string;
     examplesReady: (count: number) => string;
     examplesLoading: string;
     examplesImportFailed: string;
@@ -590,6 +598,14 @@ const translations: Record<
     speakingError: "AI 口语陪练暂时不可用，请检查 Gemini 配置",
     exampleSentence: "例句跟读",
     playSentence: "播放例句",
+    pronunciationRecord: "跟读打分",
+    pronunciationStop: "停止录音",
+    pronunciationAssessing: "评分中...",
+    pronunciationOverallScore: "总分",
+    pronunciationAccuracy: "准确度",
+    pronunciationFluency: "流利度",
+    pronunciationCompleteness: "完整度",
+    pronunciationAssessFailed: "发音评分失败，请检查麦克风权限或稍后重试",
     speechUnsupported: "当前浏览器不支持语音识别",
     examplesReady: (count) => `已导入 ${count} 条书中例句`,
     examplesLoading: "正在从本地 EPUB 读取书中例句...",
@@ -895,6 +911,14 @@ const translations: Record<
     speakingError: "AI speaking practice is unavailable. Check Gemini config",
     exampleSentence: "Sentence shadowing",
     playSentence: "Play sentence",
+    pronunciationRecord: "Record & score",
+    pronunciationStop: "Stop recording",
+    pronunciationAssessing: "Scoring...",
+    pronunciationOverallScore: "Overall",
+    pronunciationAccuracy: "Accuracy",
+    pronunciationFluency: "Fluency",
+    pronunciationCompleteness: "Completeness",
+    pronunciationAssessFailed: "Pronunciation scoring failed - check mic permission or try again",
     speechUnsupported: "Speech recognition is not supported in this browser",
     examplesReady: (count) => `${count} book examples imported`,
     examplesLoading: "Reading book examples from the local EPUB...",
@@ -1208,6 +1232,14 @@ const translations: Record<
     speakingError: "AI-spreekpartner is niet beschikbaar. Controleer Gemini-configuratie",
     exampleSentence: "Zin nazeggen",
     playSentence: "Zin afspelen",
+    pronunciationRecord: "Opnemen & scoren",
+    pronunciationStop: "Stop opname",
+    pronunciationAssessing: "Beoordelen...",
+    pronunciationOverallScore: "Totaal",
+    pronunciationAccuracy: "Nauwkeurigheid",
+    pronunciationFluency: "Vloeiendheid",
+    pronunciationCompleteness: "Volledigheid",
+    pronunciationAssessFailed: "Uitspraakbeoordeling mislukt - controleer microfoonrechten of probeer opnieuw",
     speechUnsupported: "Spraakherkenning wordt niet ondersteund in deze browser",
     examplesReady: (count) => `${count} voorbeeldzinnen geïmporteerd`,
     examplesLoading: "Voorbeeldzinnen uit de lokale EPUB lezen...",
@@ -1521,6 +1553,14 @@ const translations: Record<
     speakingError: "La práctica oral con IA no está disponible. Revisa Gemini",
     exampleSentence: "Repetir una frase",
     playSentence: "Reproducir frase",
+    pronunciationRecord: "Grabar y puntuar",
+    pronunciationStop: "Detener grabación",
+    pronunciationAssessing: "Evaluando...",
+    pronunciationOverallScore: "Total",
+    pronunciationAccuracy: "Precisión",
+    pronunciationFluency: "Fluidez",
+    pronunciationCompleteness: "Integridad",
+    pronunciationAssessFailed: "Error al evaluar la pronunciación - revisa el permiso del micrófono o inténtalo de nuevo",
     speechUnsupported: "Este navegador no admite reconocimiento de voz",
     examplesReady: (count) => `${count} ejemplos importados`,
     examplesLoading: "Leyendo ejemplos desde el EPUB local...",
@@ -1834,6 +1874,14 @@ const translations: Record<
     speakingError: "KI-Sprachtraining ist nicht verfügbar. Prüfe Gemini",
     exampleSentence: "Satz nachsprechen",
     playSentence: "Satz abspielen",
+    pronunciationRecord: "Aufnehmen & bewerten",
+    pronunciationStop: "Aufnahme stoppen",
+    pronunciationAssessing: "Wird bewertet...",
+    pronunciationOverallScore: "Gesamt",
+    pronunciationAccuracy: "Genauigkeit",
+    pronunciationFluency: "Flüssigkeit",
+    pronunciationCompleteness: "Vollständigkeit",
+    pronunciationAssessFailed: "Aussprachebewertung fehlgeschlagen - Mikrofonzugriff prüfen oder erneut versuchen",
     speechUnsupported: "Dieser Browser unterstützt keine Spracherkennung",
     examplesReady: (count) => `${count} Beispielsätze importiert`,
     examplesLoading: "Beispiele aus der lokalen EPUB werden gelesen...",
@@ -2900,6 +2948,92 @@ function findWordInfo(token: string) {
   return undefined;
 }
 
+type PronunciationAssessment = {
+  accuracyScore: number;
+  fluencyScore: number;
+  completenessScore: number;
+  pronScore: number;
+  words: { word: string; accuracyScore: number; errorType: string }[];
+};
+
+type RecordingController = { stop: () => void; result: Promise<Blob> };
+
+function startWavRecording(stream: MediaStream, maxMs = 10000): RecordingController {
+  const recorder = new MediaRecorder(stream);
+  const chunks: BlobPart[] = [];
+  recorder.ondataavailable = (event) => {
+    if (event.data.size) chunks.push(event.data);
+  };
+  const result = new Promise<Blob>((resolve) => {
+    recorder.onstop = () => resolve(new Blob(chunks, { type: recorder.mimeType }));
+  });
+  recorder.start();
+  const timeout = window.setTimeout(() => {
+    if (recorder.state !== "inactive") recorder.stop();
+  }, maxMs);
+  return {
+    stop: () => {
+      window.clearTimeout(timeout);
+      if (recorder.state !== "inactive") recorder.stop();
+    },
+    result
+  };
+}
+
+function pcmToWavBlob(samples: Float32Array, sampleRate: number): Blob {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+
+  function writeString(offset: number, text: string) {
+    for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i));
+  }
+
+  writeString(0, "RIFF");
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeString(36, "data");
+  view.setUint32(40, samples.length * 2, true);
+
+  let offset = 44;
+  for (let i = 0; i < samples.length; i++, offset += 2) {
+    const clamped = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
+  }
+
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+async function encodeTo16kMonoWav(recordedBlob: Blob): Promise<Blob> {
+  const arrayBuffer = await recordedBlob.arrayBuffer();
+  const AudioContextClass = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  const audioContext = new AudioContextClass();
+  const decoded = await audioContext.decodeAudioData(arrayBuffer);
+
+  const targetSampleRate = 16000;
+  const offlineContext = new OfflineAudioContext(1, Math.ceil(decoded.duration * targetSampleRate), targetSampleRate);
+  const source = offlineContext.createBufferSource();
+  source.buffer = decoded;
+  source.connect(offlineContext.destination);
+  source.start();
+  const rendered = await offlineContext.startRendering();
+
+  return pcmToWavBlob(rendered.getChannelData(0), targetSampleRate);
+}
+
+function pronunciationScoreTone(score: number) {
+  if (score >= 80) return "good";
+  if (score >= 60) return "fair";
+  return "poor";
+}
+
 function RepeatPractice({
   sentenceKey,
   sentence,
@@ -2910,6 +3044,10 @@ function RepeatPractice({
   translationMessage,
   onTranslate,
   onExplainGrammar,
+  onAssessPronunciation,
+  assessing,
+  assessment,
+  assessmentMessage,
   t
 }: {
   sentenceKey: string;
@@ -2921,9 +3059,47 @@ function RepeatPractice({
   translationMessage?: string;
   onTranslate: (sentenceKey: string, sentence: string, targetLanguage: ExampleTranslationLanguage) => void;
   onExplainGrammar: (sentenceKey: string, sentence: string) => void;
+  onAssessPronunciation: (sentenceKey: string, sentence: string, wavBlob: Blob) => void;
+  assessing: boolean;
+  assessment?: PronunciationAssessment;
+  assessmentMessage?: string;
   t: (typeof translations)[UiLanguage];
 }) {
   const [targetLanguage, setTargetLanguage] = useState<ExampleTranslationLanguage>(defaultExampleTranslationLanguage);
+  const [recording, setRecording] = useState(false);
+  const recordingControllerRef = useRef<RecordingController | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  async function toggleRecording() {
+    if (recording) {
+      recordingControllerRef.current?.stop();
+      return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      onAssessPronunciation(sentenceKey, sentence, new Blob());
+      return;
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => null);
+    if (!stream) return;
+
+    streamRef.current = stream;
+    const controller = startWavRecording(stream);
+    recordingControllerRef.current = controller;
+    setRecording(true);
+
+    const recordedBlob = await controller.result;
+    stream.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    recordingControllerRef.current = null;
+    setRecording(false);
+
+    if (recordedBlob.size > 0) {
+      const wavBlob = await encodeTo16kMonoWav(recordedBlob);
+      onAssessPronunciation(sentenceKey, sentence, wavBlob);
+    }
+  }
 
   return (
     <div className="repeat-box">
@@ -2933,8 +3109,32 @@ function RepeatPractice({
           <Volume2 size={15} />
           <span>{t.playSentence}</span>
         </button>
+        <button className={`mini-button ${recording ? "recording" : ""}`} type="button" onClick={() => void toggleRecording()}>
+          <Mic size={15} />
+          <span>{recording ? t.pronunciationStop : t.pronunciationRecord}</span>
+        </button>
       </div>
       <InteractiveSentence sentence={sentence} t={t} />
+      {assessing ? <p className="recognized muted">{t.pronunciationAssessing}</p> : null}
+      {assessment ? (
+        <div className="pronunciation-score">
+          <strong>
+            {t.pronunciationOverallScore}: {Math.round(assessment.pronScore)}
+          </strong>
+          <span className="pronunciation-subscores">
+            {t.pronunciationAccuracy} {Math.round(assessment.accuracyScore)} · {t.pronunciationFluency}{" "}
+            {Math.round(assessment.fluencyScore)} · {t.pronunciationCompleteness} {Math.round(assessment.completenessScore)}
+          </span>
+          <div className="pronunciation-words">
+            {assessment.words.map((word, index) => (
+              <span key={`${word.word}-${index}`} className={`pronunciation-word ${pronunciationScoreTone(word.accuracyScore)}`}>
+                {word.word}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {assessmentMessage ? <p className="recognized muted">{assessmentMessage}</p> : null}
       <div className="translation-tools">
         <select
           value={targetLanguage}
@@ -3034,6 +3234,10 @@ function WordCard({
   translationMessage,
   onTranslateExample,
   onExplainGrammar,
+  onAssessPronunciation,
+  assessingPronunciation,
+  pronunciationAssessment,
+  assessmentMessage,
   wordAnswers,
   askingWord,
   wordAnswerMessage,
@@ -3058,6 +3262,10 @@ function WordCard({
   translationMessage?: string;
   onTranslateExample: (sentenceKey: string, sentence: string, targetLanguage: ExampleTranslationLanguage) => void;
   onExplainGrammar: (sentenceKey: string, sentence: string) => void;
+  onAssessPronunciation: (sentenceKey: string, sentence: string, wavBlob: Blob) => void;
+  assessingPronunciation: boolean;
+  pronunciationAssessment?: PronunciationAssessment;
+  assessmentMessage?: string;
   wordAnswers: WordAnswerTurn[];
   askingWord: boolean;
   wordAnswerMessage?: string;
@@ -3151,6 +3359,10 @@ function WordCard({
             translationMessage={translationMessage}
             onTranslate={onTranslateExample}
             onExplainGrammar={onExplainGrammar}
+            onAssessPronunciation={onAssessPronunciation}
+            assessing={assessingPronunciation}
+            assessment={pronunciationAssessment}
+            assessmentMessage={assessmentMessage}
             t={t}
           />
           <div className="word-qa">
@@ -5950,6 +6162,9 @@ export default function App() {
   const [askingWordId, setAskingWordId] = useState("");
   const [translationMessages, setTranslationMessages] = useState<Record<string, string>>({});
   const [wordAnswerMessages, setWordAnswerMessages] = useState<Record<string, string>>({});
+  const [assessingKey, setAssessingKey] = useState("");
+  const [assessmentMessages, setAssessmentMessages] = useState<Record<string, string>>({});
+  const [pronunciationAssessments, setPronunciationAssessments] = useState<Record<string, PronunciationAssessment>>({});
   const [examplesLoading, setExamplesLoading] = useState(true);
   const [examplesFailed, setExamplesFailed] = useState(false);
   const [visibleLimit, setVisibleLimit] = useState(180);
@@ -6997,6 +7212,40 @@ export default function App() {
     }
   }
 
+  async function handleAssessPronunciation(sentenceKey: string, sentence: string, wavBlob: Blob) {
+    if (!ensurePremiumAccess()) return;
+    if (!apiAvailable || wavBlob.size === 0) {
+      setAssessmentMessages((current) => ({ ...current, [sentenceKey]: t.pronunciationAssessFailed }));
+      return;
+    }
+
+    setAssessingKey(sentenceKey);
+    setAssessmentMessages((current) => ({ ...current, [sentenceKey]: "" }));
+
+    try {
+      const response = await fetch(apiUrl("/api/pronunciation-assess"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "audio/wav",
+          "X-Reference-Text": encodeURIComponent(sentence),
+          ...authHeaders()
+        },
+        body: wavBlob
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to assess pronunciation");
+      }
+
+      const data = (await response.json()) as PronunciationAssessment;
+      setPronunciationAssessments((current) => ({ ...current, [sentenceKey]: data }));
+    } catch {
+      setAssessmentMessages((current) => ({ ...current, [sentenceKey]: t.pronunciationAssessFailed }));
+    } finally {
+      setAssessingKey("");
+    }
+  }
+
   async function handleAskWord(word: DutchWord, sentence: string, question: string) {
     if (!apiAvailable) {
       setWordAnswerMessages((current) => ({ ...current, [word.sourceId]: t.wordAnswerFailed }));
@@ -7372,6 +7621,10 @@ export default function App() {
                   translationMessage={translationMessages[studySentenceKey]}
                   onTranslate={handleTranslateExample}
                   onExplainGrammar={handleExplainGrammar}
+                  onAssessPronunciation={handleAssessPronunciation}
+                  assessing={assessingKey === studySentenceKey}
+                  assessment={pronunciationAssessments[studySentenceKey]}
+                  assessmentMessage={assessmentMessages[studySentenceKey]}
                   t={t}
                 />
               </>
@@ -7550,6 +7803,10 @@ export default function App() {
                       translationMessage={translationMessages[sentenceKey]}
                       onTranslateExample={handleTranslateExample}
                       onExplainGrammar={handleExplainGrammar}
+                      onAssessPronunciation={handleAssessPronunciation}
+                      assessingPronunciation={assessingKey === sentenceKey}
+                      pronunciationAssessment={pronunciationAssessments[sentenceKey]}
+                      assessmentMessage={assessmentMessages[sentenceKey]}
                       wordAnswers={wordAnswers[word.sourceId] ?? []}
                       askingWord={askingWordId === word.sourceId}
                       wordAnswerMessage={wordAnswerMessages[word.sourceId]}

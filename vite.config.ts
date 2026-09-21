@@ -96,6 +96,68 @@ function readJsonBody(request: IncomingMessage) {
   });
 }
 
+function readRawBody(request: IncomingMessage) {
+  return new Promise<Buffer>((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    request.on("data", (chunk) => chunks.push(chunk));
+    request.on("end", () => resolve(Buffer.concat(chunks)));
+    request.on("error", reject);
+  });
+}
+
+async function assessPronunciation(wavBuffer: Buffer, referenceText: string) {
+  const azureKey = process.env.AZURE_SPEECH_KEY;
+  const azureRegion = process.env.AZURE_SPEECH_REGION;
+  if (!azureKey || !azureRegion) {
+    throw new Error("Azure Speech is not configured (missing AZURE_SPEECH_KEY/AZURE_SPEECH_REGION)");
+  }
+
+  const assessmentConfig = Buffer.from(
+    JSON.stringify({
+      ReferenceText: referenceText,
+      GradingSystem: "HundredMark",
+      Granularity: "Phoneme",
+      Dimension: "Comprehensive"
+    })
+  ).toString("base64");
+
+  const response = await fetch(
+    `https://${azureRegion}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=nl-NL`,
+    {
+      method: "POST",
+      headers: {
+        "Ocp-Apim-Subscription-Key": azureKey,
+        "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=16000",
+        "Pronunciation-Assessment": assessmentConfig,
+        Accept: "application/json"
+      },
+      body: wavBuffer
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Azure Speech request failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const best = data.NBest?.[0];
+  if (!best) {
+    throw new Error("Azure Speech returned no recognition result");
+  }
+
+  return {
+    accuracyScore: best.PronunciationAssessment?.AccuracyScore ?? 0,
+    fluencyScore: best.PronunciationAssessment?.FluencyScore ?? 0,
+    completenessScore: best.PronunciationAssessment?.CompletenessScore ?? 0,
+    pronScore: best.PronunciationAssessment?.PronScore ?? 0,
+    words: (best.Words ?? []).map((word: any) => ({
+      word: word.Word,
+      accuracyScore: word.PronunciationAssessment?.AccuracyScore ?? 0,
+      errorType: word.PronunciationAssessment?.ErrorType ?? "None"
+    }))
+  };
+}
+
 function sanitizeExample(value: string) {
   return value
     .replace(/^["'“”‘’]+|["'“”‘’]+$/g, "")
@@ -1158,6 +1220,43 @@ export default defineConfig(({ mode }) => {
             response.statusCode = 500;
             response.setHeader("Content-Type", "application/json; charset=utf-8");
             response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Failed to practice speaking" }));
+          }
+        });
+
+        server.middlewares.use("/api/pronunciation-assess", async (request, response) => {
+          if (request.method !== "POST") {
+            response.statusCode = 405;
+            response.end("Method not allowed");
+            return;
+          }
+          if (!(await requirePremiumDev(request, response))) return;
+
+          const referenceTextHeader = String(request.headers["x-reference-text"] ?? "").trim();
+          if (!referenceTextHeader) {
+            response.statusCode = 400;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify({ error: "Missing X-Reference-Text header" }));
+            return;
+          }
+
+          try {
+            const wavBuffer = await readRawBody(request);
+            if (!wavBuffer.length) {
+              response.statusCode = 400;
+              response.setHeader("Content-Type", "application/json; charset=utf-8");
+              response.end(JSON.stringify({ error: "Missing audio body" }));
+              return;
+            }
+
+            const assessment = await assessPronunciation(wavBuffer, decodeURIComponent(referenceTextHeader));
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify(assessment));
+          } catch (error) {
+            response.statusCode = 500;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(
+              JSON.stringify({ error: error instanceof Error ? error.message : "Failed to assess pronunciation" })
+            );
           }
         });
       }

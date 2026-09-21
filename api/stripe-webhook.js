@@ -1,4 +1,4 @@
-import { fail, ok } from "./_lib/ai.js";
+import { fail, ok, readRawBody } from "./_lib/ai.js";
 
 export const config = { api: { bodyParser: false } };
 
@@ -31,17 +31,6 @@ function subscriptionFields(subscription) {
     current_period_end: toIso(periodEndOf(subscription)),
     trial_end: toIso(subscription.trial_end)
   };
-}
-
-function readRawBody(request) {
-  return new Promise((resolve, reject) => {
-    let body = "";
-    request.on("data", (chunk) => {
-      body += chunk;
-    });
-    request.on("end", () => resolve(body));
-    request.on("error", reject);
-  });
 }
 
 async function verifyStripeSignature(payload, header, secret) {
@@ -86,7 +75,7 @@ export default async function handler(request, response) {
   }
 
   try {
-    const rawBody = await readRawBody(request);
+    const rawBody = (await readRawBody(request)).toString("utf8");
     const signatureHeader = request.headers["stripe-signature"];
 
     if (!STRIPE_WEBHOOK_SECRET || !signatureHeader || typeof signatureHeader !== "string") {

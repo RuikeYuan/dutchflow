@@ -826,3 +826,70 @@ export async function getSpeakingReply(scenario, turns) {
     feedback
   };
 }
+
+export function readRawBody(request) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    request.on("data", (chunk) => chunks.push(chunk));
+    request.on("end", () => resolve(Buffer.concat(chunks)));
+    request.on("error", reject);
+  });
+}
+
+const AZURE_SPEECH_KEY = process.env.AZURE_SPEECH_KEY;
+const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION;
+
+export function azureSpeechConfigured() {
+  return Boolean(AZURE_SPEECH_KEY && AZURE_SPEECH_REGION);
+}
+
+export async function assessPronunciation(wavBuffer, referenceText) {
+  if (!azureSpeechConfigured()) {
+    throw new Error("Azure Speech is not configured (missing AZURE_SPEECH_KEY/AZURE_SPEECH_REGION)");
+  }
+
+  const assessmentConfig = Buffer.from(
+    JSON.stringify({
+      ReferenceText: referenceText,
+      GradingSystem: "HundredMark",
+      Granularity: "Phoneme",
+      Dimension: "Comprehensive"
+    })
+  ).toString("base64");
+
+  const response = await fetch(
+    `https://${AZURE_SPEECH_REGION}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=nl-NL`,
+    {
+      method: "POST",
+      headers: {
+        "Ocp-Apim-Subscription-Key": AZURE_SPEECH_KEY,
+        "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=16000",
+        "Pronunciation-Assessment": assessmentConfig,
+        Accept: "application/json"
+      },
+      body: wavBuffer
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Azure Speech request failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const best = data.NBest?.[0];
+  if (!best) {
+    throw new Error("Azure Speech returned no recognition result");
+  }
+
+  return {
+    accuracyScore: best.PronunciationAssessment?.AccuracyScore ?? 0,
+    fluencyScore: best.PronunciationAssessment?.FluencyScore ?? 0,
+    completenessScore: best.PronunciationAssessment?.CompletenessScore ?? 0,
+    pronScore: best.PronunciationAssessment?.PronScore ?? 0,
+    words: (best.Words ?? []).map((word) => ({
+      word: word.Word,
+      accuracyScore: word.PronunciationAssessment?.AccuracyScore ?? 0,
+      errorType: word.PronunciationAssessment?.ErrorType ?? "None"
+    }))
+  };
+}
