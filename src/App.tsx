@@ -285,6 +285,7 @@ const translations: Record<
     hideAnswer: string;
     random: string;
     studyQueue: string;
+    studyJumpPlaceholder: string;
     reset: string;
     reviewAgain: string;
     reviewHard: string;
@@ -554,6 +555,7 @@ const translations: Record<
     hideAnswer: "隐藏答案",
     random: "随机",
     studyQueue: "练习队列",
+    studyJumpPlaceholder: "输入序号或单词跳转",
     reset: "重置",
     reviewAgain: "不认识",
     reviewHard: "模糊",
@@ -855,6 +857,7 @@ const translations: Record<
     hideAnswer: "Hide answer",
     random: "Random",
     studyQueue: "Study queue",
+    studyJumpPlaceholder: "Rank number or word",
     reset: "Reset",
     reviewAgain: "Again",
     reviewHard: "Hard",
@@ -1164,6 +1167,7 @@ const translations: Record<
     hideAnswer: "Antwoord verbergen",
     random: "Willekeurig",
     studyQueue: "Oefenrij",
+    studyJumpPlaceholder: "Rangnummer of woord",
     reset: "Resetten",
     reviewAgain: "Opnieuw",
     reviewHard: "Moeilijk",
@@ -1473,6 +1477,7 @@ const translations: Record<
     hideAnswer: "Ocultar respuesta",
     random: "Aleatorio",
     studyQueue: "Cola de práctica",
+    studyJumpPlaceholder: "Número o palabra",
     reset: "Restablecer",
     reviewAgain: "No lo sé",
     reviewHard: "Difícil",
@@ -1782,6 +1787,7 @@ const translations: Record<
     hideAnswer: "Antwort verbergen",
     random: "Zufällig",
     studyQueue: "Übungsreihe",
+    studyJumpPlaceholder: "Rangnummer oder Wort",
     reset: "Zurücksetzen",
     reviewAgain: "Nochmal",
     reviewHard: "Schwer",
@@ -5850,6 +5856,7 @@ export default function App() {
   const [examplesFailed, setExamplesFailed] = useState(false);
   const [visibleLimit, setVisibleLimit] = useState(180);
   const [studyIndex, setStudyIndex] = useState(0);
+  const [studyJumpValue, setStudyJumpValue] = useState("");
   const [revealed, setRevealed] = useState(false);
   const [cardsFlipped, setCardsFlipped] = useState(false);
   const [cardFlipOverrides, setCardFlipOverrides] = useState<Record<string, boolean>>({});
@@ -6660,6 +6667,22 @@ export default function App() {
     setStudyIndex((current) => getRandomIndex(studyWords.length, current));
   }
 
+  function jumpToStudyWord() {
+    const trimmed = studyJumpValue.trim();
+    if (!trimmed) return;
+
+    const rankNumber = /^\d+$/.test(trimmed) ? Number(trimmed) : null;
+    const needle = normalize(trimmed);
+    const targetIndex = studyWords.findIndex((word) =>
+      rankNumber !== null ? word.rank === rankNumber : normalize(word.word) === needle
+    );
+    if (targetIndex === -1) return;
+
+    setStudyIndex(targetIndex);
+    setRevealed(false);
+    setStudyJumpValue("");
+  }
+
   function rateStudyWord(rating: StudyRating) {
     if (!studyWord) return;
     const reviewedAt = Date.now();
@@ -7299,6 +7322,24 @@ export default function App() {
                 <RotateCcw size={16} />
               </button>
             </div>
+            <form
+              className="jump-box"
+              onSubmit={(event) => {
+                event.preventDefault();
+                jumpToStudyWord();
+              }}
+            >
+              <input
+                type="text"
+                value={studyJumpValue}
+                onChange={(event) => setStudyJumpValue(event.target.value)}
+                placeholder={t.studyJumpPlaceholder}
+              />
+              <button type="submit" disabled={!studyJumpValue.trim()}>
+                <ChevronRight size={16} />
+                <span>{t.jumpToRankButton}</span>
+              </button>
+            </form>
             <div className="queue-list">
               {studyWords.slice(0, 12).map((word, index) => (
                 <button
