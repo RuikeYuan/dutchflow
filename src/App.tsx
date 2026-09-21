@@ -14,7 +14,6 @@ import {
   Pause,
   Play,
   Podcast,
-  RefreshCw,
   RotateCcw,
   Search,
   Shuffle,
@@ -32,7 +31,7 @@ import {
   type GrammarPart
 } from "./data/grammarGuide";
 import frequencyWords from "./data/frequencyWords.json";
-import { authAvailable, supabase, type Session } from "./lib/supabaseClient";
+import { supabase, type Session } from "./lib/supabaseClient";
 
 type DutchWord = {
   rank: number;
@@ -76,7 +75,6 @@ type SyncPayload = {
   wordAnswers: Record<string, WordAnswerTurn[]>;
   studyProgress: Record<string, StudyProgress>;
 };
-type SyncStatus = "idle" | "syncing" | "synced" | "error";
 type GrammarNodeEntry = {
   node: GrammarNode;
   path: GrammarNode[];
@@ -315,10 +313,6 @@ const translations: Record<
     examplesLoading: string;
     examplesImportFailed: string;
     examplesOffline: string;
-    generateExample: string;
-    generatingExample: string;
-    generatedExampleSaved: string;
-    generationFailed: string;
     translateExample: string;
     translatingExample: string;
     translationFailed: string;
@@ -588,10 +582,6 @@ const translations: Record<
     examplesLoading: "正在从本地 EPUB 读取书中例句...",
     examplesImportFailed: "读取书中例句失败，请确认 EPUB 文件路径存在",
     examplesOffline: "离线例句模式",
-    generateExample: "AI 添加例句",
-    generatingExample: "生成中...",
-    generatedExampleSaved: "AI 例句已保存",
-    generationFailed: "AI 例句生成失败，请检查 LLM 配置",
     translateExample: "翻译例句",
     translatingExample: "翻译中...",
     translationFailed: "翻译失败，请检查 LLM 配置",
@@ -893,10 +883,6 @@ const translations: Record<
     examplesLoading: "Reading book examples from the local EPUB...",
     examplesImportFailed: "Could not read book examples. Check the EPUB path",
     examplesOffline: "Offline example mode",
-    generateExample: "Add AI example",
-    generatingExample: "Generating...",
-    generatedExampleSaved: "AI example saved",
-    generationFailed: "Could not generate an AI example. Check the LLM config",
     translateExample: "Translate example",
     translatingExample: "Translating...",
     translationFailed: "Could not translate. Check the LLM config",
@@ -1206,10 +1192,6 @@ const translations: Record<
     examplesLoading: "Voorbeeldzinnen uit de lokale EPUB lezen...",
     examplesImportFailed: "Voorbeeldzinnen konden niet worden gelezen. Controleer het EPUB-pad",
     examplesOffline: "Offline voorbeeldmodus",
-    generateExample: "AI-zin toevoegen",
-    generatingExample: "Genereren...",
-    generatedExampleSaved: "AI-zin opgeslagen",
-    generationFailed: "AI-zin kon niet worden gegenereerd. Controleer de LLM-configuratie",
     translateExample: "Zin vertalen",
     translatingExample: "Vertalen...",
     translationFailed: "Vertaling mislukt. Controleer de LLM-configuratie",
@@ -1519,10 +1501,6 @@ const translations: Record<
     examplesLoading: "Leyendo ejemplos desde el EPUB local...",
     examplesImportFailed: "No se pudieron leer los ejemplos. Revisa la ruta del EPUB",
     examplesOffline: "Modo de ejemplos sin conexión",
-    generateExample: "Añadir ejemplo con IA",
-    generatingExample: "Generando...",
-    generatedExampleSaved: "Ejemplo de IA guardado",
-    generationFailed: "No se pudo generar el ejemplo. Revisa la configuración del LLM",
     translateExample: "Traducir ejemplo",
     translatingExample: "Traduciendo...",
     translationFailed: "No se pudo traducir. Revisa la configuración del LLM",
@@ -1832,10 +1810,6 @@ const translations: Record<
     examplesLoading: "Beispiele aus der lokalen EPUB werden gelesen...",
     examplesImportFailed: "Beispiele konnten nicht gelesen werden. Prüfe den EPUB-Pfad",
     examplesOffline: "Offline-Beispielmodus",
-    generateExample: "KI-Beispiel hinzufügen",
-    generatingExample: "Wird generiert...",
-    generatedExampleSaved: "KI-Beispiel gespeichert",
-    generationFailed: "KI-Beispiel konnte nicht erzeugt werden. Prüfe die LLM-Konfiguration",
     translateExample: "Beispiel übersetzen",
     translatingExample: "Wird übersetzt...",
     translationFailed: "Übersetzung fehlgeschlagen. Prüfe die LLM-Konfiguration",
@@ -2606,32 +2580,6 @@ function notebookSpeechItems(wordsToPlay: DutchWord[]): SpeechItem[] {
   });
 }
 
-function grammarExplanationSpeechItems(explanation: string): SpeechItem[] {
-  const items: SpeechItem[] = [];
-  const markerPattern = /\[\[nl:([\s\S]*?)\]\]/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = markerPattern.exec(explanation))) {
-    const englishText = explanation.slice(lastIndex, match.index).trim();
-    const dutchText = match[1]?.trim();
-    if (englishText) {
-      items.push({ text: englishText, language: "en-US" });
-    }
-    if (dutchText) {
-      items.push({ text: dutchText, language: "nl-NL" });
-    }
-    lastIndex = markerPattern.lastIndex;
-  }
-
-  const remainingText = explanation.slice(lastIndex).trim();
-  if (remainingText) {
-    items.push({ text: remainingText, language: "en-US" });
-  }
-
-  return items.length ? items : [{ text: explanation, language: "en-US" as const }];
-}
-
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -3041,7 +2989,6 @@ function WordCard({
   onToggle,
   autoPlayMuted,
   onToggleAutoPlayMuted,
-  onGenerateExample,
   sentence,
   exampleTranslations,
   grammarExplanation,
@@ -3054,8 +3001,6 @@ function WordCard({
   askingWord,
   wordAnswerMessage,
   onAskWord,
-  generating,
-  generationMessage,
   flipped,
   cardMeaningLanguage,
   meaning,
@@ -3068,7 +3013,6 @@ function WordCard({
   onToggle: (id: string) => void;
   autoPlayMuted: boolean;
   onToggleAutoPlayMuted: (id: string) => void;
-  onGenerateExample: (word: DutchWord) => void;
   sentence: string;
   exampleTranslations: Partial<Record<ExampleTranslationLanguage, string>>;
   grammarExplanation?: string;
@@ -3081,8 +3025,6 @@ function WordCard({
   askingWord: boolean;
   wordAnswerMessage?: string;
   onAskWord: (word: DutchWord, sentence: string, question: string) => void;
-  generating: boolean;
-  generationMessage?: string;
   flipped: boolean;
   cardMeaningLanguage: CardMeaningLanguage;
   meaning: string;
@@ -4861,10 +4803,6 @@ function DailyReadingPage({
     }
   }
 
-  function toggleLongReading(id: string) {
-    setLongReadingVisible((current) => ({ ...current, [id]: !current[id] }));
-  }
-
   function toggleLongReadingTranslation(id: string) {
     setLongReadingTranslationVisible((current) => ({ ...current, [id]: !current[id] }));
   }
@@ -5891,7 +5829,6 @@ export default function App() {
   const [spokenGrammar, setSpokenGrammar] = useState<Record<string, string>>(getSavedSpokenGrammar);
   const [wordAnswers, setWordAnswers] = useState<Record<string, WordAnswerTurn[]>>(getSavedWordAnswers);
   const [studyProgress, setStudyProgress] = useState<Record<string, StudyProgress>>(getSavedStudyProgress);
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const syncReadyRef = useRef(false);
   const syncPushTimerRef = useRef<number | undefined>(undefined);
   const syncPayloadRef = useRef<SyncPayload>({
@@ -5904,11 +5841,9 @@ export default function App() {
     wordAnswers: {},
     studyProgress: {}
   });
-  const [generatingId, setGeneratingId] = useState("");
   const [translatingKey, setTranslatingKey] = useState("");
   const [explainingGrammarKey, setExplainingGrammarKey] = useState("");
   const [askingWordId, setAskingWordId] = useState("");
-  const [generationMessages, setGenerationMessages] = useState<Record<string, string>>({});
   const [translationMessages, setTranslationMessages] = useState<Record<string, string>>({});
   const [wordAnswerMessages, setWordAnswerMessages] = useState<Record<string, string>>({});
   const [examplesLoading, setExamplesLoading] = useState(true);
@@ -6091,14 +6026,6 @@ export default function App() {
     const token = session?.access_token;
     return token ? { Authorization: `Bearer ${token}` } : {};
   }, [session]);
-
-  function ensureLoggedIn(): boolean {
-    if (!user) {
-      setAuthPrompt("login");
-      return false;
-    }
-    return true;
-  }
 
   function ensurePremiumAccess(): boolean {
     if (!user) {
@@ -6298,9 +6225,9 @@ export default function App() {
         applySyncPayload(remote.payload);
         localStorage.setItem(syncUpdatedAtStorageKey, String(remote.updatedAt ?? 0));
       }
-      setSyncStatus("synced");
     } catch {
-      setSyncStatus("error");
+      // Sync is best-effort; a failed pull just means we try again on the
+      // next focus/interval/realtime trigger.
     }
   }
 
@@ -6314,7 +6241,6 @@ export default function App() {
 
     let active = true;
     syncReadyRef.current = false;
-    setSyncStatus("syncing");
 
     (async () => {
       await runPull();
@@ -6335,7 +6261,6 @@ export default function App() {
 
     function pullIfReady() {
       if (!syncReadyRef.current) return;
-      setSyncStatus("syncing");
       void runPull();
     }
 
@@ -6369,7 +6294,6 @@ export default function App() {
         { event: "*", schema: "public", table: "sync_data", filter: `user_id=eq.${user.id}` },
         () => {
           if (!syncReadyRef.current) return;
-          setSyncStatus("syncing");
           void runPull();
         }
       )
@@ -6391,10 +6315,9 @@ export default function App() {
     }
 
     syncPushTimerRef.current = window.setTimeout(() => {
-      setSyncStatus("syncing");
-      pushSync()
-        .then(() => setSyncStatus("synced"))
-        .catch(() => setSyncStatus("error"));
+      pushSync().catch(() => {
+        // Best-effort; the periodic sweep below retries.
+      });
     }, 2000);
 
     return () => {
@@ -6414,10 +6337,9 @@ export default function App() {
 
     const interval = window.setInterval(() => {
       if (!syncReadyRef.current) return;
-      setSyncStatus("syncing");
-      pushSync()
-        .then(() => setSyncStatus("synced"))
-        .catch(() => setSyncStatus("error"));
+      pushSync().catch(() => {
+        // Best-effort; the next sweep retries.
+      });
     }, 30000);
 
     return () => window.clearInterval(interval);
@@ -6866,67 +6788,6 @@ export default function App() {
     }
     void handleTranslateWordMeaningBatch(pending, cardMeaningLanguage);
   }, [cardMeaningLanguage, mode, studyWord, translatingMeaningBatch, visibleWords, wordMeaningTranslations]);
-
-  async function handleGenerateExample(word: DutchWord) {
-    if (!apiAvailable) {
-      setGenerationMessages((current) => ({ ...current, [word.sourceId]: t.generationFailed }));
-      return;
-    }
-    if (!ensurePremiumAccess()) return;
-
-    setGeneratingId(word.sourceId);
-    setGenerationMessages((current) => ({ ...current, [word.sourceId]: "" }));
-
-    try {
-      const response = await fetch(apiUrl("/api/generate-example"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...authHeaders()
-        },
-        body: JSON.stringify({
-          word: word.word,
-          translation: word.translation,
-          partOfSpeech: word.partOfSpeech
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate example");
-      }
-
-      const data = (await response.json()) as { example?: string };
-      const example = data.example?.trim();
-      if (!example) {
-        throw new Error("Empty example");
-      }
-
-      setGeneratedExamples((current) => ({ ...current, [word.sourceId]: example }));
-      setExampleTranslations((current) => {
-        const next = { ...current };
-        for (const key of Object.keys(next)) {
-          if (key === word.sourceId || key.startsWith(`${word.sourceId}:`)) {
-            delete next[key];
-          }
-        }
-        return next;
-      });
-      setExampleGrammar((current) => {
-        const next = { ...current };
-        for (const key of Object.keys(next)) {
-          if (key === word.sourceId || key.startsWith(`${word.sourceId}:`)) {
-            delete next[key];
-          }
-        }
-        return next;
-      });
-      setGenerationMessages((current) => ({ ...current, [word.sourceId]: t.generatedExampleSaved }));
-    } catch {
-      setGenerationMessages((current) => ({ ...current, [word.sourceId]: t.generationFailed }));
-    } finally {
-      setGeneratingId("");
-    }
-  }
 
   async function handleTranslateExample(
     sentenceKey: string,
@@ -7539,7 +7400,6 @@ export default function App() {
                       onToggle={toggleSaved}
                       autoPlayMuted={autoPlayMutedIds.has(word.sourceId)}
                       onToggleAutoPlayMuted={toggleAutoPlayMuted}
-                      onGenerateExample={handleGenerateExample}
                       sentence={sentence}
                       exampleTranslations={translationsFor(sentenceKey)}
                       grammarExplanation={exampleGrammar[`${sentenceKey}:${language}`]}
@@ -7552,8 +7412,6 @@ export default function App() {
                       askingWord={askingWordId === word.sourceId}
                       wordAnswerMessage={wordAnswerMessages[word.sourceId]}
                       onAskWord={handleAskWord}
-                      generating={generatingId === word.sourceId}
-                      generationMessage={generationMessages[word.sourceId]}
                       flipped={isCardFlipped(word.sourceId)}
                       cardMeaningLanguage={cardMeaningLanguage}
                       meaning={resolveCardMeaning(word, cardMeaningLanguage)}

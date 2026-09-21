@@ -286,19 +286,6 @@ async function callLlm(systemPrompt, userPrompt, temperature, maxTokens) {
       );
 }
 
-export async function generateExample(word, translation, partOfSpeech) {
-  const systemPrompt =
-    "You create short, natural Dutch example sentences for language learners. Return only one Dutch sentence, no explanation.";
-  const userPrompt = `Word: ${word}\nPart of speech: ${partOfSpeech}\nEnglish meaning: ${translation}\nCreate one simple A1-A2 Dutch sentence using this exact word or its natural inflected form.`;
-  const example = await callLlm(systemPrompt, userPrompt, 0.4, 60);
-
-  if (!example) {
-    throw new Error("LLM returned an empty example");
-  }
-
-  return example;
-}
-
 export async function generateNewsReading({ headline, summary, sourceName, level = "A2-B1" }) {
   const systemPrompt =
     "You write original short Dutch reading passages for language learners. You take inspiration from a real news topic but you never copy, translate, or closely paraphrase the source text - you write entirely new sentences of your own about the same general subject.";

@@ -267,33 +267,6 @@ async function callOpenAiCompatible(messages: ChatMessage[], temperature: number
   return sanitizeExample(data.choices?.[0]?.message?.content ?? "");
 }
 
-async function generateExample(word: string, translation: string, partOfSpeech: string) {
-  const systemPrompt =
-    "You create short, natural Dutch example sentences for language learners. Return only one Dutch sentence, no explanation.";
-  const userPrompt = `Word: ${word}\nPart of speech: ${partOfSpeech}\nEnglish meaning: ${translation}\nCreate one simple A1-A2 Dutch sentence using this exact word or its natural inflected form.`;
-  const example = process.env.GEMINI_API_KEY
-    ? await callGemini(`${systemPrompt}\n\n${userPrompt}`, 0.4, 60)
-    : await callOpenAiCompatible(
-        [
-          {
-            role: "system",
-            content: systemPrompt
-          },
-          {
-            role: "user",
-            content: userPrompt
-          }
-        ],
-        0.4,
-        60
-      );
-
-  if (!example) {
-    throw new Error("LLM returned an empty example");
-  }
-  return example;
-}
-
 async function translateExample(sentence: string, targetLanguage: string, maxTokens = 80, sourceLanguage = "nl") {
   try {
     const deeplTranslation = await translateWithDeepL(sentence, targetLanguage, sourceLanguage);
@@ -900,37 +873,6 @@ export default defineConfig(({ mode }) => {
             response.statusCode = 500;
             response.setHeader("Content-Type", "application/json; charset=utf-8");
             response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Failed to read EPUB" }));
-          }
-        });
-
-        server.middlewares.use("/api/generate-example", async (request, response) => {
-          if (request.method !== "POST") {
-            response.statusCode = 405;
-            response.end("Method not allowed");
-            return;
-          }
-          if (!(await requirePremiumDev(request, response))) return;
-
-          try {
-            const body = await readJsonBody(request);
-            const word = String(body.word ?? "").trim();
-            const translation = String(body.translation ?? "").trim();
-            const partOfSpeech = String(body.partOfSpeech ?? "").trim();
-
-            if (!word) {
-              response.statusCode = 400;
-              response.setHeader("Content-Type", "application/json; charset=utf-8");
-              response.end(JSON.stringify({ error: "Missing word" }));
-              return;
-            }
-
-            const example = await generateExample(word, translation, partOfSpeech);
-            response.setHeader("Content-Type", "application/json; charset=utf-8");
-            response.end(JSON.stringify({ example }));
-          } catch (error) {
-            response.statusCode = 500;
-            response.setHeader("Content-Type", "application/json; charset=utf-8");
-            response.end(JSON.stringify({ error: error instanceof Error ? error.message : "Failed to generate example" }));
           }
         });
 
