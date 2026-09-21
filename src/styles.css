@@ -2145,6 +2145,14 @@ main {
   line-height: 1.12;
 }
 
+.ipa-transcription {
+  display: block;
+  margin: -4px 0 6px;
+  color: var(--muted, #6b7280);
+  font-family: "Charis SIL", "Doulos SIL", "Segoe UI", monospace;
+  font-size: 0.92rem;
+}
+
 .card-side-label {
   display: inline-flex;
   margin-top: 12px;

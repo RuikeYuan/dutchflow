@@ -31,6 +31,7 @@ import {
   type GrammarPart
 } from "./data/grammarGuide";
 import frequencyWords from "./data/frequencyWords.json";
+import wordIpaData from "./data/wordIpa.json";
 import { supabase, type Session } from "./lib/supabaseClient";
 
 type DutchWord = {
@@ -97,6 +98,10 @@ type ProfileRow = {
 };
 
 const words = frequencyWords as DutchWord[];
+const wordIpa = wordIpaData as Record<string, string>;
+function ipaFor(word: DutchWord) {
+  return wordIpa[word.sourceId];
+}
 const defaultNotebookWordCount = 3000;
 const wordLookup = new Map<string, DutchWord>();
 for (const word of words) {
@@ -3067,6 +3072,7 @@ function WordCard({
           </div>
           <span className="card-side-label">{primaryLabel}</span>
           <h2>{primaryText}</h2>
+          {!flipped && ipaFor(item) ? <span className="ipa-transcription">{ipaFor(item)}</span> : null}
           {!flipped ? (
             <p>
               <strong>{secondaryLabel}:</strong> {secondaryText}
@@ -7243,6 +7249,9 @@ export default function App() {
                 {studyCardFlipped ? languageNames[cardMeaningLanguage] : "Nederlands"}
               </span>
               <h2>{studyCardFlipped ? resolveCardMeaning(studyWord, cardMeaningLanguage) : studyWord.word}</h2>
+              {!studyCardFlipped && ipaFor(studyWord) ? (
+                <span className="ipa-transcription">{ipaFor(studyWord)}</span>
+              ) : null}
               {!studyCardFlipped ? <span>{t.pos[studyWord.partOfSpeech] ?? studyWord.partOfSpeech}</span> : null}
               <div className="review-state">
                 <strong>
