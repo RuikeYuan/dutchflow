@@ -43,6 +43,7 @@ type DutchWord = {
   list: string;
   sourceId: string;
   frequency?: number;
+  perMillion?: number;
 };
 
 type ViewMode =
@@ -146,7 +147,7 @@ const autoPlayMutedStorageKey = "dutch-frequency-app-autoplay-muted";
 const defaultAutoPlaySelectionMigrationKey = "dutch-frequency-app-default-autoplay-selection-fiction20";
 const studyProgressStorageKey = "dutch-frequency-app-study-progress";
 const syncUpdatedAtStorageKey = "dutch-frequency-app-sync-updated-at";
-const listNames = ["All", "Core", "Fiction", "Newspapers", "Spoken", "Web", "General"];
+const listNames = ["All", "Core", "Fiction", "Newspapers", "Spoken", "Web", "General", "Subtitles"];
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
 const apiAvailable = import.meta.env.DEV || import.meta.env.PROD || Boolean(apiBaseUrl);
 
@@ -286,6 +287,7 @@ const translations: Record<
     removeFromNotebook: string;
     noTranslation: string;
     docsLabel: string;
+    perMillionLabel: string;
     resultCount: (count: number) => string;
     showingResults: (shown: number, total: number) => string;
     loadMore: string;
@@ -457,9 +459,9 @@ const translations: Record<
       navData: "词库数据",
       navCta: "开始学习",
       heroEyebrow: "AI 驱动 · 荷兰语词频学习",
-      heroTitle: "从 5813 个高频词，\n学到能读懂真实荷兰语。",
+      heroTitle: "从 8813 个高频词，\n学到能读懂真实荷兰语。",
       heroSubtitle:
-        "按词频排序的核心词、小说、新闻、口语、网络、通用六大分类，配合 AI 例句、间隔重复练习、AI 口语陪练和每日 AI 阅读——一条从零到能读会说的路径。",
+        "按词频排序的核心词、小说、新闻、口语、网络、通用、字幕七大分类，配合 AI 例句、间隔重复练习、AI 口语陪练和每日 AI 阅读——一条从零到能读会说的路径。",
       heroCtaPrimary: "免费开始学习",
       heroCtaSecondary: "看看有什么功能",
       heroScreenshotAlt: "词频卡片截图",
@@ -568,6 +570,7 @@ const translations: Record<
     removeFromNotebook: "从单词本移除",
     noTranslation: "暂无释义",
     docsLabel: "100 篇文档",
+    perMillionLabel: "百万词（字幕）",
     resultCount: (count) => `${count} 个结果`,
     showingResults: (shown, total) => `显示 ${shown} / ${total}`,
     loadMore: "加载更多",
@@ -738,7 +741,8 @@ const translations: Record<
       Newspapers: "新闻",
       Spoken: "口语",
       Web: "网络",
-      General: "通用"
+      General: "通用",
+      Subtitles: "字幕"
     },
     pos: {
       noun: "名词",
@@ -764,9 +768,9 @@ const translations: Record<
       navData: "Word data",
       navCta: "Get started",
       heroEyebrow: "AI-powered · Dutch frequency learning",
-      heroTitle: "From 5,813 high-frequency words\nto real Dutch fluency.",
+      heroTitle: "From 8,813 high-frequency words\nto real Dutch fluency.",
       heroSubtitle:
-        "Core, Fiction, Newspapers, Spoken, Web, and General — six frequency-ranked categories, paired with AI example sentences, spaced repetition, AI speaking practice, and daily AI reading. One path from zero to reading and speaking.",
+        "Core, Fiction, Newspapers, Spoken, Web, General, and Subtitles — seven frequency-ranked categories, paired with AI example sentences, spaced repetition, AI speaking practice, and daily AI reading. One path from zero to reading and speaking.",
       heroCtaPrimary: "Start learning free",
       heroCtaSecondary: "See what's inside",
       heroScreenshotAlt: "Screenshot of word frequency cards",
@@ -882,6 +886,7 @@ const translations: Record<
     removeFromNotebook: "Remove from notebook",
     noTranslation: "No translation",
     docsLabel: "100 docs",
+    perMillionLabel: "million words (subtitles)",
     resultCount: (count) => `${count} results`,
     showingResults: (shown, total) => `Showing ${shown} / ${total}`,
     loadMore: "Load more",
@@ -1059,7 +1064,8 @@ const translations: Record<
       Newspapers: "Newspapers",
       Spoken: "Spoken",
       Web: "Web",
-      General: "General"
+      General: "General",
+      Subtitles: "Subtitles"
     },
     pos: {
       noun: "noun",
@@ -1085,9 +1091,9 @@ const translations: Record<
       navData: "Woordgegevens",
       navCta: "Beginnen",
       heroEyebrow: "AI-gestuurd · Nederlands leren op frequentie",
-      heroTitle: "Van 5.813 hoogfrequente woorden\nnaar echte vaardigheid in het Nederlands.",
+      heroTitle: "Van 8.813 hoogfrequente woorden\nnaar echte vaardigheid in het Nederlands.",
       heroSubtitle:
-        "Kern, Fictie, Kranten, Gesproken, Web en Algemeen — zes categorieën gerangschikt op frequentie, gecombineerd met AI-voorbeeldzinnen, herhaling op basis van je vergeetcurve, AI-spreekoefeningen en dagelijks AI-leesmateriaal. Eén route van nul naar lezen en spreken.",
+        "Kern, Fictie, Kranten, Gesproken, Web, Algemeen en Ondertitels — zeven categorieën gerangschikt op frequentie, gecombineerd met AI-voorbeeldzinnen, herhaling op basis van je vergeetcurve, AI-spreekoefeningen en dagelijks AI-leesmateriaal. Eén route van nul naar lezen en spreken.",
       heroCtaPrimary: "Gratis beginnen",
       heroCtaSecondary: "Bekijk de functies",
       heroScreenshotAlt: "Screenshot van woordfrequentiekaarten",
@@ -1204,6 +1210,7 @@ const translations: Record<
     removeFromNotebook: "Verwijderen uit woordenlijst",
     noTranslation: "Geen vertaling",
     docsLabel: "100 documenten",
+    perMillionLabel: "miljoen woorden (ondertitels)",
     resultCount: (count) => `${count} resultaten`,
     showingResults: (shown, total) => `${shown} / ${total} getoond`,
     loadMore: "Meer laden",
@@ -1381,7 +1388,8 @@ const translations: Record<
       Newspapers: "Kranten",
       Spoken: "Gesproken",
       Web: "Web",
-      General: "Algemeen"
+      General: "Algemeen",
+      Subtitles: "Ondertitels"
     },
     pos: {
       noun: "zelfstandig naamwoord",
@@ -1407,9 +1415,9 @@ const translations: Record<
       navData: "Datos léxicos",
       navCta: "Empezar",
       heroEyebrow: "Impulsado por IA · Neerlandés por frecuencia",
-      heroTitle: "De 5813 palabras de alta frecuencia\na una fluidez real en neerlandés.",
+      heroTitle: "De 8813 palabras de alta frecuencia\na una fluidez real en neerlandés.",
       heroSubtitle:
-        "Core, Ficción, Prensa, Oral, Web y General: seis categorías ordenadas por frecuencia, combinadas con frases de ejemplo generadas por IA, repetición espaciada, práctica oral con IA y lectura diaria generada por IA. Un solo camino de cero a leer y hablar.",
+        "Core, Ficción, Prensa, Oral, Web, General y Subtítulos: siete categorías ordenadas por frecuencia, combinadas con frases de ejemplo generadas por IA, repetición espaciada, práctica oral con IA y lectura diaria generada por IA. Un solo camino de cero a leer y hablar.",
       heroCtaPrimary: "Empezar gratis",
       heroCtaSecondary: "Ver las funciones",
       heroScreenshotAlt: "Captura de las tarjetas de frecuencia de palabras",
@@ -1526,6 +1534,7 @@ const translations: Record<
     removeFromNotebook: "Quitar del cuaderno",
     noTranslation: "Sin traducción",
     docsLabel: "100 documentos",
+    perMillionLabel: "millón de palabras (subtítulos)",
     resultCount: (count) => `${count} resultados`,
     showingResults: (shown, total) => `Mostrando ${shown} / ${total}`,
     loadMore: "Cargar más",
@@ -1703,7 +1712,8 @@ const translations: Record<
       Newspapers: "Periódicos",
       Spoken: "Hablado",
       Web: "Web",
-      General: "General"
+      General: "General",
+      Subtitles: "Subtítulos"
     },
     pos: {
       noun: "sustantivo",
@@ -1729,9 +1739,9 @@ const translations: Record<
       navData: "Wortdaten",
       navCta: "Loslegen",
       heroEyebrow: "KI-gestützt · Niederländisch nach Häufigkeit lernen",
-      heroTitle: "Von 5813 hochfrequenten Wörtern\nzu echter Sprachkompetenz im Niederländischen.",
+      heroTitle: "Von 8813 hochfrequenten Wörtern\nzu echter Sprachkompetenz im Niederländischen.",
       heroSubtitle:
-        "Kern, Fiktion, Zeitungen, Gesprochen, Web und Allgemein — sechs nach Häufigkeit sortierte Kategorien, kombiniert mit KI-Beispielsätzen, Spaced Repetition, KI-Sprachtraining und täglichem KI-Lesematerial. Ein Weg von null zum Lesen und Sprechen.",
+        "Kern, Fiktion, Zeitungen, Gesprochen, Web, Allgemein und Untertitel — sieben nach Häufigkeit sortierte Kategorien, kombiniert mit KI-Beispielsätzen, Spaced Repetition, KI-Sprachtraining und täglichem KI-Lesematerial. Ein Weg von null zum Lesen und Sprechen.",
       heroCtaPrimary: "Kostenlos starten",
       heroCtaSecondary: "Funktionen ansehen",
       heroScreenshotAlt: "Screenshot der Wortfrequenz-Karten",
@@ -1848,6 +1858,7 @@ const translations: Record<
     removeFromNotebook: "Aus Wortliste entfernen",
     noTranslation: "Keine Übersetzung",
     docsLabel: "100 Dokumente",
+    perMillionLabel: "Million Wörter (Untertitel)",
     resultCount: (count) => `${count} Ergebnisse`,
     showingResults: (shown, total) => `${shown} / ${total} angezeigt`,
     loadMore: "Mehr laden",
@@ -2025,7 +2036,8 @@ const translations: Record<
       Newspapers: "Zeitungen",
       Spoken: "Gesprochen",
       Web: "Web",
-      General: "Allgemein"
+      General: "Allgemein",
+      Subtitles: "Untertitel"
     },
     pos: {
       noun: "Substantiv",
@@ -2048,7 +2060,8 @@ const listTone: Record<string, string> = {
   Newspapers: "tone-news",
   Spoken: "tone-spoken",
   Web: "tone-web",
-  General: "tone-general"
+  General: "tone-general",
+  Subtitles: "tone-subtitles"
 };
 
 const methodContent: Record<
@@ -2112,7 +2125,7 @@ const methodContent: Record<
       "参考 Ebbinghaus 1885 年的记忆研究，以及 Murre 和 Dros 2015 年在 PLOS ONE 发表的复现实验。原始研究不是给所有学习者规定唯一时间表，所以这里采用的是基于曲线思想的可调度间隔复习。",
     sourceLink: "PLOS ONE 复现实验",
     frequencyEyebrow: "词表是怎么来的",
-    frequencyTitle: "六个频率列表：核心、小说、新闻、口语、网络、通用",
+    frequencyTitle: "七个频率列表：核心、小说、新闻、口语、网络、通用、字幕",
     frequencyLead:
       "这个 app 的 5000 个高频词并非随意挑选，而是来自一部基于 2.9 亿词荷兰语语料库编制的频率词典。语料库涵盖小说、新闻、口语、网络四种体裁，每个词的“频率”按它出现在多少比例的 2000 词样本片段中计算，而不是简单计数——避免个别文本反复出现某个词造成的偏差。",
     frequencyLists: [
@@ -2121,7 +2134,8 @@ const methodContent: Record<
       { name: "新闻", body: "来自 SoNaR 语料库中 1993-2005 年荷兰、比利时报纸文本的高频词，是四个体裁语料中占比最大的一部分。" },
       { name: "口语", body: "来自 CGN 荷兰语口语语料库，约 900 小时、900 万词的真实对话、访谈、讲座等口语材料。" },
       { name: "网络", body: "同样来自 SoNaR 语料库，涵盖博客、论坛、电子杂志、新闻通讯和维基百科条目。" },
-      { name: "通用", body: "不属于核心，也不只属于某一个或两个体裁列表，但在至少三种体裁中都高频出现的词，共 2004 个。" }
+      { name: "通用", body: "不属于核心，也不只属于某一个或两个体裁列表，但在至少三种体裁中都高频出现的词，共 2004 个。" },
+      { name: "字幕", body: "补充列表，3000 个词。来自 OpenSubtitles 荷兰语电影和剧集字幕的词频，变形词归到原形（gaat 算进 gaan），去掉前六个列表已有的词后按频率取前 3000 个。词性、de/het 和英文释义来自 Wiktionary，并经过人工校对。偏日常口语、影视对白词汇；频率按每百万词出现次数计。" }
     ],
     frequencyRuleTitle: "一个词同时在多个列表里怎么办",
     frequencyRuleBody:
@@ -2135,7 +2149,7 @@ const methodContent: Record<
       "形容词按原形收录（比如 mooie、mooier、mooist 都归入 mooi），一些形容词也能直接当副词用。",
       "如果一个词形有两个都很常见的意思，会配两个例句分别说明——频率统计的是词形本身，不是具体某个意思。"
     ],
-    frequencySourceBody: "参考来源：《A Frequency Dictionary of Dutch》。"
+    frequencySourceBody: "参考来源：《A Frequency Dictionary of Dutch》。字幕列表：OpenSubtitles 词频（hermitdave/FrequencyWords，CC BY-SA 4.0）与 Wiktionary（kaikki.org，CC BY-SA）。"
   },
   en: {
     eyebrow: "Why spacing works",
@@ -2172,7 +2186,7 @@ const methodContent: Record<
       "Based on Ebbinghaus's 1885 memory work and the 2015 PLOS ONE replication by Murre and Dros. The original work does not prescribe one universal schedule; this app uses the curve as a practical spacing model.",
     sourceLink: "PLOS ONE replication",
     frequencyEyebrow: "Where the word lists come from",
-    frequencyTitle: "Six frequency lists: Core, Fiction, Newspapers, Spoken, Web, General",
+    frequencyTitle: "Seven frequency lists: Core, Fiction, Newspapers, Spoken, Web, General, Subtitles",
     frequencyLead:
       "The app's 5,000 high-frequency words aren't picked at random - they come from a published frequency dictionary built on a 290-million-word Dutch corpus spanning four genres: fiction, newspapers, spoken language, and the web. Each word's 'frequency' is measured as the percentage of 2,000-word samples it appears in, not a raw count - this avoids one word getting an inflated score just because it happens to occur a lot in one particular text.",
     frequencyLists: [
@@ -2181,7 +2195,8 @@ const methodContent: Record<
       { name: "Newspapers", body: "High-frequency words from the SoNaR corpus's Dutch and Belgian newspaper text (1993-2005) - the largest single source in the underlying corpus." },
       { name: "Spoken", body: "From the Spoken Dutch Corpus (CGN): about 900 hours and 9 million words of real conversations, interviews, and lectures." },
       { name: "Web", body: "Also from SoNaR: blogs, discussion forums, e-magazines, newsletters, and Wikipedia entries." },
-      { name: "General", body: "Words that aren't Core and don't clearly belong to just one or two genres, but still occur with high frequency in at least three of the four genres - 2,004 words." }
+      { name: "General", body: "Words that aren't Core and don't clearly belong to just one or two genres, but still occur with high frequency in at least three of the four genres - 2,004 words." },
+      { name: "Subtitles", body: "A supplementary list of 3,000 words, ranked by frequency in Dutch film and TV subtitles from OpenSubtitles. Inflected forms count toward their lemma (gaat counts as gaan), and words already in the other six lists are left out. Part of speech, de/het and English meanings come from Wiktionary and were reviewed by hand. Expect everyday, conversational and screen-dialogue vocabulary; frequency is given per million words." }
     ],
     frequencyRuleTitle: "How overlapping words are assigned",
     frequencyRuleBody:
@@ -2195,7 +2210,7 @@ const methodContent: Record<
       "Adjectives are listed in their base form (mooie, mooier, and mooist all fall under mooi), and some adjectives can also function as adverbs.",
       "If one word form has two genuinely common meanings, it gets two example sentences - frequency is counted by word form, not by meaning."
     ],
-    frequencySourceBody: "Source: A Frequency Dictionary of Dutch."
+    frequencySourceBody: "Source: A Frequency Dictionary of Dutch. Subtitles list: OpenSubtitles frequency data (hermitdave/FrequencyWords, CC BY-SA 4.0) and Wiktionary (kaikki.org, CC BY-SA)."
   },
   nl: {
     eyebrow: "Waarom gespreid herhalen werkt",
@@ -2232,7 +2247,7 @@ const methodContent: Record<
       "Gebaseerd op Ebbinghaus uit 1885 en de PLOS ONE-replicatie van Murre en Dros uit 2015. Het is een praktisch schema op basis van de curve, geen universele vaste wet.",
     sourceLink: "PLOS ONE-replicatie",
     frequencyEyebrow: "Waar de woordenlijsten vandaan komen",
-    frequencyTitle: "Zes frequentielijsten: Kern, Fictie, Kranten, Gesproken, Web, Algemeen",
+    frequencyTitle: "Zeven frequentielijsten: Kern, Fictie, Kranten, Gesproken, Web, Algemeen, Ondertitels",
     frequencyLead:
       "De 5000 hoogfrequente woorden in deze app zijn niet willekeurig gekozen - ze komen uit een gepubliceerd frequentiewoordenboek, gebaseerd op een corpus van 290 miljoen woorden Nederlands, verdeeld over vier genres: fictie, kranten, gesproken taal en het web. De 'frequentie' van elk woord wordt gemeten als het percentage tekstfragmenten van 2000 woorden waarin het voorkomt, niet als een simpel aantal - zo wordt voorkomen dat één woord een te hoge score krijgt omdat het toevallig vaak in één tekst voorkomt.",
     frequencyLists: [
@@ -2241,7 +2256,8 @@ const methodContent: Record<
       { name: "Kranten", body: "Hoogfrequente woorden uit Nederlandse en Belgische krantenteksten (1993-2005) uit het SoNaR-corpus - de grootste bron binnen het onderliggende corpus." },
       { name: "Gesproken", body: "Uit het Corpus Gesproken Nederlands (CGN): ongeveer 900 uur en 9 miljoen woorden aan echte gesprekken, interviews en lezingen." },
       { name: "Web", body: "Ook uit SoNaR: blogs, discussieforums, e-magazines, nieuwsbrieven en Wikipedia-artikelen." },
-      { name: "Algemeen", body: "Woorden die niet bij Kern horen en niet duidelijk bij één of twee genres, maar wel in minstens drie van de vier genres met hoge frequentie voorkomen - 2004 woorden." }
+      { name: "Algemeen", body: "Woorden die niet bij Kern horen en niet duidelijk bij één of twee genres, maar wel in minstens drie van de vier genres met hoge frequentie voorkomen - 2004 woorden." },
+      { name: "Ondertitels", body: "Een aanvullende lijst van 3000 woorden, gerangschikt op frequentie in Nederlandse film- en tv-ondertitels van OpenSubtitles. Verbogen vormen tellen mee voor het lemma (gaat telt als gaan) en woorden uit de andere zes lijsten zijn weggelaten. Woordsoort, de/het en Engelse betekenis komen uit Wiktionary en zijn met de hand nagekeken. Vooral alledaagse woorden en dialoog uit films en series; frequentie per miljoen woorden." }
     ],
     frequencyRuleTitle: "Wat er gebeurt als een woord in meerdere lijsten past",
     frequencyRuleBody:
@@ -2255,7 +2271,7 @@ const methodContent: Record<
       "Bijvoeglijke naamwoorden staan in hun grondvorm (mooie, mooier en mooist vallen allemaal onder mooi); sommige kunnen ook als bijwoord gebruikt worden.",
       "Heeft een woordvorm twee even gangbare betekenissen, dan krijgt het twee voorbeeldzinnen - de frequentie wordt geteld per woordvorm, niet per betekenis."
     ],
-    frequencySourceBody: "Bron: A Frequency Dictionary of Dutch."
+    frequencySourceBody: "Bron: A Frequency Dictionary of Dutch. Lijst Ondertitels: frequentiegegevens van OpenSubtitles (hermitdave/FrequencyWords, CC BY-SA 4.0) en Wiktionary (kaikki.org, CC BY-SA)."
   },
   es: {
     eyebrow: "Por qué funciona el repaso espaciado",
@@ -2292,7 +2308,7 @@ const methodContent: Record<
       "Basado en Ebbinghaus 1885 y la réplica de Murre y Dros en PLOS ONE, 2015. Es un modelo práctico, no un horario universal obligatorio.",
     sourceLink: "Réplica en PLOS ONE",
     frequencyEyebrow: "De dónde vienen las listas de palabras",
-    frequencyTitle: "Seis listas de frecuencia: Básico, Ficción, Periódicos, Hablado, Web, General",
+    frequencyTitle: "Siete listas de frecuencia: Básico, Ficción, Periódicos, Hablado, Web, General, Subtítulos",
     frequencyLead:
       "Las 5000 palabras de alta frecuencia de esta app no se eligieron al azar: provienen de un diccionario de frecuencia publicado, basado en un corpus de 290 millones de palabras en neerlandés repartido en cuatro géneros: ficción, periódicos, lengua hablada y web. La 'frecuencia' de cada palabra se mide como el porcentaje de fragmentos de 2000 palabras en los que aparece, no como un simple recuento, para evitar que una palabra reciba una puntuación inflada solo por aparecer mucho en un único texto.",
     frequencyLists: [
@@ -2301,7 +2317,8 @@ const methodContent: Record<
       { name: "Periódicos", body: "Palabras de alta frecuencia de textos periodísticos neerlandeses y belgas (1993-2005) del corpus SoNaR, la fuente más grande del corpus general." },
       { name: "Hablado", body: "Del Corpus de Neerlandés Hablado (CGN): unas 900 horas y 9 millones de palabras de conversaciones reales, entrevistas y conferencias." },
       { name: "Web", body: "También del corpus SoNaR: blogs, foros de discusión, revistas electrónicas, boletines y artículos de Wikipedia." },
-      { name: "General", body: "Palabras que no son Básicas ni pertenecen claramente a uno o dos géneros, pero que aún así aparecen con alta frecuencia en al menos tres de los cuatro géneros: 2004 palabras." }
+      { name: "General", body: "Palabras que no son Básicas ni pertenecen claramente a uno o dos géneros, pero que aún así aparecen con alta frecuencia en al menos tres de los cuatro géneros: 2004 palabras." },
+      { name: "Subtítulos", body: "Una lista complementaria de 3000 palabras, ordenadas por frecuencia en subtítulos neerlandeses de películas y series de OpenSubtitles. Las formas flexionadas cuentan para su lema (gaat cuenta como gaan) y se excluyen las palabras de las otras seis listas. La categoría gramatical, de/het y el significado en inglés vienen de Wiktionary y se revisaron a mano. Vocabulario cotidiano y de diálogo de pantalla; frecuencia por millón de palabras." }
     ],
     frequencyRuleTitle: "Qué pasa cuando una palabra encaja en varias listas",
     frequencyRuleBody:
@@ -2315,7 +2332,7 @@ const methodContent: Record<
       "Los adjetivos aparecen en su forma base (mooie, mooier y mooist se agrupan bajo mooi), y algunos también pueden usarse como adverbios.",
       "Si una misma forma de palabra tiene dos significados igual de comunes, se incluyen dos oraciones de ejemplo: la frecuencia se cuenta por forma, no por significado."
     ],
-    frequencySourceBody: "Fuente: A Frequency Dictionary of Dutch."
+    frequencySourceBody: "Fuente: A Frequency Dictionary of Dutch. Lista Subtítulos: datos de frecuencia de OpenSubtitles (hermitdave/FrequencyWords, CC BY-SA 4.0) y Wiktionary (kaikki.org, CC BY-SA)."
   },
   de: {
     eyebrow: "Warum verteiltes Wiederholen wirkt",
@@ -2352,7 +2369,7 @@ const methodContent: Record<
       "Basierend auf Ebbinghaus 1885 und der PLOS ONE-Replikation von Murre und Dros 2015. Das ist ein praktisches Modell, kein universeller Pflichtplan.",
     sourceLink: "PLOS ONE-Replikation",
     frequencyEyebrow: "Woher die Wortlisten kommen",
-    frequencyTitle: "Sechs Häufigkeitslisten: Kern, Fiktion, Zeitungen, Gesprochen, Web, Allgemein",
+    frequencyTitle: "Sieben Häufigkeitslisten: Kern, Fiktion, Zeitungen, Gesprochen, Web, Allgemein, Untertitel",
     frequencyLead:
       "Die 5000 hochfrequenten Wörter dieser App wurden nicht willkürlich ausgewählt - sie stammen aus einem veröffentlichten Häufigkeitswörterbuch, das auf einem Korpus von 290 Millionen niederländischen Wörtern aus vier Genres basiert: Fiktion, Zeitungen, gesprochene Sprache und Web. Die 'Häufigkeit' jedes Wortes wird als Prozentsatz der 2000-Wörter-Textproben gemessen, in denen es vorkommt, nicht als reine Zählung - so wird verhindert, dass ein Wort nur deshalb einen zu hohen Wert bekommt, weil es zufällig in einem einzigen Text sehr oft vorkommt.",
     frequencyLists: [
@@ -2361,7 +2378,8 @@ const methodContent: Record<
       { name: "Zeitungen", body: "Hochfrequente Wörter aus niederländischen und belgischen Zeitungstexten (1993-2005) im SoNaR-Korpus - die größte einzelne Quelle im Gesamtkorpus." },
       { name: "Gesprochen", body: "Aus dem Corpus Gesproken Nederlands (CGN): etwa 900 Stunden und 9 Millionen Wörter echter Gespräche, Interviews und Vorträge." },
       { name: "Web", body: "Ebenfalls aus SoNaR: Blogs, Diskussionsforen, E-Magazine, Newsletter und Wikipedia-Einträge." },
-      { name: "Allgemein", body: "Wörter, die nicht zum Kern gehören und nicht eindeutig einem oder zwei Genres zuzuordnen sind, aber dennoch in mindestens drei der vier Genres mit hoher Häufigkeit vorkommen - 2004 Wörter." }
+      { name: "Allgemein", body: "Wörter, die nicht zum Kern gehören und nicht eindeutig einem oder zwei Genres zuzuordnen sind, aber dennoch in mindestens drei der vier Genres mit hoher Häufigkeit vorkommen - 2004 Wörter." },
+      { name: "Untertitel", body: "Eine ergänzende Liste mit 3000 Wörtern, sortiert nach Häufigkeit in niederländischen Film- und Serienuntertiteln von OpenSubtitles. Flektierte Formen zählen zum Lemma (gaat zählt als gaan), Wörter aus den anderen sechs Listen sind ausgenommen. Wortart, de/het und englische Bedeutung stammen aus Wiktionary und wurden von Hand geprüft. Vor allem Alltags- und Dialogwortschatz aus Filmen und Serien; Häufigkeit pro Million Wörter." }
     ],
     frequencyRuleTitle: "Was passiert, wenn ein Wort in mehrere Listen passt",
     frequencyRuleBody:
@@ -2375,7 +2393,7 @@ const methodContent: Record<
       "Adjektive stehen in ihrer Grundform (mooie, mooier und mooist fallen alle unter mooi), manche können auch als Adverb verwendet werden.",
       "Hat eine Wortform zwei ähnlich gebräuchliche Bedeutungen, gibt es zwei Beispielsätze - die Häufigkeit wird nach Wortform gezählt, nicht nach Bedeutung."
     ],
-    frequencySourceBody: "Quelle: A Frequency Dictionary of Dutch."
+    frequencySourceBody: "Quelle: A Frequency Dictionary of Dutch. Liste Untertitel: Häufigkeitsdaten von OpenSubtitles (hermitdave/FrequencyWords, CC BY-SA 4.0) und Wiktionary (kaikki.org, CC BY-SA)."
   }
 };
 
@@ -3356,13 +3374,17 @@ function WordCard({
           </button>
         </div>
       </div>
-      <div className="meter" aria-hidden="true">
-        <span style={{ width: `${Math.min(item.frequency ?? 0, 100)}%` }} />
-      </div>
+      {item.frequency !== undefined ? (
+        <div className="meter" aria-hidden="true">
+          <span style={{ width: `${Math.min(item.frequency, 100)}%` }} />
+        </div>
+      ) : null}
       <div className="card-foot">
         <span>{item.sourceId}</span>
         <span>
-          {(item.frequency ?? 0).toFixed(2)} / {t.docsLabel}
+          {item.perMillion !== undefined
+            ? `${item.perMillion.toFixed(2)} / ${t.perMillionLabel}`
+            : `${(item.frequency ?? 0).toFixed(2)} / ${t.docsLabel}`}
         </span>
       </div>
       {!flipped ? (
@@ -4618,7 +4640,8 @@ function LandingPage({
     { list: "Newspapers", count: 1124 },
     { list: "Spoken", count: 153 },
     { list: "Web", count: 521 },
-    { list: "General", count: 1997 }
+    { list: "General", count: 1997 },
+    { list: "Subtitles", count: 3000 }
   ];
 
   const featureCards: { icon: JSX.Element; title: string; body: string; tint: string; iconColor: string }[] = [

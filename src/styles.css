@@ -2158,6 +2158,12 @@ main {
   color: #44403c;
 }
 
+.tone-subtitles {
+  border-color: #a7f3d0;
+  background: #d1fae5;
+  color: #065f46;
+}
+
 .word-card h2 {
   margin: 13px 0 6px;
   overflow-wrap: anywhere;
