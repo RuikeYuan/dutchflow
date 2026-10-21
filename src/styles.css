@@ -910,8 +910,7 @@ main {
   color: white;
 }
 
-.card-controls label,
-.hide-duplicates-toggle {
+.card-controls label {
   min-height: 38px;
   display: inline-flex;
   gap: 8px;
@@ -939,6 +938,27 @@ main {
   border-color: var(--cyan);
   background: var(--cyan);
   color: white;
+}
+
+.dedup-switch {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.dedup-switch button {
+  white-space: nowrap;
+}
+
+.dedup-switch button:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.dedup-switch button:last-child {
+  margin-left: -1px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
 
 .filters {

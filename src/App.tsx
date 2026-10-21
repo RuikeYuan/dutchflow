@@ -113,17 +113,20 @@ for (const word of words) {
     wordLookup.set(normalize(variant), word);
   }
 }
+function wordTextKey(word: DutchWord) {
+  return normalize(cleanWord(word.word));
+}
 const listsByWordText = new Map<string, string[]>();
 for (const word of words) {
-  const existing = listsByWordText.get(word.word);
+  const existing = listsByWordText.get(wordTextKey(word));
   if (existing) {
     if (!existing.includes(word.list)) existing.push(word.list);
   } else {
-    listsByWordText.set(word.word, [word.list]);
+    listsByWordText.set(wordTextKey(word), [word.list]);
   }
 }
 function listsFor(word: DutchWord): string[] {
-  const all = listsByWordText.get(word.word);
+  const all = listsByWordText.get(wordTextKey(word));
   if (!all || all.length <= 1) return [word.list];
   return [word.list, ...all.filter((list) => list !== word.list)];
 }
@@ -131,6 +134,7 @@ const totalUniqueWords = listsByWordText.size;
 const notebookStorageKey = "dutch-frequency-app-notebook";
 const defaultNotebookMigrationKey = "dutch-frequency-app-default-notebook-3000";
 const languageStorageKey = "dutch-frequency-app-ui-language";
+const hideDuplicatesStorageKey = "dutch-frequency-app-hide-duplicates";
 const generatedExamplesStorageKey = "dutch-frequency-app-generated-examples";
 const exampleTranslationsStorageKey = "dutch-frequency-app-example-translations";
 const wordMeaningTranslationsStorageKey = "dutch-frequency-app-word-meaning-translations";
@@ -214,7 +218,8 @@ const translations: Record<
     statsUniqueWords: string;
     statsNotebook: string;
     statsCurrent: string;
-    hideDuplicatesLabel: string;
+    showAllWordsLabel: string;
+    dedupWordsLabel: string;
     searchPlaceholder: string;
     jumpToRankPlaceholder: string;
     jumpToRankButton: string;
@@ -549,7 +554,8 @@ const translations: Record<
     podcastShowTranscript: "显示文字稿",
     podcastHideTranscript: "隐藏文字稿",
     filtersLabel: "词频分类",
-    hideDuplicatesLabel: "隐藏重复词",
+    showAllWordsLabel: "全部词条",
+    dedupWordsLabel: "去重",
     playPronunciation: "播放读音",
     autoPlayNotebook: "自动播放中英荷",
     stopAutoPlayNotebook: "停止播放",
@@ -862,7 +868,8 @@ const translations: Record<
     podcastShowTranscript: "Show transcript",
     podcastHideTranscript: "Hide transcript",
     filtersLabel: "Frequency lists",
-    hideDuplicatesLabel: "Hide duplicate words",
+    showAllWordsLabel: "All entries",
+    dedupWordsLabel: "Unique only",
     playPronunciation: "Play pronunciation",
     autoPlayNotebook: "Auto-play Chinese, English, Dutch",
     stopAutoPlayNotebook: "Stop playback",
@@ -1183,7 +1190,8 @@ const translations: Record<
     podcastShowTranscript: "Transcript tonen",
     podcastHideTranscript: "Transcript verbergen",
     filtersLabel: "Frequentielijsten",
-    hideDuplicatesLabel: "Dubbele woorden verbergen",
+    showAllWordsLabel: "Alle items",
+    dedupWordsLabel: "Alleen uniek",
     playPronunciation: "Uitspraak afspelen",
     autoPlayNotebook: "Chinees, Engels, Nederlands automatisch afspelen",
     stopAutoPlayNotebook: "Afspelen stoppen",
@@ -1504,7 +1512,8 @@ const translations: Record<
     podcastShowTranscript: "Mostrar transcripción",
     podcastHideTranscript: "Ocultar transcripción",
     filtersLabel: "Listas de frecuencia",
-    hideDuplicatesLabel: "Ocultar palabras duplicadas",
+    showAllWordsLabel: "Todas",
+    dedupWordsLabel: "Solo únicas",
     playPronunciation: "Reproducir pronunciación",
     autoPlayNotebook: "Reproducir chino, inglés y neerlandés",
     stopAutoPlayNotebook: "Detener reproducción",
@@ -1825,7 +1834,8 @@ const translations: Record<
     podcastShowTranscript: "Transkript anzeigen",
     podcastHideTranscript: "Transkript verbergen",
     filtersLabel: "Frequenzlisten",
-    hideDuplicatesLabel: "Doppelte Wörter ausblenden",
+    showAllWordsLabel: "Alle Einträge",
+    dedupWordsLabel: "Nur eindeutige",
     playPronunciation: "Aussprache abspielen",
     autoPlayNotebook: "Chinesisch, Englisch, Niederländisch abspielen",
     stopAutoPlayNotebook: "Wiedergabe stoppen",
@@ -2872,6 +2882,14 @@ function getSavedLanguage(): UiLanguage {
   return value === "zh" || value === "en" || value === "nl" || value === "es" || value === "de"
     ? value
     : "zh";
+}
+
+function getSavedHideDuplicates() {
+  try {
+    return localStorage.getItem(hideDuplicatesStorageKey) !== "false";
+  } catch {
+    return true;
+  }
 }
 
 function getRandomIndex(length: number, current: number) {
@@ -6135,7 +6153,7 @@ export default function App() {
   const [highlightedWordId, setHighlightedWordId] = useState<string | null>(null);
   const skipVisibleResetRef = useRef(false);
   const [selectedList, setSelectedList] = useState("All");
-  const [hideDuplicateWords, setHideDuplicateWords] = useState(false);
+  const [hideDuplicateWords, setHideDuplicateWords] = useState(getSavedHideDuplicates);
   const [savedIds, setSavedIds] = useState<Set<string>>(getSavedIds);
   const [bookExamples, setBookExamples] = useState<Record<string, string>>({});
   const [generatedExamples, setGeneratedExamples] = useState<Record<string, string>>(getSavedGeneratedExamples);
@@ -6666,6 +6684,14 @@ export default function App() {
   }, [user?.id]);
 
   useEffect(() => {
+    try {
+      localStorage.setItem(hideDuplicatesStorageKey, String(hideDuplicateWords));
+    } catch {
+      // Storage unavailable; the toggle still works for this session.
+    }
+  }, [hideDuplicateWords]);
+
+  useEffect(() => {
     localStorage.setItem(languageStorageKey, language);
     document.documentElement.lang = language === "zh" ? "zh-CN" : language;
   }, [language]);
@@ -6781,8 +6807,9 @@ export default function App() {
 
     const seenWords = new Set<string>();
     return filtered.filter((word) => {
-      if (seenWords.has(word.word)) return false;
-      seenWords.add(word.word);
+      const key = wordTextKey(word);
+      if (seenWords.has(key)) return false;
+      seenWords.add(key);
       return true;
     });
   }, [hideDuplicateWords, mode, query, savedWords, selectedList]);
@@ -7498,14 +7525,24 @@ export default function App() {
                   {t.list[name] ?? name}
                 </button>
               ))}
-              <label className="hide-duplicates-toggle">
-                <input
-                  type="checkbox"
-                  checked={hideDuplicateWords}
-                  onChange={(event) => setHideDuplicateWords(event.target.checked)}
-                />
-                <span>{t.hideDuplicatesLabel}</span>
-              </label>
+              <div className="dedup-switch" role="group">
+                <button
+                  type="button"
+                  className={!hideDuplicateWords ? "active" : ""}
+                  aria-pressed={!hideDuplicateWords}
+                  onClick={() => setHideDuplicateWords(false)}
+                >
+                  {t.showAllWordsLabel}
+                </button>
+                <button
+                  type="button"
+                  className={hideDuplicateWords ? "active" : ""}
+                  aria-pressed={hideDuplicateWords}
+                  onClick={() => setHideDuplicateWords(true)}
+                >
+                  {t.dedupWordsLabel}
+                </button>
+              </div>
             </div>
           </header>
           ) : null}
